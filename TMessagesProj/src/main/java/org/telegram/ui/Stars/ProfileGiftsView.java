@@ -25,9 +25,9 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AvatarImageView;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedFloat;
+import org.telegram.ui.Components.AvatarImageView;
 import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 
@@ -141,93 +141,12 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         }
     }
 
-    public final class Gift {
-
-        public final long id;
-        public final TLRPC.Document document;
-        public final long documentId;
-        public final int color;
-        public final String slug;
-
-        public Gift(TL_stars.TL_starGiftUnique gift) {
-            id = gift.id;
-            document = gift.getDocument();
-            documentId = document == null ? 0 : document.id;
-            final TL_stars.starGiftAttributeBackdrop backdrop = findAttribute(gift.attributes, TL_stars.starGiftAttributeBackdrop.class);
-            color = backdrop.center_color | 0xFF000000;
-            slug = gift.slug;
-        }
-
-        public Gift(TLRPC.TL_emojiStatusCollectible status) {
-            id = status.collectible_id;
-            document = null;
-            documentId = status.document_id;
-            color = status.center_color | 0xFF000000;
-            slug = status.slug;
-        }
-
-        public boolean equals(Gift b) {
-            return b != null && b.id == id;
-        }
-
-        public RadialGradient gradient;
-        public final Matrix gradientMatrix = new Matrix();
-        public Paint gradientPaint;
-        public AnimatedEmojiDrawable emojiDrawable;
-        public AnimatedFloat animatedFloat;
-
-        public final RectF bounds = new RectF();
-        public final ButtonBounce bounce = new ButtonBounce(ProfileGiftsView.this);
-
-        public void copy(Gift b) {
-            gradient = b.gradient;
-            emojiDrawable = b.emojiDrawable;
-            gradientPaint = b.gradientPaint;
-            animatedFloat = b.animatedFloat;
-        }
-
-        public void draw(
-            Canvas canvas,
-            float cx, float cy,
-            float ascale, float rotate,
-            float alpha,
-            float gradientAlpha
-        ) {
-            if (alpha <= 0.0f) return;
-            final float gsz = dp(45);
-            bounds.set(cx - gsz / 2, cy - gsz / 2, cx + gsz / 2, cy + gsz / 2);
-            canvas.save();
-            canvas.translate(cx, cy);
-            canvas.rotate(rotate);
-            final float scale = ascale * bounce.getScale(0.1f);
-            canvas.scale(scale, scale);
-            if (gradientPaint != null) {
-                gradientPaint.setAlpha((int) (0xFF * alpha * gradientAlpha));
-                canvas.drawRect(-gsz / 2.0f, -gsz / 2.0f, gsz / 2.0f, gsz / 2.0f, gradientPaint);
-            }
-            if (emojiDrawable != null) {
-                final int sz = dp(24);
-                emojiDrawable.setBounds(-sz / 2, -sz / 2, sz / 2, sz / 2);
-                emojiDrawable.setAlpha((int) (0xFF * alpha));
-                emojiDrawable.draw(canvas);
-            }
-            canvas.restore();
-        }
-    }
-
-    private StarsController.GiftsList list;
-
-    public final ArrayList<Gift> oldGifts = new ArrayList<>();
-    public final ArrayList<Gift> gifts = new ArrayList<>();
-    public final HashSet<Long> giftIds = new HashSet<>();
-    public int maxCount;
-
     public void update() {
         if (!MessagesController.getInstance(currentAccount).enableGiftsInProfile) {
             return;
         }
 
-        maxCount = MessagesController.getInstance(currentAccount).stargiftsPinnedToTopLimit;
+        maxCount = Math.min(6, MessagesController.getInstance(currentAccount).stargiftsPinnedToTopLimit);
         oldGifts.clear();
         oldGifts.addAll(gifts);
         gifts.clear();
@@ -246,7 +165,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         }
         list = StarsController.getInstance(currentAccount).getProfileGiftsList(dialogId);
         if (list != null) {
-            for (int i = 0; i < list.gifts.size(); i++) {
+            for (int i = 0; i < list.gifts.size() && gifts.size() < maxCount; i++) {
                 final TL_stars.SavedStarGift savedGift = list.gifts.get(i);
                 if (!savedGift.unsaved && savedGift.pinned_to_top && savedGift.gift instanceof TL_stars.TL_starGiftUnique) {
                     final Gift gift = new Gift((TL_stars.TL_starGiftUnique) savedGift.gift);
@@ -317,7 +236,12 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             invalidate();
     }
 
-    public final AnimatedFloat animatedCount = new AnimatedFloat(this, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private StarsController.GiftsList list;
+
+    public final ArrayList<Gift> oldGifts = new ArrayList<>();
+    public final ArrayList<Gift> gifts = new ArrayList<>();
+    public final HashSet<Long> giftIds = new HashSet<>();
+    public int maxCount;
 
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
@@ -337,89 +261,149 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         final float ar = Math.min(aw, ah) / 2.0f + dp(6);
         final float cx = getWidth() / 2.0f;
 
-        final float closedAlpha = Utilities.clamp01((float) (expandY - (AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight())) / dp(50));
+        final float closedAlpha = Utilities.clamp01((expandY - (AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight())) / dp(50));
 
-        for (int i = 0; i < gifts.size(); ++i) {
+        final int maxGiftsToShow = Math.min(6, gifts.size());
+        for (int i = 0; i < maxGiftsToShow; ++i) {
             final Gift gift = gifts.get(i);
             final float alpha = gift.animatedFloat.set(1.0f);
             final float scale = lerp(0.5f, 1.0f, alpha);
-            final int index = i; // gifts.size() == maxCount ? i - 1 : i;
+            final int index = i;
+
             if (index == 0) {
+                // Top left
                 gift.draw(
-                    canvas,
-                    (float) (acx + ar * Math.cos(-65 / 180.0f * Math.PI)),
-                    (float) (acy + ar * Math.sin(-65 / 180.0f * Math.PI)),
-                    scale, -65 + 90,
-                    alpha * (1.0f - expandProgress), lerp(0.9f, 0.25f, actionBarProgress)
+                        canvas,
+                        acx - ar - dp(10), acy - dp(40),
+                        scale, -10.0f,
+                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
+                        lerp(0.9f, 0.25f, actionBarProgress)
                 );
             } else if (index == 1) {
+                // Middle left
                 gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .27f, dp(62)), cx, 0.5f * actionBarProgress), acy - dp(52),
-                    scale, -4.0f,
-                    alpha * alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
+                        canvas,
+                        acx - ar - dp(25), acy,
+                        scale, 0.0f,
+                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
+                        1.0f
                 );
             } else if (index == 2) {
+                // Bottom left
                 gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .46f, dp(105)), cx, 0.5f * actionBarProgress), acy - dp(72),
-                    scale, 8.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
+                        canvas,
+                        acx - ar - dp(10), acy + dp(40),
+                        scale, 10.0f,
+                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
+                        1.0f
                 );
             } else if (index == 3) {
+                // Top right
                 gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .60f, dp(136)), cx, 0.5f * actionBarProgress), acy - dp(46),
-                    scale, 3.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
+                        canvas,
+                        acx + ar + dp(10), acy - dp(40),
+                        scale, 10.0f,
+                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
+                        1.0f
                 );
             } else if (index == 4) {
+                // Middle right
                 gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .08f, dp(21.6f)), cx, 0.5f * actionBarProgress), acy - dp(82f),
-                    scale, -3.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
+                        canvas,
+                        acx + ar + dp(25), acy,
+                        scale, 0.0f,
+                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
+                        1.0f
                 );
             } else if (index == 5) {
+                // Bottom right
                 gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .745f, dp(186)), cx, 0.5f * actionBarProgress), acy - dp(39),
-                    scale, 2.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 6) {
-                gift.draw(
-                    canvas,
-                    cacx + Math.min(getWidth() * .38f, dp(102)), expandY - dp(12),
-                    scale, 0,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 7) {
-                gift.draw(
-                    canvas,
-                    cacx + Math.min(getWidth() * .135f, dp(36)), expandY - dp(17.6f),
-                    scale, -5.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 8) {
-                gift.draw(
-                    canvas,
-                    cacx + Math.min(getWidth() * .76f, dp(178)), expandY - dp(21.66f),
-                    scale, 5.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
+                        canvas,
+                        acx + ar + dp(10), acy + dp(40),
+                        scale, -10.0f,
+                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
+                        1.0f
                 );
             }
         }
 
         canvas.restore();
+    }
+
+    public final AnimatedFloat animatedCount = new AnimatedFloat(this, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+
+    public final class Gift {
+
+        public final long id;
+        public final TLRPC.Document document;
+        public final long documentId;
+        public final int color;
+        public final String slug;
+
+        public Gift(TL_stars.TL_starGiftUnique gift) {
+            id = gift.id;
+            document = gift.getDocument();
+            documentId = document == null ? 0 : document.id;
+            final TL_stars.starGiftAttributeBackdrop backdrop = findAttribute(gift.attributes, TL_stars.starGiftAttributeBackdrop.class);
+            color = backdrop.center_color | 0xFF000000;
+            slug = gift.slug;
+        }
+
+        public Gift(TLRPC.TL_emojiStatusCollectible status) {
+            id = status.collectible_id;
+            document = null;
+            documentId = status.document_id;
+            color = status.center_color | 0xFF000000;
+            slug = status.slug;
+        }
+
+        public boolean equals(Gift b) {
+            return b != null && b.id == id;
+        }
+
+        public RadialGradient gradient;
+        public final Matrix gradientMatrix = new Matrix();
+        public Paint gradientPaint;
+        public AnimatedEmojiDrawable emojiDrawable;
+        public AnimatedFloat animatedFloat;
+
+        public final RectF bounds = new RectF();
+        public final ButtonBounce bounce = new ButtonBounce(ProfileGiftsView.this);
+
+        public void copy(Gift b) {
+            gradient = b.gradient;
+            emojiDrawable = b.emojiDrawable;
+            gradientPaint = b.gradientPaint;
+            animatedFloat = b.animatedFloat;
+        }
+
+        public void draw(
+                Canvas canvas,
+                float cx, float cy,
+                float ascale, float rotate,
+                float alpha,
+                float gradientAlpha
+        ) {
+            if (alpha <= 0.0f) return;
+            final float gsz = dp(45);
+            bounds.set(cx - gsz / 2, cy - gsz / 2, cx + gsz / 2, cy + gsz / 2);
+            canvas.save();
+            canvas.translate(cx, cy);
+            canvas.rotate(rotate);
+            final float scale = ascale * bounce.getScale(0.1f);
+            canvas.scale(scale, scale);
+            if (gradientPaint != null) {
+                gradientPaint.setAlpha((int) (0xFF * alpha * gradientAlpha));
+                canvas.drawRect(-gsz / 2.0f, -gsz / 2.0f, gsz / 2.0f, gsz / 2.0f, gradientPaint);
+            }
+            if (emojiDrawable != null) {
+                final int sz = dp(24);
+                emojiDrawable.setBounds(-sz / 2, -sz / 2, sz / 2, sz / 2);
+                emojiDrawable.setAlpha((int) (0xFF * alpha));
+                emojiDrawable.draw(canvas);
+            }
+            canvas.restore();
+        }
     }
 
     public Gift getGiftUnder(float x, float y) {
