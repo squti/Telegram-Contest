@@ -7,7 +7,6 @@ import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.ActionBar.Theme;
 
 public class StarGiftPatterns {
 
@@ -205,6 +204,32 @@ public class StarGiftPatterns {
                 (int) (b + dpf2(y) + dpf2(size) / 2.0f)
             );
             pattern.setAlpha((int) (0xFF * alpha * thisAlpha));
+            pattern.draw(canvas);
+        }
+    }
+
+    public static void drawCircularProfilePattern(Canvas canvas, Drawable pattern, float centerX, float centerY, float radius, float alpha) {
+        if (alpha <= 0.0f) return;
+
+        final int emojiCount = 8;
+        final float baseSize = 20f;
+        final float highAlpha = 0.37f;
+        for (int i = 0; i < emojiCount; i++) {
+            float angle = (float) (i * 2 * Math.PI / emojiCount);
+
+            float x = centerX + radius * (float) Math.cos(angle);
+            float y = centerY + radius * (float) Math.sin(angle);
+
+            float size = baseSize + (i % 2 == 0 ? 2f : -1f);
+
+            pattern.setBounds(
+                    (int) (x - dpf2(size) / 2.0f),
+                    (int) (y - dpf2(size) / 2.0f),
+                    (int) (x + dpf2(size) / 2.0f),
+                    (int) (y + dpf2(size) / 2.0f)
+            );
+
+            pattern.setAlpha((int) (0xFF * alpha * highAlpha));
             pattern.draw(canvas);
         }
     }
