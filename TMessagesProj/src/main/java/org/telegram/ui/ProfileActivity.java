@@ -4784,118 +4784,227 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void setAvatarExpandProgress(float animatedFracture) {
-        final int newTop = ActionBar.getCurrentActionBarHeight() + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0);
+        final int newTop = calculateActionBarTopOffset();
         final float value = currentExpandAnimatorValue = AndroidUtilities.lerp(expandAnimatorValues, currentExpanAnimatorFracture = animatedFracture);
+
+        updateAvatarContainerTransform(value);
+        updateSearchItemAppearance(value);
+        updateIconDrawables(value);
+        updateTextPositionsAndColors(newTop, value);
+        updateAvatarContainerLayoutParams(newTop, value);
+
+        updateCollectibleHint();
+    }
+
+    private void updateAvatarContainerTransform(float expandValue) {
         checkPhotoDescriptionAlpha();
+
         avatarContainer.setScaleX(avatarScale);
         avatarContainer.setScaleY(avatarScale);
-        avatarContainer.setTranslationX(AndroidUtilities.lerp(avatarX, 0f, value));
-        avatarContainer.setTranslationY(AndroidUtilities.lerp((float) Math.ceil(avatarY), 0f, value));
-        avatarImage.setRoundRadius((int) AndroidUtilities.lerp(getSmallAvatarRoundRadius(), 0f, value));
+        avatarContainer.setTranslationX(AndroidUtilities.lerp(avatarX, 0f, expandValue));
+        avatarContainer.setTranslationY(AndroidUtilities.lerp((float) Math.ceil(avatarY), 0f, expandValue));
+
+        avatarImage.setRoundRadius((int) AndroidUtilities.lerp(getSmallAvatarRoundRadius(), 0f, expandValue));
+        avatarImage.setForegroundAlpha(expandValue);
+
+        updateStoryAndGiftsViews(expandValue);
+        updateNamePositionForExpandedView();
+    }
+
+    private void updateStoryAndGiftsViews(float expandValue) {
         if (storyView != null) {
-            storyView.setExpandProgress(value);
+            storyView.setExpandProgress(expandValue);
         }
         if (giftsView != null) {
-            giftsView.setExpandProgress(value);
+            giftsView.setExpandProgress(expandValue);
         }
-        if (searchItem != null) {
-            searchItem.setAlpha(1.0f - value);
-            searchItem.setScaleY(1.0f - value);
-            searchItem.setVisibility(View.VISIBLE);
-            searchItem.setClickable(searchItem.getAlpha() > .5f);
-            if (qrItem != null) {
-                float translation = AndroidUtilities.dp(48) * value;
-//                    if (searchItem.getVisibility() == View.VISIBLE)
-//                        translation += AndroidUtilities.dp(48);
-                qrItem.setTranslationX(translation);
-                avatarsViewPagerIndicatorView.setTranslationX(translation - AndroidUtilities.dp(48));
-            }
-        }
+    }
 
+    private void updateNamePositionForExpandedView() {
         if (extraHeight > collapsedAreaHeight && expandProgress < 0.33f) {
             refreshNameAndOnlineXY();
         }
+    }
 
+    private void updateSearchItemAppearance(float expandValue) {
+        if (searchItem == null) return;
+
+        searchItem.setAlpha(1.0f - expandValue);
+        searchItem.setScaleY(1.0f - expandValue);
+        searchItem.setVisibility(View.VISIBLE);
+        searchItem.setClickable(searchItem.getAlpha() > .5f);
+
+        updateQrItemPosition(expandValue);
+    }
+
+    private void updateQrItemPosition(float expandValue) {
+        if (qrItem != null) {
+            float translation = AndroidUtilities.dp(48) * expandValue;
+            qrItem.setTranslationX(translation);
+            avatarsViewPagerIndicatorView.setTranslationX(translation - AndroidUtilities.dp(48));
+        }
+    }
+
+    private void updateIconDrawables(float expandValue) {
+        updateScamDrawableColor(expandValue);
+        updateLockIconColor(expandValue);
+        updateVerifiedDrawables(expandValue);
+        updatePremiumDrawables(expandValue);
+        updateEmojiStatusDrawableColor(expandValue);
+    }
+
+    private void updateScamDrawableColor(float expandValue) {
         if (scamDrawable != null) {
-            scamDrawable.setColor(ColorUtils.blendARGB(getThemedColor(Theme.key_avatar_subtitleInProfileBlue), Color.argb(179, 255, 255, 255), value));
+            scamDrawable.setColor(ColorUtils.blendARGB(
+                    getThemedColor(Theme.key_avatar_subtitleInProfileBlue),
+                    Color.argb(179, 255, 255, 255),
+                    expandValue
+            ));
         }
+    }
 
+    private void updateLockIconColor(float expandValue) {
         if (lockIconDrawable != null) {
-            lockIconDrawable.setColorFilter(ColorUtils.blendARGB(getThemedColor(Theme.key_chat_lockIcon), Color.WHITE, value), PorterDuff.Mode.MULTIPLY);
+            lockIconDrawable.setColorFilter(
+                    ColorUtils.blendARGB(getThemedColor(Theme.key_chat_lockIcon), Color.WHITE, expandValue),
+                    PorterDuff.Mode.MULTIPLY
+            );
         }
+    }
 
+    private void updateVerifiedDrawables(float expandValue) {
         if (verifiedCrossfadeDrawable[0] != null) {
-            verifiedCrossfadeDrawable[0].setProgress(value);
+            verifiedCrossfadeDrawable[0].setProgress(expandValue);
         }
         if (verifiedCrossfadeDrawable[1] != null) {
-            verifiedCrossfadeDrawable[1].setProgress(value);
+            verifiedCrossfadeDrawable[1].setProgress(expandValue);
         }
+    }
 
+    private void updatePremiumDrawables(float expandValue) {
         if (premiumCrossfadeDrawable[0] != null) {
-            premiumCrossfadeDrawable[0].setProgress(value);
+            premiumCrossfadeDrawable[0].setProgress(expandValue);
         }
         if (premiumCrossfadeDrawable[1] != null) {
-            premiumCrossfadeDrawable[1].setProgress(value);
+            premiumCrossfadeDrawable[1].setProgress(expandValue);
         }
+    }
 
-        updateEmojiStatusDrawableColor(value);
+    private void updateTextPositionsAndColors(int newTop, float expandValue) {
+        updateTextPositions(newTop, expandValue);
+        updateTextColors(expandValue);
+        updateTextScaling(expandValue);
+        updateActionBarColors(expandValue);
+        updateStatusButtonColor();
 
+        needLayoutText(Math.min(1f, extraHeight / collapsedAreaHeight));
+    }
+
+    private void updateTextPositions(int newTop, float expandValue) {
         final float k = AndroidUtilities.dpf2(8f);
 
+        // Calculate name text view positions using Bezier curve interpolation
         final float nameTextViewXEnd = AndroidUtilities.dpf2(18f) - nameTextView[1].getLeft();
         final float nameTextViewYEnd = newTop + extraHeight - AndroidUtilities.dpf2(38f) - nameTextView[1].getBottom();
         final float nameTextViewCx = k + nameX + (nameTextViewXEnd - nameX) / 2f;
         final float nameTextViewCy = k + nameY + (nameTextViewYEnd - nameY) / 2f;
-        final float nameTextViewX = (1 - value) * (1 - value) * nameX + 2 * (1 - value) * value * nameTextViewCx + value * value * nameTextViewXEnd;
-        final float nameTextViewY = (1 - value) * (1 - value) * nameY + 2 * (1 - value) * value * nameTextViewCy + value * value * nameTextViewYEnd;
+        final float nameTextViewX = calculateBezierPosition(nameX, nameTextViewCx, nameTextViewXEnd, expandValue);
+        final float nameTextViewY = calculateBezierPosition(nameY, nameTextViewCy, nameTextViewYEnd, expandValue);
 
+        // Calculate online text view positions using Bezier curve interpolation
         final float onlineTextViewXEnd = AndroidUtilities.dpf2(16f) - onlineTextView[1].getLeft();
         final float onlineTextViewYEnd = newTop + extraHeight - AndroidUtilities.dpf2(18f) - onlineTextView[1].getBottom();
         final float onlineTextViewCx = k + onlineX + (onlineTextViewXEnd - onlineX) / 2f;
         final float onlineTextViewCy = k + onlineY + (onlineTextViewYEnd - onlineY) / 2f;
-        final float onlineTextViewX = (1 - value) * (1 - value) * onlineX + 2 * (1 - value) * value * onlineTextViewCx + value * value * onlineTextViewXEnd;
-        final float onlineTextViewY = (1 - value) * (1 - value) * onlineY + 2 * (1 - value) * value * onlineTextViewCy + value * value * onlineTextViewYEnd;
+        final float onlineTextViewX = calculateBezierPosition(onlineX, onlineTextViewCx, onlineTextViewXEnd, expandValue);
+        final float onlineTextViewY = calculateBezierPosition(onlineY, onlineTextViewCy, onlineTextViewYEnd, expandValue);
 
-        nameTextView[1].setTranslationX(nameTextViewX);
-        nameTextView[1].setTranslationY(nameTextViewY);
-        onlineTextView[1].setTranslationX(onlineTextViewX + customPhotoOffset);
-        onlineTextView[1].setTranslationY(onlineTextViewY);
-        mediaCounterTextView.setTranslationX(onlineTextViewX);
-        mediaCounterTextView.setTranslationY(onlineTextViewY);
+        applyTextPositions(nameTextViewX, nameTextViewY, onlineTextViewX, onlineTextViewY);
+    }
+
+    private float calculateBezierPosition(float start, float control, float end, float t) {
+        return (1 - t) * (1 - t) * start + 2 * (1 - t) * t * control + t * t * end;
+    }
+
+    private void applyTextPositions(float nameX, float nameY, float onlineX, float onlineY) {
+        nameTextView[1].setTranslationX(nameX);
+        nameTextView[1].setTranslationY(nameY);
+        onlineTextView[1].setTranslationX(onlineX + customPhotoOffset);
+        onlineTextView[1].setTranslationY(onlineY);
+        mediaCounterTextView.setTranslationX(onlineX);
+        mediaCounterTextView.setTranslationY(onlineY);
+    }
+
+    private void updateTextColors(float expandValue) {
+        updateOnlineTextColor(expandValue);
+        updateNameTextColor();
+    }
+
+    private void updateOnlineTextColor(float expandValue) {
         final Object onlineTextViewTag = onlineTextView[1].getTag();
         int statusColor;
         boolean online = false;
+
         if (onlineTextViewTag instanceof Integer) {
             statusColor = getThemedColor((Integer) onlineTextViewTag);
             online = (Integer) onlineTextViewTag == Theme.key_profile_status;
         } else {
             statusColor = getThemedColor(Theme.key_avatar_subtitleInProfileBlue);
         }
-        onlineTextView[1].setTextColor(ColorUtils.blendARGB(applyPeerColor(statusColor, true, online), 0xB3FFFFFF, value));
+
+        onlineTextView[1].setTextColor(
+                ColorUtils.blendARGB(applyPeerColor(statusColor, true, online), 0xB3FFFFFF, expandValue)
+        );
+    }
+
+    private void updateNameTextColor() {
+        nameTextView[1].setTextColor(
+                ColorUtils.blendARGB(
+                        peerColor != null ? Color.WHITE : getThemedColor(Theme.key_profile_title),
+                        Color.WHITE,
+                        currentExpandAnimatorValue
+                )
+        );
+    }
+
+    private void updateTextScaling(float expandValue) {
         if (extraHeight > collapsedAreaHeight) {
-            nameTextView[1].setPivotY(AndroidUtilities.lerp(0, nameTextView[1].getMeasuredHeight(), value));
-            nameTextView[1].setScaleX(AndroidUtilities.lerp(1.12f, 1.67f, value));
-            nameTextView[1].setScaleY(AndroidUtilities.lerp(1.12f, 1.67f, value));
+            nameTextView[1].setPivotY(AndroidUtilities.lerp(0, nameTextView[1].getMeasuredHeight(), expandValue));
+            nameTextView[1].setScaleX(AndroidUtilities.lerp(1.12f, 1.67f, expandValue));
+            nameTextView[1].setScaleY(AndroidUtilities.lerp(1.12f, 1.67f, expandValue));
         }
-        if (showStatusButton != null) {
-            showStatusButton.setBackgroundColor(ColorUtils.blendARGB(Theme.multAlpha(Theme.adaptHSV(actionBarBackgroundColor, +0.18f, -0.1f), 0.5f), 0x23ffffff, currentExpandAnimatorValue));
-        }
+    }
 
-        needLayoutText(Math.min(1f, extraHeight / collapsedAreaHeight));
-
-        nameTextView[1].setTextColor(ColorUtils.blendARGB(peerColor != null ? Color.WHITE : getThemedColor(Theme.key_profile_title), Color.WHITE, currentExpandAnimatorValue));
-        actionBar.setItemsColor(ColorUtils.blendARGB(peerColor != null ? Color.WHITE : getThemedColor(Theme.key_actionBarDefaultIcon), Color.WHITE, value), false);
+    private void updateActionBarColors(float expandValue) {
+        actionBar.setItemsColor(
+                ColorUtils.blendARGB(
+                        peerColor != null ? Color.WHITE : getThemedColor(Theme.key_actionBarDefaultIcon),
+                        Color.WHITE,
+                        expandValue
+                ),
+                false
+        );
         actionBar.setMenuOffsetSuppressed(true);
+    }
 
-        avatarImage.setForegroundAlpha(value);
+    private void updateStatusButtonColor() {
+        if (showStatusButton != null) {
+            showStatusButton.setBackgroundColor(
+                    ColorUtils.blendARGB(
+                            Theme.multAlpha(Theme.adaptHSV(actionBarBackgroundColor, +0.18f, -0.1f), 0.5f),
+                            0x23ffffff,
+                            currentExpandAnimatorValue
+                    )
+            );
+        }
+    }
 
+    private void updateAvatarContainerLayoutParams(int newTop, float expandValue) {
         final FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
-        params.width = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(42f), listView.getMeasuredWidth() / avatarScale, value);
-        params.height = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(42f), (extraHeight + newTop) / avatarScale, value);
-        params.leftMargin = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(64f), 0f, value);
+        params.width = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(42f), listView.getMeasuredWidth() / avatarScale, expandValue);
+        params.height = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(42f), (extraHeight + newTop) / avatarScale, expandValue);
+        params.leftMargin = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(64f), 0f, expandValue);
         avatarContainer.requestLayout();
-
-        updateCollectibleHint();
     }
 
     private int getSmallAvatarRoundRadius() {
