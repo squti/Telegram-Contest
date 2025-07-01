@@ -1486,7 +1486,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         createActionBarMenu(false);
 
 
-
         fragmentView.setWillNotDraw(false);
         contentView = ((NestedFrameLayout) fragmentView);
         contentView.needBlur = true;
@@ -13772,6 +13771,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         private String lastSearchString;
         private TLRPC.WebPage faqWebPage;
         private boolean loadingFaqPage;
+
         public SearchAdapter(Context context) {
             mContext = context;
 
