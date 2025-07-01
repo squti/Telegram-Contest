@@ -366,6 +366,21 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final ArrayList<Integer> visibleSortedUsers = new ArrayList<>();
     private final AccelerateDecelerateInterpolator floatingInterpolator = new AccelerateDecelerateInterpolator();
     private final SparseIntArray adaptedColors = new SparseIntArray();
+    private final SimpleTextView[] nameTextView = new SimpleTextView[2];
+    private final SimpleTextView[] onlineTextView = new SimpleTextView[4];
+    private final Paint scrimPaint = new Paint(Paint.ANTI_ALIAS_FLAG) {
+        @Override
+        public void setAlpha(int a) {
+            super.setAlpha(a);
+            fragmentView.invalidate();
+        }
+    };
+    private final Paint actionBarBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final boolean[] isOnline = new boolean[1];
+    private final HashMap<Integer, Integer> positionToOffset = new HashMap<>();
+    private final float[] expandAnimatorValues = new float[]{0f, 1f};
+    private final Paint whitePaint = new Paint();
+    private final Rect rect = new Rect();
     public SharedMediaLayout sharedMediaLayout;
     public ProfileGiftsView giftsView;
     public boolean saved;
@@ -402,10 +417,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private LinearLayoutManager layoutManager;
     private ListAdapter listAdapter;
     private SearchAdapter searchAdapter;
-    private final SimpleTextView[] nameTextView = new SimpleTextView[2];
     private String nameTextViewRightDrawableContentDescription = null;
     private String nameTextViewRightDrawable2ContentDescription = null;
-    private final SimpleTextView[] onlineTextView = new SimpleTextView[4];
     private AudioPlayerAlert.ClippingTextViewSwitcher mediaCounterTextView;
     private RLottieImageView writeButton;
     private AnimatorSet writeButtonAnimation;
@@ -440,14 +453,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int avatarColor;
     private ProfileStoriesView storyView;
     private View scrimView = null;
-    private final Paint scrimPaint = new Paint(Paint.ANTI_ALIAS_FLAG) {
-        @Override
-        public void setAlpha(int a) {
-            super.setAlpha(a);
-            fragmentView.invalidate();
-        }
-    };
-    private final Paint actionBarBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private ActionBarPopupWindow scrimPopupWindow;
     private Theme.ResourcesProvider resourcesProvider;
     private int overlayCountVisible;
@@ -458,7 +463,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private boolean openingAvatar;
     private boolean fragmentViewAttached;
     private boolean doNotSetForeground;
-    private final boolean[] isOnline = new boolean[1];
     private boolean callItemVisible;
     private boolean videoCallItemVisible;
     private boolean editItemVisible;
@@ -490,6 +494,60 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     };
     private long userId;
     private long chatId;
+    private final PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
+
+        @Override
+        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview, boolean closing) {
+            if (fileLocation == null) {
+                return null;
+            }
+
+            TLRPC.FileLocation photoBig = null;
+            if (userId != 0) {
+                TLRPC.User user = getMessagesController().getUser(userId);
+                if (user != null && user.photo != null && user.photo.photo_big != null) {
+                    photoBig = user.photo.photo_big;
+                }
+            } else if (chatId != 0) {
+                TLRPC.Chat chat = getMessagesController().getChat(chatId);
+                if (chat != null && chat.photo != null && chat.photo.photo_big != null) {
+                    photoBig = chat.photo.photo_big;
+                }
+            }
+
+            if (photoBig != null && photoBig.local_id == fileLocation.local_id && photoBig.volume_id == fileLocation.volume_id && photoBig.dc_id == fileLocation.dc_id) {
+                int[] coords = new int[2];
+                avatarImage.getLocationInWindow(coords);
+                PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
+                object.viewX = coords[0];
+                object.viewY = coords[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight);
+                object.parentView = avatarImage;
+                object.imageReceiver = avatarImage.getImageReceiver();
+                if (userId != 0) {
+                    object.dialogId = userId;
+                } else if (chatId != 0) {
+                    object.dialogId = -chatId;
+                }
+                object.thumb = object.imageReceiver.getBitmapSafe();
+                object.size = -1;
+                object.radius = avatarImage.getImageReceiver().getRoundRadius(true);
+                object.scale = avatarContainer.getScaleX();
+                object.canEdit = userId == getUserConfig().clientUserId;
+                return object;
+            }
+            return null;
+        }
+
+        @Override
+        public void willHidePhotoViewer() {
+            avatarImage.getImageReceiver().setVisible(true, true);
+        }
+
+        @Override
+        public void openPhotoForEdit(String file, String thumb, boolean isVideo) {
+            imageUpdater.openPhotoForEdit(file, thumb, 0, isVideo);
+        }
+    };
     private long topicId;
     private long mDialogId;
     private boolean creatingChat;
@@ -524,7 +582,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private Animator searchViewTransition;
     private boolean searchMode;
     private FlagSecureReason flagSecure;
-    private final HashMap<Integer, Integer> positionToOffset = new HashMap<>();
     private float avatarX;
     private float avatarY;
     private float avatarScale;
@@ -537,11 +594,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private ValueAnimator expandAnimator;
     private float currentExpandAnimatorValue;
     private float currentExpanAnimatorFracture;
-    private final float[] expandAnimatorValues = new float[]{0f, 1f};
     private boolean isInLandscapeMode;
     private boolean allowPullingDown;
     private boolean isPulledDown;
-    private final Paint whitePaint = new Paint();
     private boolean isBot;
     private BotLocation botLocation;
     private BotBiometry botBiometry;
@@ -559,7 +614,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private TLRPC.FileLocation avatar;
     private TLRPC.FileLocation avatarBig;
     private ImageLocation uploadingImageLocation;
-    private final Rect rect = new Rect();
     private TextCell setAvatarCell;
     private int rowCount;
     private int setAvatarRow;
@@ -678,61 +732,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private String vcardFirstName;
     private String vcardLastName;
     private CharacterStyle loadingSpan;
-
-    private final PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
-
-        @Override
-        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview, boolean closing) {
-            if (fileLocation == null) {
-                return null;
-            }
-
-            TLRPC.FileLocation photoBig = null;
-            if (userId != 0) {
-                TLRPC.User user = getMessagesController().getUser(userId);
-                if (user != null && user.photo != null && user.photo.photo_big != null) {
-                    photoBig = user.photo.photo_big;
-                }
-            } else if (chatId != 0) {
-                TLRPC.Chat chat = getMessagesController().getChat(chatId);
-                if (chat != null && chat.photo != null && chat.photo.photo_big != null) {
-                    photoBig = chat.photo.photo_big;
-                }
-            }
-
-            if (photoBig != null && photoBig.local_id == fileLocation.local_id && photoBig.volume_id == fileLocation.volume_id && photoBig.dc_id == fileLocation.dc_id) {
-                int[] coords = new int[2];
-                avatarImage.getLocationInWindow(coords);
-                PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
-                object.viewX = coords[0];
-                object.viewY = coords[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight);
-                object.parentView = avatarImage;
-                object.imageReceiver = avatarImage.getImageReceiver();
-                if (userId != 0) {
-                    object.dialogId = userId;
-                } else if (chatId != 0) {
-                    object.dialogId = -chatId;
-                }
-                object.thumb = object.imageReceiver.getBitmapSafe();
-                object.size = -1;
-                object.radius = avatarImage.getImageReceiver().getRoundRadius(true);
-                object.scale = avatarContainer.getScaleX();
-                object.canEdit = userId == getUserConfig().clientUserId;
-                return object;
-            }
-            return null;
-        }
-
-        @Override
-        public void willHidePhotoViewer() {
-            avatarImage.getImageReceiver().setVisible(true, true);
-        }
-
-        @Override
-        public void openPhotoForEdit(String file, String thumb, boolean isVideo) {
-            imageUpdater.openPhotoForEdit(file, thumb, 0, isVideo);
-        }
-    };
     private boolean fragmentOpened;
     private NestedFrameLayout contentView;
     private float titleAnimationsYDiff;
@@ -11734,9 +11733,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         private final AnimatedColor color2Animated = new AnimatedColor(this, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
         private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emoji = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, false, dp(20), AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_STATIC);
+        private final Paint paint = new Paint();
+        private final Rect blurBounds = new Rect();
         public int color1, color2;
         private int currentColor;
-        private final Paint paint = new Paint();
         private boolean hasColorById;
         private int backgroundGradientColor1, backgroundGradientColor2, backgroundGradientHeight;
         private LinearGradient backgroundGradient;
@@ -11744,7 +11744,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         private boolean hasEmoji;
         private boolean emojiIsCollectible;
         private boolean emojiLoaded;
-        private final Rect blurBounds = new Rect();
 
         public TopView(Context context) {
             super(context);
@@ -13769,13 +13768,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private class SearchAdapter extends RecyclerListView.SelectionAdapter {
 
-        private SearchResult[] searchArray = onCreateSearchArray();
         private final ArrayList<MessagesController.FaqSearchResult> faqSearchArray = new ArrayList<>();
         private final Context mContext;
+        private final ArrayList<Object> recentSearches = new ArrayList<>();
+        private SearchResult[] searchArray = onCreateSearchArray();
         private ArrayList<CharSequence> resultNames = new ArrayList<>();
         private ArrayList<SearchResult> searchResults = new ArrayList<>();
         private ArrayList<MessagesController.FaqSearchResult> faqSearchResults = new ArrayList<>();
-        private final ArrayList<Object> recentSearches = new ArrayList<>();
         private boolean searchWas;
         private Runnable searchRunnable;
         private String lastSearchString;
@@ -14466,9 +14465,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             private final String searchTitle;
             private final Runnable openRunnable;
             private final String rowName;
-            private String[] path;
             private final int iconResId;
             private final int guid;
+            private String[] path;
             private int num;
 
             public SearchResult(int g, String search, int icon, Runnable open) {
