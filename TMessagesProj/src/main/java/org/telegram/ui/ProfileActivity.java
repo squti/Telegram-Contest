@@ -1396,14 +1396,8 @@ public class ProfileActivity extends BaseFragment
         hasOwnBackground = true;
         extraHeight = collapsedAreaHeight;
 
-        final long dialogId;
-        if (mDialogId != 0) {
-            dialogId = mDialogId;
-        } else if (userId != 0) {
-            dialogId = userId;
-        } else {
-            dialogId = -chatId;
-        }
+        final long dialogId = mDialogId != 0 ? mDialogId : (userId != 0 ? userId : -chatId);
+
         int initialTab = setupInitialTab();
         setupActionBarMenuItemsClickListener();
 
@@ -1414,19 +1408,6 @@ public class ProfileActivity extends BaseFragment
         setupSharedMediaLayout(context, dialogId, initialTab);
 
         setupActionBarMenu(context);
-
-        int scrollTo;
-        Object writeButtonTag = null;
-        if (profileDetailsListView != null && imageUpdater != null) {
-            scrollTo = layoutManager.findFirstVisibleItemPosition();
-            View topView = layoutManager.findViewByPosition(scrollTo);
-            if (topView == null) {
-                scrollTo = -1;
-            }
-            writeButtonTag = writeButton.getTag();
-        } else {
-            scrollTo = -1;
-        }
 
         createActionBarMenu(false);
 
@@ -1892,76 +1873,9 @@ public class ProfileActivity extends BaseFragment
                 LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         updateProfileData(true);
 
-        writeButton = new RLottieImageView(context);
-        writeButtonSetBackground();
-        if (userId != 0) {
-            if (imageUpdater != null) {
-                cameraDrawable = new RLottieDrawable(R.raw.camera_outline, String.valueOf(R.raw.camera_outline),
-                        AndroidUtilities.dp(56), AndroidUtilities.dp(56), false, null);
-                cellCameraDrawable = new RLottieDrawable(R.raw.camera_outline, R.raw.camera_outline + "_cell",
-                        AndroidUtilities.dp(42), AndroidUtilities.dp(42), false, null);
+        setupWriteButton(context);
 
-                writeButton.setAnimation(cameraDrawable);
-                writeButton.setContentDescription(LocaleController.getString(R.string.AccDescrChangeProfilePicture));
-                writeButton.setPadding(AndroidUtilities.dp(2), 0, 0, AndroidUtilities.dp(2));
-            } else {
-                writeButton.setImageResource(R.drawable.profile_newmsg);
-                writeButton.setContentDescription(LocaleController.getString(R.string.AccDescrOpenChat));
-            }
-        } else {
-            writeButton.setImageResource(R.drawable.profile_discuss);
-            writeButton.setContentDescription(LocaleController.getString(R.string.ViewDiscussion));
-        }
-        writeButton.setScaleType(ImageView.ScaleType.CENTER);
 
-        writeButton.setOnClickListener(v -> {
-            if (writeButton.getTag() != null) {
-                return;
-            }
-            onWriteButtonClick();
-        });
-        updateProfileLayout(false);
-
-        if (scrollTo != -1) {
-            if (writeButtonTag != null) {
-                writeButton.setTag(0);
-                writeButton.setScaleX(0.2f);
-                writeButton.setScaleY(0.2f);
-                writeButton.setAlpha(0.0f);
-            }
-        }
-
-        profileDetailsListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
-
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
-                    AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
-                }
-                if (openingAvatar && newState != RecyclerView.SCROLL_STATE_SETTLING) {
-                    openingAvatar = false;
-                }
-                if (searchItem != null) {
-                    scrolling = newState != RecyclerView.SCROLL_STATE_IDLE;
-                    searchItem.setEnabled(!scrolling && !isPulledDown);
-                }
-                sharedMediaLayout.scrollingByUser = profileDetailsListView.scrollingByUser;
-            }
-
-            @Override
-            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                if (fwdRestrictedHint != null) {
-                    fwdRestrictedHint.hide();
-                }
-                checkListViewScroll();
-                if (participantsMap != null && !usersEndReached
-                        && layoutManager.findLastVisibleItemPosition() > membersEndRow - 8) {
-                    getChannelParticipants(false);
-                }
-                sharedMediaLayout.setPinnedToTop(sharedMediaLayout.getY() <= 0);
-                updateBottomButtonY();
-            }
-        });
 
         undoView = new UndoView(context, null, false, resourcesProvider);
 
@@ -2110,6 +2024,54 @@ public class ProfileActivity extends BaseFragment
         // setupMainLayout()
         setupMainLayout();
         return fragmentView;
+    }
+
+    private void setupWriteButton(Context context) {
+        writeButton = new RLottieImageView(context);
+        writeButtonSetBackground();
+        if (userId != 0) {
+            if (imageUpdater != null) {
+                cameraDrawable = new RLottieDrawable(R.raw.camera_outline, String.valueOf(R.raw.camera_outline),
+                        AndroidUtilities.dp(56), AndroidUtilities.dp(56), false, null);
+                cellCameraDrawable = new RLottieDrawable(R.raw.camera_outline, R.raw.camera_outline + "_cell",
+                        AndroidUtilities.dp(42), AndroidUtilities.dp(42), false, null);
+
+                writeButton.setAnimation(cameraDrawable);
+                writeButton.setContentDescription(LocaleController.getString(R.string.AccDescrChangeProfilePicture));
+                writeButton.setPadding(AndroidUtilities.dp(2), 0, 0, AndroidUtilities.dp(2));
+            } else {
+                writeButton.setImageResource(R.drawable.profile_newmsg);
+                writeButton.setContentDescription(LocaleController.getString(R.string.AccDescrOpenChat));
+            }
+        } else {
+            writeButton.setImageResource(R.drawable.profile_discuss);
+            writeButton.setContentDescription(LocaleController.getString(R.string.ViewDiscussion));
+        }
+        writeButton.setScaleType(ImageView.ScaleType.CENTER);
+
+        writeButton.setOnClickListener(v -> {
+            if (writeButton.getTag() != null) {
+                return;
+            }
+            onWriteButtonClick();
+        });
+        int scrollTo = -1;
+        Object writeButtonTag = null;
+        if (profileDetailsListView != null && imageUpdater != null) {
+            scrollTo = layoutManager.findFirstVisibleItemPosition();
+            if (layoutManager.findViewByPosition(scrollTo) == null) {
+                scrollTo = -1;
+            }
+            writeButtonTag = writeButton.getTag();
+        }
+        if (scrollTo != -1) {
+            if (writeButtonTag != null) {
+                writeButton.setTag(0);
+                writeButton.setScaleX(0.2f);
+                writeButton.setScaleY(0.2f);
+                writeButton.setAlpha(0.0f);
+            }
+        }
     }
 
     private int setupInitialTab() {
@@ -3607,6 +3569,37 @@ public class ProfileActivity extends BaseFragment
                         return true;
                     return processOnClickOrPress(position, view, view.getWidth() / 2f, (int) (view.getHeight() * .75f));
                 }
+            }
+        });
+        profileDetailsListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                    AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
+                }
+                if (openingAvatar && newState != RecyclerView.SCROLL_STATE_SETTLING) {
+                    openingAvatar = false;
+                }
+                if (searchItem != null) {
+                    scrolling = newState != RecyclerView.SCROLL_STATE_IDLE;
+                    searchItem.setEnabled(!scrolling && !isPulledDown);
+                }
+                sharedMediaLayout.scrollingByUser = profileDetailsListView.scrollingByUser;
+            }
+
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                if (fwdRestrictedHint != null) {
+                    fwdRestrictedHint.hide();
+                }
+                checkListViewScroll();
+                if (participantsMap != null && !usersEndReached
+                        && layoutManager.findLastVisibleItemPosition() > membersEndRow - 8) {
+                    getChannelParticipants(false);
+                }
+                sharedMediaLayout.setPinnedToTop(sharedMediaLayout.getY() <= 0);
+                updateBottomButtonY();
             }
         });
     }
