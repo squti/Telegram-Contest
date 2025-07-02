@@ -1439,37 +1439,35 @@ public class ProfileActivity extends BaseFragment
 
         setupStarItem(context);
 
-
-
         setupAvatarViewPager(context);
-
 
         checkPhotoDescriptionAlpha();
 
         setupMediaCounterTextView(context);
-
 
         setupWriteButton(context);
 
         setupAvatarContainer(context);
 
         setupStoryView(context);
+
         setupGiftsView(context);
 
         undoView = new UndoView(context, null, false, resourcesProvider);
 
         setupExpandAnimator();
+
         updateRowsState();
 
         updateSelectedMediaTabText();
 
-        fwdRestrictedHint = new HintView(getParentActivity(), 9);
-        fwdRestrictedHint.setAlpha(0);
-        sharedMediaLayout.setForwardRestrictedHint(fwdRestrictedHint);
+        setupForwardRestrictedHint();
 
         setupPinchToZoom();
+
         scrimPaint.setAlpha(0);
         actionBarBackgroundPaint.setColor(getThemedColor(Theme.key_listSelector));
+
         updateTtlIcon();
 
         setupBlurredView(context);
@@ -1484,10 +1482,18 @@ public class ProfileActivity extends BaseFragment
         // Every new view should be added to the main layout after initialization using
         // setupMainLayout()
         setupMainLayout();
+
         createFloatingActionButton(getContext());
 
-        System.out.println("ProfileActivity: createView completed");
         return fragmentView;
+    }
+
+    // Methods to setup createView components
+    /////////////////////////////////////////////////////////////////
+    private void setupForwardRestrictedHint() {
+        fwdRestrictedHint = new HintView(getParentActivity(), 9);
+        fwdRestrictedHint.setAlpha(0);
+        sharedMediaLayout.setForwardRestrictedHint(fwdRestrictedHint);
     }
 
     private void setupBlurredView(Context context) {
@@ -5119,6 +5125,7 @@ public class ProfileActivity extends BaseFragment
             }
         });
     }
+    /////////////////////////////////////////////////////////////////
 
     private void updateBottomButtonY() {
         if (bottomButtonsContainer == null) {
