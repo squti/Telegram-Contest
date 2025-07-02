@@ -1432,98 +1432,14 @@ public class ProfileActivity extends BaseFragment
         avatarDrawable = new AvatarDrawable();
         avatarDrawable.setProfile(true);
         avatarContainer = new FrameLayout(context);
-        mainProfileViewContainer = new FrameLayout(context) {
 
-            CanvasButton canvasButton;
 
-            @Override
-            protected void dispatchDraw(Canvas canvas) {
-                super.dispatchDraw(canvas);
-                if (transitionOnlineText != null) {
-                    canvas.save();
-                    canvas.translate(onlineTextView[0].getX(), onlineTextView[0].getY());
-                    canvas.saveLayerAlpha(0, 0, transitionOnlineText.getMeasuredWidth(),
-                            transitionOnlineText.getMeasuredHeight(), (int) (255 * (1f - avatarAnimationProgress)),
-                            Canvas.ALL_SAVE_FLAG);
-                    transitionOnlineText.draw(canvas);
-                    canvas.restore();
-                    canvas.restore();
-                    invalidate();
-                }
-                if (hasFallbackPhoto && photoDescriptionProgress != 0 && customAvatarProgress != 1f) {
-                    float cy = onlineTextView[1].getY() + onlineTextView[1].getMeasuredHeight() / 2f;
-                    float size = AndroidUtilities.dp(22);
-                    float x = AndroidUtilities.dp(28) - customPhotoOffset + onlineTextView[1].getX() - size;
-
-                    fallbackImage.setImageCoords(x, cy - size / 2f, size, size);
-                    fallbackImage.setAlpha(photoDescriptionProgress);
-                    canvas.save();
-                    float s = photoDescriptionProgress;
-                    canvas.scale(s, s, fallbackImage.getCenterX(), fallbackImage.getCenterY());
-                    fallbackImage.draw(canvas);
-                    canvas.restore();
-
-                    if (customAvatarProgress == 0) {
-                        if (canvasButton == null) {
-                            canvasButton = new CanvasButton(this);
-                            canvasButton.setDelegate(() -> {
-                                if (customAvatarProgress != 1f) {
-                                    avatarsViewPager.scrollToLastItem();
-                                }
-                            });
-                        }
-                        AndroidUtilities.rectTmp.set(x - AndroidUtilities.dp(4), cy - AndroidUtilities.dp(14),
-                                x + onlineTextView[2].getTextWidth()
-                                        + AndroidUtilities.dp(28) * (1f - customAvatarProgress)
-                                        + AndroidUtilities.dp(4),
-                                cy + AndroidUtilities.dp(14));
-                        canvasButton.setRect(AndroidUtilities.rectTmp);
-                        canvasButton.setRounded(true);
-                        canvasButton.setColor(Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, 50));
-                        canvasButton.draw(canvas);
-                    } else {
-                        if (canvasButton != null) {
-                            canvasButton.cancelRipple();
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public boolean onInterceptTouchEvent(MotionEvent ev) {
-                return (canvasButton != null && canvasButton.checkTouchEvent(ev)) || super.onInterceptTouchEvent(ev);
-            }
-
-            @Override
-            public boolean onTouchEvent(MotionEvent event) {
-                return (canvasButton != null && canvasButton.checkTouchEvent(event)) || super.onTouchEvent(event);
-            }
-
-            @Override
-            protected void onAttachedToWindow() {
-                super.onAttachedToWindow();
-                fallbackImage.onAttachedToWindow();
-            }
-
-            @Override
-            protected void onDetachedFromWindow() {
-                super.onDetachedFromWindow();
-                fallbackImage.onDetachedFromWindow();
-            }
-
-            @Override
-            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-                super.onLayout(changed, left, top, right, bottom);
-                updateCollectibleHint();
-            }
-        };
         fallbackImage = new ImageReceiver(mainProfileViewContainer);
         fallbackImage.setRoundRadius(AndroidUtilities.dp(11));
         AndroidUtilities.updateViewVisibilityAnimated(mainProfileViewContainer, true, 1f, false);
         avatarContainer.setPivotX(0);
         avatarContainer.setPivotY(0);
-        mainProfileViewContainer.addView(avatarContainer,
-                LayoutHelper.createFrame(42, 42, Gravity.TOP | Gravity.LEFT, 64, 0, 0, 0));
+
         avatarImage = new AvatarImageView(context) {
             @Override
             public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
@@ -1670,13 +1586,10 @@ public class ProfileActivity extends BaseFragment
         if (!isTopic) {
             avatarsViewPager.setChatInfo(chatInfo);
         }
-        mainProfileViewContainer.addView(avatarsViewPager);
-        mainProfileViewContainer.addView(overlaysView);
+
         avatarImage.setAvatarsViewPager(avatarsViewPager);
 
         avatarsViewPagerIndicatorView = new PagerIndicatorView(context);
-        mainProfileViewContainer.addView(avatarsViewPagerIndicatorView,
-                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         float rightMargin = (54 + ((callItemVisible && userId != 0) ? 54 : 0));
         boolean hasTitleExpanded = false;
@@ -1695,127 +1608,7 @@ public class ProfileActivity extends BaseFragment
             }
         }
 
-        for (int a = 0; a < nameTextView.length; a++) {
-            if (playProfileAnimation == 0 && a == 0) {
-                continue;
-            }
-            nameTextView[a] = new SimpleTextView(context) {
-                @Override
-                public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
-                    super.onInitializeAccessibilityNodeInfo(info);
-                    if (isFocusable() && (nameTextViewRightDrawableContentDescription != null
-                            || nameTextViewRightDrawable2ContentDescription != null)) {
-                        StringBuilder s = new StringBuilder(getText());
-                        if (nameTextViewRightDrawable2ContentDescription != null) {
-                            if (s.length() > 0)
-                                s.append(", ");
-                            s.append(nameTextViewRightDrawable2ContentDescription);
-                        }
-                        if (nameTextViewRightDrawableContentDescription != null) {
-                            if (s.length() > 0)
-                                s.append(", ");
-                            s.append(nameTextViewRightDrawableContentDescription);
-                        }
-                        info.setText(s);
-                    }
-                }
-
-                @Override
-                protected void onDraw(Canvas canvas) {
-                    final int wasRightDrawableX = getRightDrawableX();
-                    super.onDraw(canvas);
-                    if (wasRightDrawableX != getRightDrawableX()) {
-                        updateCollectibleHint();
-                    }
-                }
-            };
-            if (a == 1) {
-                nameTextView[a].setTextColor(getThemedColor(Theme.key_profile_title));
-            } else {
-                nameTextView[a].setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
-            }
-            nameTextView[a].setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(a == 0 ? 12 : 4));
-            nameTextView[a].setTextSize(18);
-            nameTextView[a].setGravity(Gravity.LEFT);
-            nameTextView[a].setTypeface(AndroidUtilities.bold());
-            nameTextView[a].setLeftDrawableTopPadding(-AndroidUtilities.dp(1.3f));
-            nameTextView[a].setPivotX(0);
-            nameTextView[a].setPivotY(0);
-            nameTextView[a].setAlpha(a == 0 ? 0.0f : 1.0f);
-            if (a == 1) {
-                nameTextView[a].setScrollNonFitText(true);
-                nameTextView[a].setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            }
-            nameTextView[a].setFocusable(a == 0);
-            nameTextView[a].setEllipsizeByGradient(true);
-            nameTextView[a].setRightDrawableOutside(a == 0);
-            mainProfileViewContainer.addView(nameTextView[a],
-                    LayoutHelper.createFrame(a == 0 ? initialTitleWidth : LayoutHelper.WRAP_CONTENT,
-                            LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 118, -6,
-                            (a == 0 ? rightMargin - (hasTitleExpanded ? 10 : 0) : 0), 0));
-        }
-        for (int a = 0; a < onlineTextView.length; a++) {
-            if (a == 1) {
-                onlineTextView[a] = new LinkSpanDrawable.ClickableSmallTextView(context) {
-
-                    @Override
-                    public void setAlpha(float alpha) {
-                        super.setAlpha(alpha);
-                        checkPhotoDescriptionAlpha();
-                    }
-
-                    @Override
-                    public void setTranslationY(float translationY) {
-                        super.setTranslationY(translationY);
-                        onlineTextView[2].setTranslationY(translationY);
-                        onlineTextView[3].setTranslationY(translationY);
-                    }
-
-                    @Override
-                    public void setTranslationX(float translationX) {
-                        super.setTranslationX(translationX);
-                        onlineTextView[2].setTranslationX(translationX);
-                        onlineTextView[3].setTranslationX(translationX);
-                    }
-
-                    @Override
-                    public void setTextColor(int color) {
-                        super.setTextColor(color);
-                        if (onlineTextView[2] != null) {
-                            onlineTextView[2].setTextColor(color);
-                            onlineTextView[3].setTextColor(color);
-                        }
-                        if (showStatusButton != null) {
-                            showStatusButton.setTextColor(Theme.multAlpha(Theme.adaptHSV(color, -.02f, +.15f), 1.4f));
-                        }
-                    }
-                };
-            } else {
-                onlineTextView[a] = new LinkSpanDrawable.ClickableSmallTextView(context);
-            }
-
-            onlineTextView[a].setEllipsizeByGradient(true);
-            onlineTextView[a]
-                    .setTextColor(applyPeerColor(getThemedColor(Theme.key_avatar_subtitleInProfileBlue), true, null));
-            onlineTextView[a].setTextSize(14);
-            onlineTextView[a].setGravity(Gravity.LEFT);
-            onlineTextView[a].setAlpha(a == 0 ? 0.0f : 1.0f);
-            if (a == 1 || a == 2 || a == 3) {
-                onlineTextView[a].setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(2), AndroidUtilities.dp(4),
-                        AndroidUtilities.dp(2));
-            }
-            if (a > 0) {
-                onlineTextView[a].setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            }
-            onlineTextView[a].setFocusable(a == 0);
-            mainProfileViewContainer.addView(onlineTextView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT,
-                    LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 118 - (a == 1 || a == 2 || a == 3 ? 4 : 0),
-                    (a == 1 || a == 2 || a == 3 ? -2 : 0),
-                    (a == 0 ? rightMargin - (hasTitleExpanded ? 10 : 0) : 8) - (a == 1 || a == 2 || a == 3 ? 4 : 0),
-                    0));
-        }
         checkPhotoDescriptionAlpha();
-        mainProfileViewContainer.addView(animatedStatusView);
 
         mediaCounterTextView = new AudioPlayerAlert.ClippingTextViewSwitcher(context) {
             @Override
@@ -1830,8 +1623,6 @@ public class ProfileActivity extends BaseFragment
             }
         };
         mediaCounterTextView.setAlpha(0.0f);
-        mainProfileViewContainer.addView(mediaCounterTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT,
-                LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 118.33f, -2, 8, 0));
         storyView = new ProfileStoriesView(context, currentAccount, getDialogId(), isTopic, avatarContainer,
                 avatarImage, resourcesProvider) {
             @Override
@@ -1865,13 +1656,8 @@ public class ProfileActivity extends BaseFragment
         if (avatarImage != null) {
             avatarImage.setHasStories(needInsetForStories());
         }
-        mainProfileViewContainer.addView(storyView,
-                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         giftsView = new ProfileGiftsView(context, currentAccount, getDialogId(), avatarContainer, avatarImage,
                 resourcesProvider);
-        mainProfileViewContainer.addView(giftsView,
-                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        updateProfileData(true);
 
         setupWriteButton(context);
 
@@ -2020,10 +1806,244 @@ public class ProfileActivity extends BaseFragment
             AndroidUtilities.runOnUIThread(this::scrollToSharedMedia);
         }
 
+        setupMainProfileContainer(context,initialTitleWidth, rightMargin, hasTitleExpanded);
         // Every new view should be added to the main layout after initialization using
         // setupMainLayout()
         setupMainLayout();
+        updateProfileData(true);
+
         return fragmentView;
+    }
+
+    private void setupOnlineTextView(Context context, float rightMargin, boolean hasTitleExpanded) {
+        for (int a = 0; a < onlineTextView.length; a++) {
+            if (a == 1) {
+                onlineTextView[a] = new LinkSpanDrawable.ClickableSmallTextView(context) {
+
+                    @Override
+                    public void setAlpha(float alpha) {
+                        super.setAlpha(alpha);
+                        checkPhotoDescriptionAlpha();
+                    }
+
+                    @Override
+                    public void setTranslationY(float translationY) {
+                        super.setTranslationY(translationY);
+                        onlineTextView[2].setTranslationY(translationY);
+                        onlineTextView[3].setTranslationY(translationY);
+                    }
+
+                    @Override
+                    public void setTranslationX(float translationX) {
+                        super.setTranslationX(translationX);
+                        onlineTextView[2].setTranslationX(translationX);
+                        onlineTextView[3].setTranslationX(translationX);
+                    }
+
+                    @Override
+                    public void setTextColor(int color) {
+                        super.setTextColor(color);
+                        if (onlineTextView[2] != null) {
+                            onlineTextView[2].setTextColor(color);
+                            onlineTextView[3].setTextColor(color);
+                        }
+                        if (showStatusButton != null) {
+                            showStatusButton.setTextColor(Theme.multAlpha(Theme.adaptHSV(color, -.02f, +.15f), 1.4f));
+                        }
+                    }
+                };
+            } else {
+                onlineTextView[a] = new LinkSpanDrawable.ClickableSmallTextView(context);
+            }
+
+            onlineTextView[a].setEllipsizeByGradient(true);
+            onlineTextView[a]
+                    .setTextColor(applyPeerColor(getThemedColor(Theme.key_avatar_subtitleInProfileBlue), true, null));
+            onlineTextView[a].setTextSize(14);
+            onlineTextView[a].setGravity(Gravity.LEFT);
+            onlineTextView[a].setAlpha(a == 0 ? 0.0f : 1.0f);
+            if (a == 1 || a == 2 || a == 3) {
+                onlineTextView[a].setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(2), AndroidUtilities.dp(4),
+                        AndroidUtilities.dp(2));
+            }
+            if (a > 0) {
+                onlineTextView[a].setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            }
+            onlineTextView[a].setFocusable(a == 0);
+            mainProfileViewContainer.addView(onlineTextView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT,
+                    LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 118 - (a == 1 || a == 2 || a == 3 ? 4 : 0),
+                    (a == 1 || a == 2 || a == 3 ? -2 : 0),
+                    (a == 0 ? rightMargin - (hasTitleExpanded ? 10 : 0) : 8) - (a == 1 || a == 2 || a == 3 ? 4 : 0),
+                    0));
+        }
+    }
+
+    private void setupNameTextView(Context context, int initialTitleWidth, float rightMargin, boolean hasTitleExpanded) {
+        for (int a = 0; a < nameTextView.length; a++) {
+            if (playProfileAnimation == 0 && a == 0) {
+                continue;
+            }
+            nameTextView[a] = new SimpleTextView(context) {
+                @Override
+                public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                    super.onInitializeAccessibilityNodeInfo(info);
+                    if (isFocusable() && (nameTextViewRightDrawableContentDescription != null
+                            || nameTextViewRightDrawable2ContentDescription != null)) {
+                        StringBuilder s = new StringBuilder(getText());
+                        if (nameTextViewRightDrawable2ContentDescription != null) {
+                            if (s.length() > 0)
+                                s.append(", ");
+                            s.append(nameTextViewRightDrawable2ContentDescription);
+                        }
+                        if (nameTextViewRightDrawableContentDescription != null) {
+                            if (s.length() > 0)
+                                s.append(", ");
+                            s.append(nameTextViewRightDrawableContentDescription);
+                        }
+                        info.setText(s);
+                    }
+                }
+
+                @Override
+                protected void onDraw(Canvas canvas) {
+                    final int wasRightDrawableX = getRightDrawableX();
+                    super.onDraw(canvas);
+                    if (wasRightDrawableX != getRightDrawableX()) {
+                        updateCollectibleHint();
+                    }
+                }
+            };
+            if (a == 1) {
+                nameTextView[a].setTextColor(getThemedColor(Theme.key_profile_title));
+            } else {
+                nameTextView[a].setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
+            }
+            nameTextView[a].setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(a == 0 ? 12 : 4));
+            nameTextView[a].setTextSize(18);
+            nameTextView[a].setGravity(Gravity.LEFT);
+            nameTextView[a].setTypeface(AndroidUtilities.bold());
+            nameTextView[a].setLeftDrawableTopPadding(-AndroidUtilities.dp(1.3f));
+            nameTextView[a].setPivotX(0);
+            nameTextView[a].setPivotY(0);
+            nameTextView[a].setAlpha(a == 0 ? 0.0f : 1.0f);
+            if (a == 1) {
+                nameTextView[a].setScrollNonFitText(true);
+                nameTextView[a].setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            }
+            nameTextView[a].setFocusable(a == 0);
+            nameTextView[a].setEllipsizeByGradient(true);
+            nameTextView[a].setRightDrawableOutside(a == 0);
+            mainProfileViewContainer.addView(nameTextView[a],
+                    LayoutHelper.createFrame(a == 0 ? initialTitleWidth : LayoutHelper.WRAP_CONTENT,
+                            LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 118, -6,
+                            (a == 0 ? rightMargin - (hasTitleExpanded ? 10 : 0) : 0), 0));
+        }
+    }
+
+    private void setupMainProfileContainer(Context context, int initialTitleWidth, float rightMargin, boolean hasTitleExpanded) {
+        mainProfileViewContainer = new FrameLayout(context) {
+
+            CanvasButton canvasButton;
+
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                super.dispatchDraw(canvas);
+                if (transitionOnlineText != null) {
+                    canvas.save();
+                    canvas.translate(onlineTextView[0].getX(), onlineTextView[0].getY());
+                    canvas.saveLayerAlpha(0, 0, transitionOnlineText.getMeasuredWidth(),
+                            transitionOnlineText.getMeasuredHeight(), (int) (255 * (1f - avatarAnimationProgress)),
+                            Canvas.ALL_SAVE_FLAG);
+                    transitionOnlineText.draw(canvas);
+                    canvas.restore();
+                    canvas.restore();
+                    invalidate();
+                }
+                if (hasFallbackPhoto && photoDescriptionProgress != 0 && customAvatarProgress != 1f) {
+                    float cy = onlineTextView[1].getY() + onlineTextView[1].getMeasuredHeight() / 2f;
+                    float size = AndroidUtilities.dp(22);
+                    float x = AndroidUtilities.dp(28) - customPhotoOffset + onlineTextView[1].getX() - size;
+
+                    fallbackImage.setImageCoords(x, cy - size / 2f, size, size);
+                    fallbackImage.setAlpha(photoDescriptionProgress);
+                    canvas.save();
+                    float s = photoDescriptionProgress;
+                    canvas.scale(s, s, fallbackImage.getCenterX(), fallbackImage.getCenterY());
+                    fallbackImage.draw(canvas);
+                    canvas.restore();
+
+                    if (customAvatarProgress == 0) {
+                        if (canvasButton == null) {
+                            canvasButton = new CanvasButton(this);
+                            canvasButton.setDelegate(() -> {
+                                if (customAvatarProgress != 1f) {
+                                    avatarsViewPager.scrollToLastItem();
+                                }
+                            });
+                        }
+                        AndroidUtilities.rectTmp.set(x - AndroidUtilities.dp(4), cy - AndroidUtilities.dp(14),
+                                x + onlineTextView[2].getTextWidth()
+                                        + AndroidUtilities.dp(28) * (1f - customAvatarProgress)
+                                        + AndroidUtilities.dp(4),
+                                cy + AndroidUtilities.dp(14));
+                        canvasButton.setRect(AndroidUtilities.rectTmp);
+                        canvasButton.setRounded(true);
+                        canvasButton.setColor(Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, 50));
+                        canvasButton.draw(canvas);
+                    } else {
+                        if (canvasButton != null) {
+                            canvasButton.cancelRipple();
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public boolean onInterceptTouchEvent(MotionEvent ev) {
+                return (canvasButton != null && canvasButton.checkTouchEvent(ev)) || super.onInterceptTouchEvent(ev);
+            }
+
+            @Override
+            public boolean onTouchEvent(MotionEvent event) {
+                return (canvasButton != null && canvasButton.checkTouchEvent(event)) || super.onTouchEvent(event);
+            }
+
+            @Override
+            protected void onAttachedToWindow() {
+                super.onAttachedToWindow();
+                fallbackImage.onAttachedToWindow();
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                super.onDetachedFromWindow();
+                fallbackImage.onDetachedFromWindow();
+            }
+
+            @Override
+            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+                super.onLayout(changed, left, top, right, bottom);
+                updateCollectibleHint();
+            }
+        };
+        setupNameTextView(context, initialTitleWidth, rightMargin, hasTitleExpanded);
+        setupOnlineTextView(context, rightMargin, hasTitleExpanded);
+
+        mainProfileViewContainer.addView(avatarContainer,
+                LayoutHelper.createFrame(42, 42, Gravity.TOP | Gravity.LEFT, 64, 0, 0, 0));
+        mainProfileViewContainer.addView(avatarsViewPager);
+        mainProfileViewContainer.addView(overlaysView);
+        mainProfileViewContainer.addView(avatarsViewPagerIndicatorView,
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        mainProfileViewContainer.addView(animatedStatusView);
+        mainProfileViewContainer.addView(mediaCounterTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT,
+                LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 118.33f, -2, 8, 0));
+        mainProfileViewContainer.addView(storyView,
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        mainProfileViewContainer.addView(giftsView,
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+
     }
 
     private void setupWriteButton(Context context) {
