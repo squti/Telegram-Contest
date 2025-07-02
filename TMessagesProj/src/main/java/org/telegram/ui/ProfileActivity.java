@@ -852,7 +852,7 @@ public class ProfileActivity extends BaseFragment
 
             if (avatarsViewPagerIndicatorView.getSecondaryMenuItem() != null
                     && (videoCallItemVisible || editItemVisible || callItemVisible)) {
-                needLayoutText(Math.min(1f, extraHeight / collapsedAreaHeight));
+                updateProfileLayoutText(Math.min(1f, extraHeight / collapsedAreaHeight));
             }
         }
 
@@ -5474,7 +5474,7 @@ public class ProfileActivity extends BaseFragment
         updateActionBarColors(expandValue);
         updateStatusButtonColor();
 
-        needLayoutText(Math.min(1f, extraHeight / collapsedAreaHeight));
+        updateProfileLayoutText(Math.min(1f, extraHeight / collapsedAreaHeight));
     }
 
     private void updateTextPositions(int newTop, float expandValue) {
@@ -7139,7 +7139,7 @@ public class ProfileActivity extends BaseFragment
             float currentHeight = openAnimationInProgress ? initialAnimationExtraHeight : extraHeight;
 
             if (currentHeight > collapsedAreaHeight || isPulledDown) {
-                handleExpandedState(animated, currentHeight, newTop);
+                handleExpandedState(currentHeight, newTop);
             } else {
                 handleCollapsedState(collapseProgress);
             }
@@ -7148,7 +7148,7 @@ public class ProfileActivity extends BaseFragment
             updateOverlaysLayout(newTop);
 
             if (!openAnimationInProgress && (expandAnimator == null || !expandAnimator.isRunning())) {
-                needLayoutText(collapseProgress);
+                updateProfileLayoutText(collapseProgress);
             }
         }
 
@@ -7302,7 +7302,7 @@ public class ProfileActivity extends BaseFragment
                 actionBar.getTranslationY();
     }
 
-    private void handleExpandedState(boolean animated, float currentHeight, int newTop) {
+    private void handleExpandedState(float currentHeight, int newTop) {
         expandProgress = Math.max(0f, Math.min(1f,
                 (currentHeight - collapsedAreaHeight) / (maxAvatarExpansionHeight - newTop - collapsedAreaHeight)));
 
@@ -7773,7 +7773,7 @@ public class ProfileActivity extends BaseFragment
         return profileDetailsListView;
     }
 
-    private void needLayoutText(float diff) {
+    private void updateProfileLayoutText(float diff) {
         FrameLayout.LayoutParams layoutParams;
         float scale = nameTextView[1].getScaleX();
         float maxScale = extraHeight > collapsedAreaHeight ? 1.67f : 1.12f;
