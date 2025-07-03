@@ -74,8 +74,8 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
 
 
     private float left, right, cy;
-    private float expandRight, expandY;
-    private boolean expandRightPad;
+    private float expandY;
+
     private final AnimatedFloat expandRightPadAnimated = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
     private final AnimatedFloat rightAnimated = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
 
@@ -92,9 +92,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         }
     }
 
-    public void setExpandCoords(float right, boolean rightPadded, float y) {
-        this.expandRight = right;
-        this.expandRightPad = rightPadded;
+    public void setExpandCoords(float y) {
         this.expandY = y;
         invalidate();
     }

@@ -6442,8 +6442,6 @@ public class ProfileActivity extends BaseFragment
             updateQrItemLayout(animated);
         }
 
-        updateViewExpandCoords(storyView, writeButtonVisible, newTop);
-        updateViewExpandCoords(giftsView, writeButtonVisible, newTop);
     }
 
     private boolean shouldShowWriteButton(float collapseProgress) {
@@ -6524,18 +6522,14 @@ public class ProfileActivity extends BaseFragment
         }
     }
 
-    private void updateViewExpandCoords(View view, boolean writeButtonVisible, int newTop) {
-        if (view != null && view instanceof ProfileStoriesView) {
-            ((ProfileStoriesView) view).setExpandCoords(
-                    mainProfileViewContainer.getMeasuredWidth() - AndroidUtilities.dp(40),
-                    writeButtonVisible,
-                    newTop + extraHeight + searchTransitionOffset);
-        } else if (view != null && view instanceof ProfileGiftsView) {
-            ((ProfileGiftsView) view).setExpandCoords(
-                    mainProfileViewContainer.getMeasuredWidth() - AndroidUtilities.dp(40),
-                    writeButtonVisible,
-                    newTop + extraHeight + searchTransitionOffset);
-        }
+    private void updateProfileGiftsView(ProfileGiftsView view, int newTop) {
+        view.setExpandCoords(newTop + extraHeight + searchTransitionOffset);
+    }
+
+    private void updateProfileStoryView(ProfileStoriesView view, int newTop) {
+        view.setExpandCoords(
+                mainProfileViewContainer.getMeasuredWidth() - AndroidUtilities.dp(40),false,
+                newTop + extraHeight + searchTransitionOffset);
     }
 
     private void handleExpandedState(float currentHeight, int newTop) {
@@ -15532,6 +15526,12 @@ public class ProfileActivity extends BaseFragment
 
             configureListViewScrollBehavior(newTop);
             handleWriteButtonLayout(animated, collapseProgress, newTop);
+            if (storyView != null) {
+                updateProfileStoryView(storyView, newTop);
+            }
+            if (giftsView != null) {
+                updateProfileGiftsView(giftsView, newTop);
+            }
             updateAvatarPosition(collapseProgress);
 
             float currentHeight = openAnimationInProgress ? initialAnimationExtraHeight : extraHeight;
