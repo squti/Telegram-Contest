@@ -408,7 +408,7 @@ public class ProfileActivity extends BaseFragment
     boolean showBoostsAlert;
     boolean profileTransitionInProgress;
     int maxAvatarExpansionHeight = (int) (AndroidUtilities.displaySize.y * 0.6f);
-    int collapsedAreaHeight = (int) (AndroidUtilities.displaySize.y * 0.25f);
+    int collapsedAreaHeight = (int) (AndroidUtilities.displaySize.y * 0.3f);
     int avatarUploadingRequest;
     int savedScrollPosition = -1;
     int savedScrollOffset;
@@ -864,8 +864,7 @@ public class ProfileActivity extends BaseFragment
     private boolean hasTitleExpanded;
     float rightMargin;
     int initialTitleWidth;
-    private final int AVATAR_SIZE_DP = 64;
-    private float avatarX;
+    private final int AVATAR_SIZE_DP = 88;
     private float avatarY;
     private float avatarScale;
     private float nameX;
@@ -1847,30 +1846,6 @@ public class ProfileActivity extends BaseFragment
             openAvatar();
             return false;
         });
-    }
-
-    private void setupAvatarContainer(Context context) {
-        avatarContainer = new FrameLayout(context);
-        avatarContainer.setPivotX(avatarContainer.getMeasuredWidth() / 2f);
-        avatarContainer.setPivotY(avatarContainer.getMeasuredHeight() / 2f);
-
-        avatarContainer.addView(avatarImage,
-                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        avatarContainer.addView(avatarProgressView,
-                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        if (parentLayout != null && parentLayout.getLastFragment() instanceof ChatActivity) {
-            ChatAvatarContainer avatarContainer = ((ChatActivity) parentLayout.getLastFragment()).getAvatarContainer();
-            if (avatarContainer != null) {
-                hasTitleExpanded = avatarContainer.getTitleTextView().getPaddingRight() != 0;
-                if (avatarContainer.getLayoutParams() != null && avatarContainer.getTitleTextView() != null) {
-                    rightMargin = (((ViewGroup.MarginLayoutParams) avatarContainer.getLayoutParams()).rightMargin +
-                            (avatarContainer.getWidth() - avatarContainer.getTitleTextView().getRight()))
-                            / AndroidUtilities.density;
-                    // initialTitleWidth = (int) (avatarContainer.getTitleTextView().getWidth() /
-                    // AndroidUtilities.density);
-                }
-            }
-        }
     }
 
     private void setupAnimatedStatusView(Context context) {
@@ -4749,7 +4724,6 @@ public class ProfileActivity extends BaseFragment
 
         avatarContainer.setScaleX(avatarScale);
         avatarContainer.setScaleY(avatarScale);
-        avatarContainer.setTranslationX(AndroidUtilities.lerp(avatarX, 0f, expandValue));
         avatarContainer.setTranslationY(AndroidUtilities.lerp((float) Math.ceil(avatarY), 0f, expandValue));
 
         avatarImage.setRoundRadius((int) AndroidUtilities.lerp(getSmallAvatarRoundRadius(), 0f, expandValue));
@@ -4942,16 +4916,6 @@ public class ProfileActivity extends BaseFragment
         }
     }
 
-    private void updateAvatarContainerLayoutParams(int newTop, float expandValue) {
-        final FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
-        params.width = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(AVATAR_SIZE_DP),
-                profileDetailsListView.getMeasuredWidth() / avatarScale, expandValue);
-        params.height = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(AVATAR_SIZE_DP),
-                (extraHeight + newTop) / avatarScale,
-                expandValue);
-        params.leftMargin = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(64f), 0f, expandValue);
-        avatarContainer.requestLayout();
-    }
 
     private void updateTtlIcon() {
         if (ttlIconView == null) {
@@ -6574,17 +6538,6 @@ public class ProfileActivity extends BaseFragment
         }
     }
 
-    private void updateAvatarPosition(float collapseProgress) {
-        avatarX = -AndroidUtilities.dpf2(47f) * collapseProgress;
-
-        int actionBarHeight = ActionBar.getCurrentActionBarHeight();
-        int statusBarOffset = actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
-
-        avatarY = statusBarOffset + actionBarHeight / 2.0f * (1.0f + collapseProgress) -
-                21 * AndroidUtilities.density + 27 * AndroidUtilities.density * collapseProgress +
-                actionBar.getTranslationY();
-    }
-
     private void handleExpandedState(float currentHeight, int newTop) {
         expandProgress = Math.max(0f, Math.min(1f,
                 (currentHeight - collapsedAreaHeight) / (maxAvatarExpansionHeight - newTop - collapsedAreaHeight)));
@@ -6815,7 +6768,6 @@ public class ProfileActivity extends BaseFragment
 
         if (expandAnimator == null || !expandAnimator.isRunning()) {
             applyAvatarTransformations();
-            avatarContainer.setTranslationX(avatarX);
             avatarContainer.setTranslationY((float) Math.ceil(avatarY));
             updateTimeAndStarItems();
         }
@@ -15518,8 +15470,6 @@ public class ProfileActivity extends BaseFragment
         return null;
     }
 
-
-
     private void checkListViewScroll() {
         if (profileDetailsListView.getVisibility() != View.VISIBLE) {
             return;
@@ -15571,7 +15521,8 @@ public class ProfileActivity extends BaseFragment
     }
 
     private void updateProfileLayout(boolean animated) {
-        System.out.println("ProfileActivity:: updateProfileLayout: animated = " + animated);
+
+        System.out.println("ProfileActivity:: updateProfileLayout: avatarX = " + avatarContainer.getX());
         final int newTop = calculateActionBarTopOffset();
 
         updateListViewLayout(newTop);
@@ -15598,7 +15549,6 @@ public class ProfileActivity extends BaseFragment
                 updateProfileLayoutText(collapseProgress);
             }
         }
-
         updateEmojiStatusEffectPosition();
     }
 
@@ -16293,7 +16243,7 @@ public class ProfileActivity extends BaseFragment
         };
 
         mainProfileViewContainer.addView(avatarContainer,
-                LayoutHelper.createFrame(64, 64, Gravity.TOP | Gravity.LEFT, 64, 0, 0, 0));
+                LayoutHelper.createFrame(AVATAR_SIZE_DP, AVATAR_SIZE_DP, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, -32, 0, 0));
         mainProfileViewContainer.addView(avatarsViewPager);
         mainProfileViewContainer.addView(overlaysView);
         mainProfileViewContainer.addView(avatarsViewPagerIndicatorView,
@@ -16309,16 +16259,41 @@ public class ProfileActivity extends BaseFragment
                 LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
     }
+    private void setupAvatarContainer(Context context) {
+        avatarContainer = new FrameLayout(context);
+        avatarContainer.post(() -> {
+            avatarContainer.setPivotX(avatarContainer.getWidth() / 2f);
+            avatarContainer.setPivotY(avatarContainer.getHeight() / 2f);
+        });
+        avatarContainer.addView(avatarImage,
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        avatarContainer.addView(avatarProgressView,
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        if (parentLayout != null && parentLayout.getLastFragment() instanceof ChatActivity) {
+            ChatAvatarContainer avatarContainer = ((ChatActivity) parentLayout.getLastFragment()).getAvatarContainer();
+            if (avatarContainer != null) {
+                hasTitleExpanded = avatarContainer.getTitleTextView().getPaddingRight() != 0;
+                if (avatarContainer.getLayoutParams() != null && avatarContainer.getTitleTextView() != null) {
+                    rightMargin = (((ViewGroup.MarginLayoutParams) avatarContainer.getLayoutParams()).rightMargin +
+                            (avatarContainer.getWidth() - avatarContainer.getTitleTextView().getRight()))
+                            / AndroidUtilities.density;
+                    // initialTitleWidth = (int) (avatarContainer.getTitleTextView().getWidth() /
+                    // AndroidUtilities.density);
+                }
+            }
+        }
+    }
+
 
     /// Avatar adjustments
     private int getSmallAvatarRoundRadius() {
         if (chatId != 0) {
             TLRPC.Chat chatLocal = getMessagesController().getChat(chatId);
             if (ChatObject.isForum(chatLocal)) {
-                return AndroidUtilities.dp(needInsetForStories() ? 17 : 24); // Scaled from 11→17, 16→24
+                return AndroidUtilities.dp(needInsetForStories() ? 17 * 0.26f : 24 * 0.38f); // Forum with stories or Forum without stories Round Radius
             }
         }
-        return AndroidUtilities.dp(32); // Scaled from 21→32 (maintaining 50% roundness)
+        return AndroidUtilities.dp(collapsedAreaHeight * 0.5f); // Standard avatar Round Radius
     }
 
     private void handleProfileAnimation(int newTop) {
@@ -16358,7 +16333,7 @@ public class ProfileActivity extends BaseFragment
 
             avatarImage.setRoundRadius(
                     (int) AndroidUtilities.lerp(getSmallAvatarRoundRadius(), 0f, avatarAnimationProgress));
-            avatarContainer.setTranslationX(AndroidUtilities.lerp(avX, 0, avatarAnimationProgress));
+            avatarContainer.setTranslationX(avX);
             avatarContainer.setTranslationY(AndroidUtilities.lerp((float) Math.ceil(avY), 0f, avatarAnimationProgress));
 
             updateTimeAndStarItemsForAnimation();
@@ -16379,12 +16354,12 @@ public class ProfileActivity extends BaseFragment
                     profileDetailsListView.getMeasuredWidth() / avatarScale, avatarAnimationProgress);
             params.height = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(AVATAR_SIZE_DP),
                     (extraHeight + newTop) / avatarScale, avatarAnimationProgress);
-            params.leftMargin = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(64f), 0f, avatarAnimationProgress);
             avatarContainer.requestLayout();
 
             updateCollectibleHint();
         }
     }
+
     @Keep
     public void setAvatarAnimationProgress(float progress) {
         // Update animation state and core avatar properties
@@ -16495,5 +16470,25 @@ public class ProfileActivity extends BaseFragment
                 giftsView.setProgressToStoriesInsets(avatarAnimationProgress);
             }
         }
+    }
+
+    private void updateAvatarPosition(float collapseProgress) {
+
+        int actionBarHeight = ActionBar.getCurrentActionBarHeight();
+        int statusBarOffset = actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
+
+        avatarY = statusBarOffset + actionBarHeight / 2.0f * (1.0f + collapseProgress) -
+                21 * AndroidUtilities.density + 27 * AndroidUtilities.density * collapseProgress +
+                actionBar.getTranslationY();
+    }
+
+    private void updateAvatarContainerLayoutParams(int newTop, float expandValue) {
+        final FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
+        params.width = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(AVATAR_SIZE_DP),
+                profileDetailsListView.getMeasuredWidth() / avatarScale, expandValue);
+        params.height = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(AVATAR_SIZE_DP),
+                (extraHeight + newTop) / avatarScale,
+                expandValue);
+        avatarContainer.requestLayout();
     }
 }
