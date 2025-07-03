@@ -380,7 +380,7 @@ public class ProfileActivity extends BaseFragment
     private final Paint actionBarBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final boolean[] isOnline = new boolean[1];
     private final HashMap<Integer, Integer> positionToOffset = new HashMap<>();
-    private final float[] expandAnimatorValues = new float[] { 0f, 1f };
+    private final float[] expandAnimatorValues = new float[]{0f, 1f};
     private final Paint whitePaint = new Paint();
     private final Rect rect = new Rect();
     public SharedMediaLayout sharedMediaLayout;
@@ -501,7 +501,7 @@ public class ProfileActivity extends BaseFragment
 
         @Override
         public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject,
-                TLRPC.FileLocation fileLocation, int index, boolean needPreview, boolean closing) {
+                                                                TLRPC.FileLocation fileLocation, int index, boolean needPreview, boolean closing) {
             if (fileLocation == null) {
                 return null;
             }
@@ -586,13 +586,6 @@ public class ProfileActivity extends BaseFragment
     private Animator searchViewTransition;
     private boolean searchMode;
     private FlagSecureReason flagSecure;
-    private float avatarX;
-    private float avatarY;
-    private float avatarScale;
-    private float nameX;
-    private float nameY;
-    private float onlineX;
-    private float onlineY;
     private float expandProgress;
     private float listViewVelocityY;
     private ValueAnimator expandAnimator;
@@ -810,11 +803,11 @@ public class ProfileActivity extends BaseFragment
             if (verifiedDrawable[1] != null) {
                 color1 = peerColor != null
                         ? Theme.adaptHSV(
-                                ColorUtils.blendARGB(peerColor.getColor2(),
-                                        peerColor.hasColor6(Theme.isCurrentThemeDark()) ? peerColor.getColor5()
-                                                : peerColor.getColor3(),
-                                        .4f),
-                                +.1f, Theme.isCurrentThemeDark() ? -.1f : -.08f)
+                        ColorUtils.blendARGB(peerColor.getColor2(),
+                                peerColor.hasColor6(Theme.isCurrentThemeDark()) ? peerColor.getColor5()
+                                        : peerColor.getColor3(),
+                                .4f),
+                        +.1f, Theme.isCurrentThemeDark() ? -.1f : -.08f)
                         : getThemedColor(Theme.key_profile_verifiedBackground);
                 color2 = getThemedColor(Theme.key_player_actionBarTitle);
                 verifiedDrawable[1].setColorFilter(AndroidUtilities.getOffsetColor(color1, color2, value, 1.0f),
@@ -871,7 +864,14 @@ public class ProfileActivity extends BaseFragment
     private boolean hasTitleExpanded;
     float rightMargin;
     int initialTitleWidth;
-
+    private final int AVATAR_SIZE_DP = 64;
+    private float avatarX;
+    private float avatarY;
+    private float avatarScale;
+    private float nameX;
+    private float nameY;
+    private float onlineX;
+    private float onlineY;
     private TLRPC.TL_emojiStatusCollectible collectibleStatus;
 
     public ProfileActivity(Bundle args) {
@@ -1489,7 +1489,8 @@ public class ProfileActivity extends BaseFragment
     }
 
     // Methods to setup createView components
-    /////////////////////////////////////////////////////////////////
+
+    /// //////////////////////////////////////////////////////////////
     private void setupForwardRestrictedHint() {
         fwdRestrictedHint = new HintView(getParentActivity(), 9);
         fwdRestrictedHint.setAlpha(0);
@@ -1544,7 +1545,7 @@ public class ProfileActivity extends BaseFragment
 
             @Override
             protected void drawOverlays(Canvas canvas, float alpha, float parentOffsetX, float parentOffsetY,
-                    float clipTop, float clipBottom) {
+                                        float clipTop, float clipBottom) {
                 if (alpha > 0) {
                     AndroidUtilities.rectTmp.set(0, 0, avatarsViewPager.getMeasuredWidth(),
                             avatarsViewPager.getMeasuredHeight() + AndroidUtilities.dp(30));
@@ -1617,7 +1618,7 @@ public class ProfileActivity extends BaseFragment
             @Override
             public void onAnimationEnd(Animator animation) {
                 actionBar.setItemsBackgroundColor(isPulledDown ? Theme.ACTION_BAR_WHITE_SELECTOR_COLOR
-                        : peerColor != null ? 0x20ffffff : getThemedColor(Theme.key_avatar_actionBarSelectorBlue),
+                                : peerColor != null ? 0x20ffffff : getThemedColor(Theme.key_avatar_actionBarSelectorBlue),
                         false);
                 avatarImage.clearForeground();
                 doNotSetForeground = false;
@@ -2189,7 +2190,7 @@ public class ProfileActivity extends BaseFragment
                 fragment.setDelegate(new ChatRightsEditActivity.ChatRightsEditActivityDelegate() {
                     @Override
                     public void didSetRights(int rights, TLRPC.TL_chatAdminRights rightsAdmin,
-                            TLRPC.TL_chatBannedRights rightsBanned, String rank) {
+                                             TLRPC.TL_chatBannedRights rightsBanned, String rank) {
                         removeSelfFromStack();
                         TLRPC.User user = getMessagesController().getUser(userId);
                         if (user != null && chat != null && userId != 0 && fragment != null && fragment.banning
@@ -2373,7 +2374,7 @@ public class ProfileActivity extends BaseFragment
     }
 
     private void setupProfileDetailsListView(Context context, DefaultItemAnimator defaultItemAnimator, long dialogId,
-            BaseFragment lastFragment) {
+                                             BaseFragment lastFragment) {
         listAdapter = new ListAdapter(context);
 
         profileDetailsListView = new ClippedListView(context) {
@@ -2705,85 +2706,85 @@ public class ProfileActivity extends BaseFragment
                 }
                 ChatNotificationsPopupWrapper chatNotificationsPopupWrapper = new ChatNotificationsPopupWrapper(context,
                         currentAccount, null, true, true, new ChatNotificationsPopupWrapper.Callback() {
-                            @Override
-                            public void toggleSound() {
-                                SharedPreferences preferences = MessagesController
-                                        .getNotificationsSettings(currentAccount);
-                                boolean enabled = !preferences.getBoolean(
-                                        "sound_enabled_" + NotificationsController.getSharedPrefKey(dialogId, topicId),
-                                        true);
-                                preferences.edit()
-                                        .putBoolean(
-                                                "sound_enabled_"
-                                                        + NotificationsController.getSharedPrefKey(dialogId, topicId),
-                                                enabled)
-                                        .apply();
-                                if (BulletinFactory.canShowBulletin(ProfileActivity.this)) {
-                                    BulletinFactory.createSoundEnabledBulletin(ProfileActivity.this,
-                                            enabled ? NotificationsController.SETTING_SOUND_ON
-                                                    : NotificationsController.SETTING_SOUND_OFF,
-                                            getResourceProvider()).show();
-                                }
-                            }
+                    @Override
+                    public void toggleSound() {
+                        SharedPreferences preferences = MessagesController
+                                .getNotificationsSettings(currentAccount);
+                        boolean enabled = !preferences.getBoolean(
+                                "sound_enabled_" + NotificationsController.getSharedPrefKey(dialogId, topicId),
+                                true);
+                        preferences.edit()
+                                .putBoolean(
+                                        "sound_enabled_"
+                                                + NotificationsController.getSharedPrefKey(dialogId, topicId),
+                                        enabled)
+                                .apply();
+                        if (BulletinFactory.canShowBulletin(ProfileActivity.this)) {
+                            BulletinFactory.createSoundEnabledBulletin(ProfileActivity.this,
+                                    enabled ? NotificationsController.SETTING_SOUND_ON
+                                            : NotificationsController.SETTING_SOUND_OFF,
+                                    getResourceProvider()).show();
+                        }
+                    }
 
-                            @Override
-                            public void muteFor(int timeInSeconds) {
-                                if (timeInSeconds == 0) {
-                                    if (getMessagesController().isDialogMuted(dialogId, topicId)) {
-                                        toggleMute();
-                                    }
-                                    if (BulletinFactory.canShowBulletin(ProfileActivity.this)) {
-                                        BulletinFactory.createMuteBulletin(ProfileActivity.this,
-                                                NotificationsController.SETTING_MUTE_UNMUTE, timeInSeconds,
-                                                getResourceProvider()).show();
-                                    }
-                                } else {
-                                    getNotificationsController().muteUntil(dialogId, topicId, timeInSeconds);
-                                    if (BulletinFactory.canShowBulletin(ProfileActivity.this)) {
-                                        BulletinFactory.createMuteBulletin(ProfileActivity.this,
-                                                NotificationsController.SETTING_MUTE_CUSTOM, timeInSeconds,
-                                                getResourceProvider()).show();
-                                    }
-                                    updateExceptions();
-                                    if (notificationsRow >= 0 && listAdapter != null) {
-                                        listAdapter.notifyItemChanged(notificationsRow);
-                                    }
-                                }
+                    @Override
+                    public void muteFor(int timeInSeconds) {
+                        if (timeInSeconds == 0) {
+                            if (getMessagesController().isDialogMuted(dialogId, topicId)) {
+                                toggleMute();
                             }
+                            if (BulletinFactory.canShowBulletin(ProfileActivity.this)) {
+                                BulletinFactory.createMuteBulletin(ProfileActivity.this,
+                                        NotificationsController.SETTING_MUTE_UNMUTE, timeInSeconds,
+                                        getResourceProvider()).show();
+                            }
+                        } else {
+                            getNotificationsController().muteUntil(dialogId, topicId, timeInSeconds);
+                            if (BulletinFactory.canShowBulletin(ProfileActivity.this)) {
+                                BulletinFactory.createMuteBulletin(ProfileActivity.this,
+                                        NotificationsController.SETTING_MUTE_CUSTOM, timeInSeconds,
+                                        getResourceProvider()).show();
+                            }
+                            updateExceptions();
+                            if (notificationsRow >= 0 && listAdapter != null) {
+                                listAdapter.notifyItemChanged(notificationsRow);
+                            }
+                        }
+                    }
 
-                            @Override
-                            public void showCustomize() {
-                                if (dialogId != 0) {
-                                    Bundle args = new Bundle();
-                                    args.putLong("dialog_id", dialogId);
-                                    args.putLong("topic_id", topicId);
-                                    presentFragment(new ProfileNotificationsActivity(args, resourcesProvider));
-                                }
-                            }
+                    @Override
+                    public void showCustomize() {
+                        if (dialogId != 0) {
+                            Bundle args = new Bundle();
+                            args.putLong("dialog_id", dialogId);
+                            args.putLong("topic_id", topicId);
+                            presentFragment(new ProfileNotificationsActivity(args, resourcesProvider));
+                        }
+                    }
 
-                            @Override
-                            public void toggleMute() {
-                                boolean muted = getMessagesController().isDialogMuted(dialogId, topicId);
-                                getNotificationsController().muteDialog(dialogId, topicId, !muted);
-                                if (ProfileActivity.this.fragmentView != null) {
-                                    BulletinFactory.createMuteBulletin(ProfileActivity.this, !muted, null).show();
-                                }
-                                updateExceptions();
-                                if (notificationsRow >= 0 && listAdapter != null) {
-                                    listAdapter.notifyItemChanged(notificationsRow);
-                                }
-                            }
+                    @Override
+                    public void toggleMute() {
+                        boolean muted = getMessagesController().isDialogMuted(dialogId, topicId);
+                        getNotificationsController().muteDialog(dialogId, topicId, !muted);
+                        if (ProfileActivity.this.fragmentView != null) {
+                            BulletinFactory.createMuteBulletin(ProfileActivity.this, !muted, null).show();
+                        }
+                        updateExceptions();
+                        if (notificationsRow >= 0 && listAdapter != null) {
+                            listAdapter.notifyItemChanged(notificationsRow);
+                        }
+                    }
 
-                            @Override
-                            public void openExceptions() {
-                                Bundle bundle = new Bundle();
-                                bundle.putLong("dialog_id", dialogId);
-                                TopicsNotifySettingsFragments notifySettings = new TopicsNotifySettingsFragments(
-                                        bundle);
-                                notifySettings.setExceptions(notificationsExceptionTopics);
-                                presentFragment(notifySettings);
-                            }
-                        }, getResourceProvider());
+                    @Override
+                    public void openExceptions() {
+                        Bundle bundle = new Bundle();
+                        bundle.putLong("dialog_id", dialogId);
+                        TopicsNotifySettingsFragments notifySettings = new TopicsNotifySettingsFragments(
+                                bundle);
+                        notifySettings.setExceptions(notificationsExceptionTopics);
+                        presentFragment(notifySettings);
+                    }
+                }, getResourceProvider());
                 chatNotificationsPopupWrapper.update(dialogId, topicId, notificationsExceptionTopics);
                 if (AndroidUtilities.isTablet()) {
                     View v = parentLayout.getView();
@@ -3026,15 +3027,15 @@ public class ProfileActivity extends BaseFragment
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), resourcesProvider);
                         builder.setTitle(getString(R.string.DebugMenu));
                         CharSequence[] items;
-                        items = new CharSequence[] {
+                        items = new CharSequence[]{
                                 getString(R.string.DebugMenuImportContacts),
                                 getString(R.string.DebugMenuReloadContacts),
                                 getString(R.string.DebugMenuResetContacts),
                                 getString(R.string.DebugMenuResetDialogs),
                                 BuildVars.DEBUG_VERSION ? null
                                         : (BuildVars.LOGS_ENABLED
-                                                ? getString("DebugMenuDisableLogs", R.string.DebugMenuDisableLogs)
-                                                : getString("DebugMenuEnableLogs", R.string.DebugMenuEnableLogs)),
+                                        ? getString("DebugMenuDisableLogs", R.string.DebugMenuDisableLogs)
+                                        : getString("DebugMenuEnableLogs", R.string.DebugMenuEnableLogs)),
                                 SharedConfig.inappCamera
                                         ? getString("DebugMenuDisableCamera", R.string.DebugMenuDisableCamera)
                                         : getString("DebugMenuEnableCamera", R.string.DebugMenuEnableCamera),
@@ -3043,12 +3044,12 @@ public class ProfileActivity extends BaseFragment
                                 null,
                                 BuildVars.DEBUG_PRIVATE_VERSION || ApplicationLoader.isStandaloneBuild()
                                         || ApplicationLoader.isBetaBuild()
-                                                ? getString("DebugMenuCheckAppUpdate", R.string.DebugMenuCheckAppUpdate)
-                                                : null,
+                                        ? getString("DebugMenuCheckAppUpdate", R.string.DebugMenuCheckAppUpdate)
+                                        : null,
                                 getString("DebugMenuReadAllDialogs", R.string.DebugMenuReadAllDialogs),
                                 BuildVars.DEBUG_PRIVATE_VERSION
                                         ? (SharedConfig.disableVoiceAudioEffects ? "Enable voip audio effects"
-                                                : "Disable voip audio effects")
+                                        : "Disable voip audio effects")
                                         : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Clean app update" : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Reset suggestions" : null,
@@ -3056,38 +3057,38 @@ public class ProfileActivity extends BaseFragment
                                 getString(R.string.DebugMenuClearWebViewCookies),
                                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT
                                         ? getString(SharedConfig.debugWebView ? R.string.DebugMenuDisableWebViewDebug
-                                                : R.string.DebugMenuEnableWebViewDebug)
+                                        : R.string.DebugMenuEnableWebViewDebug)
                                         : null,
                                 (AndroidUtilities.isTabletInternal() && BuildVars.DEBUG_PRIVATE_VERSION)
                                         ? (SharedConfig.forceDisableTabletMode ? "Enable tablet mode"
-                                                : "Disable tablet mode")
+                                        : "Disable tablet mode")
                                         : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION
                                         ? getString(SharedConfig.isFloatingDebugActive ? R.string.FloatingDebugDisable
-                                                : R.string.FloatingDebugEnable)
+                                        : R.string.FloatingDebugEnable)
                                         : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Force remove premium suggestions" : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Share device info" : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Force performance class" : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION && !InstantCameraView.allowBigSizeCameraDebug()
                                         ? (!SharedConfig.bigCameraForRound ? "Force big camera for round"
-                                                : "Disable big camera for round")
+                                        : "Disable big camera for round")
                                         : null,
                                 getString(DualCameraView.dualAvailableStatic(getContext()) ? "DebugMenuDualOff"
                                         : "DebugMenuDualOn"),
                                 BuildVars.DEBUG_VERSION
                                         ? (SharedConfig.useSurfaceInStories ? "back to TextureView in stories"
-                                                : "use SurfaceView in stories")
+                                        : "use SurfaceView in stories")
                                         : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION
                                         ? (SharedConfig.photoViewerBlur ? "do not blur in photoviewer"
-                                                : "blur in photoviewer")
+                                        : "blur in photoviewer")
                                         : null,
                                 !SharedConfig.payByInvoice ? "Enable Invoice Payment" : "Disable Invoice Payment",
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Update Attach Bots" : null,
                                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
                                         ? (!SharedConfig.isUsingCamera2(currentAccount) ? "Use Camera 2 API"
-                                                : "Use old Camera 1 API")
+                                        : "Use old Camera 1 API")
                                         : null,
                                 BuildVars.DEBUG_VERSION ? "Clear Mini Apps Permissions and Files" : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Clear all login tokens" : null,
@@ -3100,8 +3101,8 @@ public class ProfileActivity extends BaseFragment
                                         : "Enable video qualities debug",
                                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
                                         ? getString(
-                                                SharedConfig.useSystemBoldFont ? R.string.DebugMenuDontUseSystemBoldFont
-                                                        : R.string.DebugMenuUseSystemBoldFont)
+                                        SharedConfig.useSystemBoldFont ? R.string.DebugMenuDontUseSystemBoldFont
+                                                : R.string.DebugMenuUseSystemBoldFont)
                                         : null,
                                 "Reload app config",
                                 !SharedConfig.forceForumTabs ? "Force Forum Tabs" : "Do Not Force Forum Tabs"
@@ -3381,7 +3382,7 @@ public class ProfileActivity extends BaseFragment
                                         new ShareAlert(getParentActivity(), null, info.toString(), false, null, false) {
                                             @Override
                                             protected void onSend(LongSparseArray<TLRPC.Dialog> dialogIds, int count,
-                                                    TLRPC.TL_forumTopic topic, boolean showToast) {
+                                                                  TLRPC.TL_forumTopic topic, boolean showToast) {
                                                 if (!showToast)
                                                     return;
                                                 AndroidUtilities.runOnUIThread(() -> {
@@ -3399,24 +3400,24 @@ public class ProfileActivity extends BaseFragment
                                 builder2.setTitle("Force performance class");
                                 int currentClass = SharedConfig.getDevicePerformanceClass();
                                 int trueClass = SharedConfig.measureDevicePerformanceClass();
-                                builder2.setItems(new CharSequence[] {
+                                builder2.setItems(new CharSequence[]{
                                         AndroidUtilities.replaceTags(
                                                 (currentClass == SharedConfig.PERFORMANCE_CLASS_HIGH ? "**HIGH**"
                                                         : "HIGH")
                                                         + (trueClass == SharedConfig.PERFORMANCE_CLASS_HIGH
-                                                                ? " (measured)"
-                                                                : "")),
+                                                        ? " (measured)"
+                                                        : "")),
                                         AndroidUtilities.replaceTags(
                                                 (currentClass == SharedConfig.PERFORMANCE_CLASS_AVERAGE ? "**AVERAGE**"
                                                         : "AVERAGE")
                                                         + (trueClass == SharedConfig.PERFORMANCE_CLASS_AVERAGE
-                                                                ? " (measured)"
-                                                                : "")),
+                                                        ? " (measured)"
+                                                        : "")),
                                         AndroidUtilities.replaceTags(
                                                 (currentClass == SharedConfig.PERFORMANCE_CLASS_LOW ? "**LOW**" : "LOW")
                                                         + (trueClass == SharedConfig.PERFORMANCE_CLASS_LOW
-                                                                ? " (measured)"
-                                                                : ""))
+                                                        ? " (measured)"
+                                                        : ""))
                                 }, (dialog2, which2) -> {
                                     int newClass = 2 - which2;
                                     if (newClass == trueClass) {
@@ -3435,7 +3436,7 @@ public class ProfileActivity extends BaseFragment
                                         .apply();
                                 try {
                                     Toast.makeText(getParentActivity(), getString(
-                                            !enabled ? R.string.DebugMenuDualOnToast : R.string.DebugMenuDualOffToast),
+                                                    !enabled ? R.string.DebugMenuDualOnToast : R.string.DebugMenuDualOffToast),
                                             Toast.LENGTH_SHORT).show();
                                 } catch (Exception e) {
                                 }
@@ -3478,7 +3479,7 @@ public class ProfileActivity extends BaseFragment
                     } else {
                         try {
                             Toast.makeText(getParentActivity(),
-                                    getString("DebugMenuLongPress", R.string.DebugMenuLongPress), Toast.LENGTH_SHORT)
+                                            getString("DebugMenuLongPress", R.string.DebugMenuLongPress), Toast.LENGTH_SHORT)
                                     .show();
                         } catch (Exception e) {
                             FileLog.e(e);
@@ -3808,7 +3809,7 @@ public class ProfileActivity extends BaseFragment
                             storyItem.pinned = pin;
                         }
                         getMessagesController().getStoriesController().updateStoriesInLists(dialogId, storyItems);
-                        final boolean[] undone = new boolean[] { false };
+                        final boolean[] undone = new boolean[]{false};
                         applyBulletin = () -> {
                             getMessagesController().getStoriesController().updateStoriesPinned(dialogId, storyItems,
                                     pin, null);
@@ -3926,7 +3927,7 @@ public class ProfileActivity extends BaseFragment
                                             List<BaseFragment> fragmentStack = getParentLayout().getFragmentStack();
                                             BaseFragment prevFragment = fragmentStack == null
                                                     || fragmentStack.size() < 2 ? null
-                                                            : fragmentStack.get(fragmentStack.size() - 2);
+                                                    : fragmentStack.get(fragmentStack.size() - 2);
                                             if (prevFragment instanceof ChatActivity) {
                                                 getParentLayout().removeFragmentFromStack(fragmentStack.size() - 2);
                                             }
@@ -4077,33 +4078,33 @@ public class ProfileActivity extends BaseFragment
                                 if (chat != null && (chat.creator
                                         || chat.admin_rights != null && chat.admin_rights.add_admins)) {
                                     getMessagesController().checkIsInChat(false, chat, user, (isInChatAlready,
-                                            rightsAdmin, currentRank) -> AndroidUtilities.runOnUIThread(() -> {
-                                                ChatRightsEditActivity editRightsActivity = new ChatRightsEditActivity(
-                                                        userId, -dialogId, rightsAdmin, null, null, currentRank,
-                                                        ChatRightsEditActivity.TYPE_ADD_BOT, true, !isInChatAlready,
-                                                        null);
-                                                editRightsActivity.setDelegate(
-                                                        new ChatRightsEditActivity.ChatRightsEditActivityDelegate() {
-                                                            @Override
-                                                            public void didSetRights(int rights,
-                                                                    TLRPC.TL_chatAdminRights rightsAdmin,
-                                                                    TLRPC.TL_chatBannedRights rightsBanned,
-                                                                    String rank) {
-                                                                disableProfileAnimation = true;
-                                                                fragment.removeSelfFromStack();
-                                                                getNotificationCenter().removeObserver(
-                                                                        ProfileActivity.this,
-                                                                        NotificationCenter.closeChats);
-                                                                getNotificationCenter().postNotificationName(
-                                                                        NotificationCenter.closeChats);
-                                                            }
+                                                                                              rightsAdmin, currentRank) -> AndroidUtilities.runOnUIThread(() -> {
+                                        ChatRightsEditActivity editRightsActivity = new ChatRightsEditActivity(
+                                                userId, -dialogId, rightsAdmin, null, null, currentRank,
+                                                ChatRightsEditActivity.TYPE_ADD_BOT, true, !isInChatAlready,
+                                                null);
+                                        editRightsActivity.setDelegate(
+                                                new ChatRightsEditActivity.ChatRightsEditActivityDelegate() {
+                                                    @Override
+                                                    public void didSetRights(int rights,
+                                                                             TLRPC.TL_chatAdminRights rightsAdmin,
+                                                                             TLRPC.TL_chatBannedRights rightsBanned,
+                                                                             String rank) {
+                                                        disableProfileAnimation = true;
+                                                        fragment.removeSelfFromStack();
+                                                        getNotificationCenter().removeObserver(
+                                                                ProfileActivity.this,
+                                                                NotificationCenter.closeChats);
+                                                        getNotificationCenter().postNotificationName(
+                                                                NotificationCenter.closeChats);
+                                                    }
 
-                                                            @Override
-                                                            public void didChangeOwner(TLRPC.User user) {
-                                                            }
-                                                        });
-                                                presentFragment(editRightsActivity);
-                                            }));
+                                                    @Override
+                                                    public void didChangeOwner(TLRPC.User user) {
+                                                    }
+                                                });
+                                        presentFragment(editRightsActivity);
+                                    }));
                                 } else {
                                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(),
                                             resourcesProvider);
@@ -4229,8 +4230,8 @@ public class ProfileActivity extends BaseFragment
                         BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
                         if (lastFragment != null) {
                             BulletinFactory.of(lastFragment).createSimpleBulletin(R.raw.error,
-                                    AndroidUtilities.replaceTags(LocaleController.formatString(
-                                            R.string.UserDisallowedGifts, DialogObject.getShortName(getDialogId()))))
+                                            AndroidUtilities.replaceTags(LocaleController.formatString(
+                                                    R.string.UserDisallowedGifts, DialogObject.getShortName(getDialogId()))))
                                     .show();
                         }
                         return;
@@ -4269,9 +4270,9 @@ public class ProfileActivity extends BaseFragment
                     }
                     if (Build.VERSION.SDK_INT >= 23 && (Build.VERSION.SDK_INT <= 28 || BuildVars.NO_SCOPED_STORAGE)
                             && getParentActivity().checkSelfPermission(
-                                    Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                         getParentActivity().requestPermissions(
-                                new String[] { Manifest.permission.WRITE_EXTERNAL_STORAGE },
+                                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
                                 BasePermissionsActivity.REQUEST_CODE_EXTERNAL_STORAGE);
                         return;
                     }
@@ -4488,7 +4489,8 @@ public class ProfileActivity extends BaseFragment
             }
         });
     }
-    /////////////////////////////////////////////////////////////////
+
+    /// //////////////////////////////////////////////////////////////
 
     private void updateBottomButtonY() {
         if (bottomButtonsContainer == null) {
@@ -4497,8 +4499,8 @@ public class ProfileActivity extends BaseFragment
         bottomButtonsContainer
                 .setTranslationY(sharedMediaLayout != null && sharedMediaLayout.isAttachedToWindow()
                         ? Math.max(0,
-                                dp(72 + 64 + 48)
-                                        - (profileDetailsListView.getMeasuredHeight() - sharedMediaLayout.getY()))
+                        dp(72 + 64 + 48)
+                                - (profileDetailsListView.getMeasuredHeight() - sharedMediaLayout.getY()))
                         : dp(72));
         final Bulletin bulletin = Bulletin.getVisibleBulletin();
         if (bulletin != null) {
@@ -4606,10 +4608,10 @@ public class ProfileActivity extends BaseFragment
                 new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_actionIcon), PorterDuff.Mode.MULTIPLY));
         if (Build.VERSION.SDK_INT >= 21) {
             StateListAnimator animator = new StateListAnimator();
-            animator.addState(new int[] { android.R.attr.state_pressed },
+            animator.addState(new int[]{android.R.attr.state_pressed},
                     ObjectAnimator.ofFloat(floatingButtonContainer, View.TRANSLATION_Z, AndroidUtilities.dp(2),
                             AndroidUtilities.dp(4)).setDuration(200));
-            animator.addState(new int[] {}, ObjectAnimator.ofFloat(floatingButtonContainer, View.TRANSLATION_Z,
+            animator.addState(new int[]{}, ObjectAnimator.ofFloat(floatingButtonContainer, View.TRANSLATION_Z,
                     AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
             floatingButtonContainer.setStateListAnimator(animator);
             floatingButtonContainer.setOutlineProvider(new ViewOutlineProvider() {
@@ -4945,23 +4947,14 @@ public class ProfileActivity extends BaseFragment
 
     private void updateAvatarContainerLayoutParams(int newTop, float expandValue) {
         final FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
-        params.width = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(42f),
+        params.width = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(AVATAR_SIZE_DP),
                 profileDetailsListView.getMeasuredWidth() / avatarScale, expandValue);
-        params.height = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(42f), (extraHeight + newTop) / avatarScale,
+        params.height = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(AVATAR_SIZE_DP), (extraHeight + newTop) / avatarScale,
                 expandValue);
         params.leftMargin = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(64f), 0f, expandValue);
         avatarContainer.requestLayout();
     }
 
-    private int getSmallAvatarRoundRadius() {
-        if (chatId != 0) {
-            TLRPC.Chat chatLocal = getMessagesController().getChat(chatId);
-            if (ChatObject.isForum(chatLocal)) {
-                return AndroidUtilities.dp(needInsetForStories() ? 11 : 16);
-            }
-        }
-        return AndroidUtilities.dp(21);
-    }
 
     private void updateTtlIcon() {
         if (ttlIconView == null) {
@@ -5060,11 +5053,11 @@ public class ProfileActivity extends BaseFragment
         ecenter -= xoff;
         SelectAnimatedEmojiDialog popupLayout = new SelectAnimatedEmojiDialog(this, getContext(), true,
                 Math.max(0, ecenter), currentChat == null ? SelectAnimatedEmojiDialog.TYPE_EMOJI_STATUS
-                        : SelectAnimatedEmojiDialog.TYPE_EMOJI_STATUS_CHANNEL,
+                : SelectAnimatedEmojiDialog.TYPE_EMOJI_STATUS_CHANNEL,
                 true, resourcesProvider, topMarginDp) {
             @Override
             protected boolean willApplyEmoji(View view, Long documentId, TLRPC.Document document,
-                    TL_stars.TL_starGiftUnique gift, Integer until) {
+                                             TL_stars.TL_starGiftUnique gift, Integer until) {
                 if (gift != null) {
                     final TL_stars.SavedStarGift savedStarGift = StarsController.getInstance(currentAccount)
                             .findUserStarGift(gift.id);
@@ -5081,7 +5074,7 @@ public class ProfileActivity extends BaseFragment
 
             @Override
             protected void onEmojiSelected(View emojiView, Long documentId, TLRPC.Document document,
-                    TL_stars.TL_starGiftUnique gift, Integer until) {
+                                           TL_stars.TL_starGiftUnique gift, Integer until) {
                 final TLRPC.EmojiStatus emojiStatus;
                 if (gift != null) {
                     final TL_stars.SavedStarGift savedStarGift = StarsController.getInstance(currentAccount)
@@ -5156,8 +5149,8 @@ public class ProfileActivity extends BaseFragment
         } else {
             popupLayout.setSelected(emojiStatusDrawable[1] != null
                     && emojiStatusDrawable[1].getDrawable() instanceof AnimatedEmojiDrawable
-                            ? ((AnimatedEmojiDrawable) emojiStatusDrawable[1].getDrawable()).getDocumentId()
-                            : null);
+                    ? ((AnimatedEmojiDrawable) emojiStatusDrawable[1].getDrawable()).getDocumentId()
+                    : null);
         }
         popupLayout.setSaveState(3);
         popupLayout.setScrimDrawable(emojiStatusDrawable[1], nameTextView[1]);
@@ -5236,22 +5229,22 @@ public class ProfileActivity extends BaseFragment
                 }
                 imageUpdater.openMenu(user.photo != null && user.photo.photo_big != null
                         && !(user.photo instanceof TLRPC.TL_userProfilePhotoEmpty), () -> {
-                            MessagesController.getInstance(currentAccount).deleteUserPhoto(null);
-                            cameraDrawable.setCurrentFrame(0);
-                            cellCameraDrawable.setCurrentFrame(0);
-                        }, dialog -> {
-                            if (!imageUpdater.isUploadingImage()) {
-                                cameraDrawable.setCustomEndFrame(86);
-                                cellCameraDrawable.setCustomEndFrame(86);
-                                writeButton.playAnimation();
-                                if (setAvatarCell != null) {
-                                    setAvatarCell.getImageView().playAnimation();
-                                }
-                            } else {
-                                cameraDrawable.setCurrentFrame(0, false);
-                                cellCameraDrawable.setCurrentFrame(0, false);
-                            }
-                        }, 0);
+                    MessagesController.getInstance(currentAccount).deleteUserPhoto(null);
+                    cameraDrawable.setCurrentFrame(0);
+                    cellCameraDrawable.setCurrentFrame(0);
+                }, dialog -> {
+                    if (!imageUpdater.isUploadingImage()) {
+                        cameraDrawable.setCustomEndFrame(86);
+                        cellCameraDrawable.setCustomEndFrame(86);
+                        writeButton.playAnimation();
+                        if (setAvatarCell != null) {
+                            setAvatarCell.getImageView().playAnimation();
+                        }
+                    } else {
+                        cameraDrawable.setCurrentFrame(0, false);
+                        cellCameraDrawable.setCurrentFrame(0, false);
+                    }
+                }, 0);
                 cameraDrawable.setCurrentFrame(0);
                 cameraDrawable.setCustomEndFrame(43);
                 cellCameraDrawable.setCurrentFrame(0);
@@ -5263,7 +5256,7 @@ public class ProfileActivity extends BaseFragment
             } else {
                 if (playProfileAnimation != 0 && parentLayout != null && parentLayout.getFragmentStack() != null
                         && parentLayout.getFragmentStack().size() >= 2 && parentLayout.getFragmentStack()
-                                .get(parentLayout.getFragmentStack().size() - 2) instanceof ChatActivity) {
+                        .get(parentLayout.getFragmentStack().size() - 2) instanceof ChatActivity) {
                     finishFragment();
                 } else {
                     TLRPC.User user = getMessagesController().getUser(userId);
@@ -5339,13 +5332,13 @@ public class ProfileActivity extends BaseFragment
                 canEditAdmin = ChatObject.canAddAdmins(currentChat);
                 if (canEditAdmin && (channelParticipant instanceof TLRPC.TL_channelParticipantCreator
                         || channelParticipant instanceof TLRPC.TL_channelParticipantAdmin
-                                && !channelParticipant.can_edit)) {
+                        && !channelParticipant.can_edit)) {
                     canEditAdmin = false;
                 }
                 allowKick = canRestrict = ChatObject.canBlockUsers(currentChat)
                         && (!(channelParticipant instanceof TLRPC.TL_channelParticipantAdmin
-                                || channelParticipant instanceof TLRPC.TL_channelParticipantCreator)
-                                || channelParticipant.can_edit);
+                        || channelParticipant instanceof TLRPC.TL_channelParticipantCreator)
+                        || channelParticipant.can_edit);
                 if (currentChat.gigagroup) {
                     canRestrict = false;
                 }
@@ -5354,7 +5347,7 @@ public class ProfileActivity extends BaseFragment
                 channelParticipant = null;
                 allowKick = currentChat.creator
                         || participant instanceof TLRPC.TL_chatParticipant && (ChatObject.canBlockUsers(currentChat)
-                                || participant.inviter_id == getUserConfig().getClientUserId());
+                        || participant.inviter_id == getUserConfig().getClientUserId());
                 canEditAdmin = currentChat.creator;
                 canRestrict = currentChat.creator;
                 editingAdmin = participant instanceof TLRPC.TL_chatParticipantAdmin;
@@ -5419,8 +5412,8 @@ public class ProfileActivity extends BaseFragment
     }
 
     private void openRightsEdit(int action, TLRPC.User user, TLRPC.ChatParticipant participant,
-            TLRPC.TL_chatAdminRights adminRights, TLRPC.TL_chatBannedRights bannedRights, String rank,
-            boolean editingAdmin) {
+                                TLRPC.TL_chatAdminRights adminRights, TLRPC.TL_chatBannedRights bannedRights, String rank,
+                                boolean editingAdmin) {
         boolean[] needShowBulletin = new boolean[1];
         ChatRightsEditActivity fragment = new ChatRightsEditActivity(user.id, chatId, adminRights,
                 currentChat.default_banned_rights, bannedRights, rank, action, true, false, null) {
@@ -5435,7 +5428,7 @@ public class ProfileActivity extends BaseFragment
         fragment.setDelegate(new ChatRightsEditActivity.ChatRightsEditActivityDelegate() {
             @Override
             public void didSetRights(int rights, TLRPC.TL_chatAdminRights rightsAdmin,
-                    TLRPC.TL_chatBannedRights rightsBanned, String rank) {
+                                     TLRPC.TL_chatBannedRights rightsBanned, String rank) {
                 if (action == 0) {
                     if (participant instanceof TLRPC.TL_chatChannelParticipant) {
                         TLRPC.TL_chatChannelParticipant channelParticipant1 = ((TLRPC.TL_chatChannelParticipant) participant);
@@ -5548,13 +5541,13 @@ public class ProfileActivity extends BaseFragment
                 ShareAlert shareAlert = new ShareAlert(getParentActivity(), null, link, false, link, false) {
                     @Override
                     protected void onSend(LongSparseArray<TLRPC.Dialog> dialogIds, int count, TLRPC.TL_forumTopic topic,
-                            boolean showToast) {
+                                          boolean showToast) {
                         if (!showToast)
                             return;
                         AndroidUtilities.runOnUIThread(() -> {
                             BulletinFactory.createInviteSentBulletin(getParentActivity(), mainLayout, dialogIds.size(),
-                                    dialogIds.size() == 1 ? dialogIds.valueAt(0).id : 0, count,
-                                    getThemedColor(Theme.key_undo_background), getThemedColor(Theme.key_undo_infoColor))
+                                            dialogIds.size() == 1 ? dialogIds.valueAt(0).id : 0, count,
+                                            getThemedColor(Theme.key_undo_background), getThemedColor(Theme.key_undo_infoColor))
                                     .show();
                         }, 250);
                     }
@@ -5875,11 +5868,11 @@ public class ProfileActivity extends BaseFragment
                     return;
                 }
                 CharSequence[] items = withTranslate[0]
-                        ? new CharSequence[] { LocaleController.getString(R.string.Copy),
-                                LocaleController.getString(R.string.TranslateMessage) }
-                        : new CharSequence[] { LocaleController.getString(R.string.Copy) };
-                int[] icons = withTranslate[0] ? new int[] { R.drawable.msg_copy, R.drawable.msg_translate }
-                        : new int[] { R.drawable.msg_copy };
+                        ? new CharSequence[]{LocaleController.getString(R.string.Copy),
+                        LocaleController.getString(R.string.TranslateMessage)}
+                        : new CharSequence[]{LocaleController.getString(R.string.Copy)};
+                int[] icons = withTranslate[0] ? new int[]{R.drawable.msg_copy, R.drawable.msg_translate}
+                        : new int[]{R.drawable.msg_copy};
 
                 AtomicReference<ActionBarPopupWindow> popupWindowRef = new AtomicReference<>();
                 ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(
@@ -5974,12 +5967,12 @@ public class ProfileActivity extends BaseFragment
                         fromLanguage[0] = fromLang;
                         withTranslate[0] = fromLang != null && (!fromLang.equals(toLang) || fromLang.equals("und"))
                                 && (translateButtonEnabled
-                                        && !RestrictedLanguagesSelectActivity.getRestrictedLanguages()
-                                                .contains(fromLang)
-                                        ||
-                                        (currentChat != null
-                                                && (currentChat.has_link || ChatObject.isPublic(currentChat)))
-                                                && ("uk".equals(fromLang) || "ru".equals(fromLang)));
+                                && !RestrictedLanguagesSelectActivity.getRestrictedLanguages()
+                                .contains(fromLang)
+                                ||
+                                (currentChat != null
+                                        && (currentChat.has_link || ChatObject.isPublic(currentChat)))
+                                        && ("uk".equals(fromLang) || "ru".equals(fromLang)));
                         showMenu.run();
                     }, (error) -> {
                         FileLog.e("mlkit: failed to detect language in selection", error);
@@ -6032,22 +6025,22 @@ public class ProfileActivity extends BaseFragment
 
             ActionBarMenuItem.addItem(popupLayout, R.drawable.msg_copy, LocaleController.getString(R.string.Copy),
                     false, resourcesProvider).setOnClickListener(v -> {
-                        popupWindowRef.get().dismiss();
-                        try {
-                            AndroidUtilities.addToClipboard(finalText);
-                            if (position == bizHoursRow) {
-                                BulletinFactory.of(this)
-                                        .createCopyBulletin(LocaleController.getString(R.string.BusinessHoursCopied))
-                                        .show();
-                            } else {
-                                BulletinFactory.of(this)
-                                        .createCopyBulletin(LocaleController.getString(R.string.BusinessLocationCopied))
-                                        .show();
-                            }
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                    });
+                popupWindowRef.get().dismiss();
+                try {
+                    AndroidUtilities.addToClipboard(finalText);
+                    if (position == bizHoursRow) {
+                        BulletinFactory.of(this)
+                                .createCopyBulletin(LocaleController.getString(R.string.BusinessHoursCopied))
+                                .show();
+                    } else {
+                        BulletinFactory.of(this)
+                                .createCopyBulletin(LocaleController.getString(R.string.BusinessLocationCopied))
+                                .show();
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            });
 
             ActionBarPopupWindow popupWindow = new ActionBarPopupWindow(popupLayout, LayoutHelper.WRAP_CONTENT,
                     LayoutHelper.WRAP_CONTENT);
@@ -6351,7 +6344,6 @@ public class ProfileActivity extends BaseFragment
     }
 
 
-
     public void updateSelectedMediaTabText() {
         if (sharedMediaLayout == null || mediaCounterTextView == null) {
             return;
@@ -6602,7 +6594,7 @@ public class ProfileActivity extends BaseFragment
         expandProgress = Math.max(0f, Math.min(1f,
                 (currentHeight - collapsedAreaHeight) / (maxAvatarExpansionHeight - newTop - collapsedAreaHeight)));
 
-        avatarScale = AndroidUtilities.lerp((42f + 18f) / 42f, (42f + 42f + 18f) / 42f,
+        avatarScale = AndroidUtilities.lerp((AVATAR_SIZE_DP + 18f) / AVATAR_SIZE_DP, (AVATAR_SIZE_DP + AVATAR_SIZE_DP + 18f) / AVATAR_SIZE_DP,
                 Math.min(1f, expandProgress * 3f));
 
         invalidateStoryAndGiftsViews();
@@ -6820,7 +6812,7 @@ public class ProfileActivity extends BaseFragment
     }
 
     private void handleCollapsedState(float collapseProgress) {
-        avatarScale = (42 + 18 * collapseProgress) / 42.0f;
+        avatarScale = (AVATAR_SIZE_DP + 18 * collapseProgress) / AVATAR_SIZE_DP;
         invalidateStoryAndGiftsViews();
 
         float nameScale = 1.0f + 0.12f * collapseProgress;
@@ -6837,7 +6829,7 @@ public class ProfileActivity extends BaseFragment
     }
 
     private void updateTimeAndStarItems() {
-        float extra = AndroidUtilities.dp(42) * avatarScale - AndroidUtilities.dp(42);
+        float extra = AndroidUtilities.dp(AVATAR_SIZE_DP) * avatarScale - AndroidUtilities.dp(AVATAR_SIZE_DP);
         timeItem.setTranslationX(avatarContainer.getX() + AndroidUtilities.dp(16) + extra);
         timeItem.setTranslationY(avatarContainer.getY() + AndroidUtilities.dp(15) + extra);
         starBgItem.setTranslationX(avatarContainer.getX() + AndroidUtilities.dp(28) + extra);
@@ -6900,7 +6892,7 @@ public class ProfileActivity extends BaseFragment
             nameTextView[1].setScaleY(1.67f);
 
             // Update avatar
-            avatarScale = AndroidUtilities.lerp(1.0f, (42f + 42f + 18f) / 42f, avatarAnimationProgress);
+            avatarScale = AndroidUtilities.lerp(1.0f, (AVATAR_SIZE_DP + AVATAR_SIZE_DP + 18f) / AVATAR_SIZE_DP, avatarAnimationProgress);
 
             if (storyView != null) {
                 storyView.setExpandProgress(1f);
@@ -6928,9 +6920,9 @@ public class ProfileActivity extends BaseFragment
 
             // Update avatar container layout params
             final FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
-            params.width = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(42f),
+            params.width = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(AVATAR_SIZE_DP),
                     profileDetailsListView.getMeasuredWidth() / avatarScale, avatarAnimationProgress);
-            params.height = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(42f),
+            params.height = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(AVATAR_SIZE_DP),
                     (extraHeight + newTop) / avatarScale, avatarAnimationProgress);
             params.leftMargin = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(64f), 0f, avatarAnimationProgress);
             avatarContainer.requestLayout();
@@ -6940,7 +6932,7 @@ public class ProfileActivity extends BaseFragment
     }
 
     private void updateTimeAndStarItemsForAnimation() {
-        float extra = (avatarContainer.getMeasuredWidth() - AndroidUtilities.dp(42)) * avatarScale;
+        float extra = (avatarContainer.getMeasuredWidth() - AndroidUtilities.dp(AVATAR_SIZE_DP)) * avatarScale;
         timeItem.setTranslationX(avatarContainer.getX() + AndroidUtilities.dp(16) + extra);
         timeItem.setTranslationY(avatarContainer.getY() + AndroidUtilities.dp(15) + extra);
         starBgItem.setTranslationX(avatarContainer.getX() + AndroidUtilities.dp(28) + extra);
@@ -6957,7 +6949,7 @@ public class ProfileActivity extends BaseFragment
         }
         if (lockIconDrawable != null) {
             lockIconDrawable.setColorFilter(ColorUtils.blendARGB(
-                    getThemedColor(Theme.key_chat_lockIcon), Color.WHITE, avatarAnimationProgress),
+                            getThemedColor(Theme.key_chat_lockIcon), Color.WHITE, avatarAnimationProgress),
                     PorterDuff.Mode.MULTIPLY);
         }
         if (verifiedCrossfadeDrawable[1] != null) {
@@ -7056,13 +7048,13 @@ public class ProfileActivity extends BaseFragment
     }
 
     private void refreshNameAndOnlineXY() {
-        nameX = AndroidUtilities.dp(-21f) + avatarContainer.getMeasuredWidth() * (avatarScale - (42f + 18f) / 42f);
+        nameX = AndroidUtilities.dp(-21f) + avatarContainer.getMeasuredWidth() * (avatarScale - (AVATAR_SIZE_DP + 18f) / AVATAR_SIZE_DP);
         nameY = (float) Math.floor(avatarY) + AndroidUtilities.dp(1.3f) + AndroidUtilities.dp(7f)
-                + avatarContainer.getMeasuredHeight() * (avatarScale - (42f + 18f) / 42f) / 2f;
-        onlineX = AndroidUtilities.dp(-21f) + avatarContainer.getMeasuredWidth() * (avatarScale - (42f + 18f) / 42f);
+                + avatarContainer.getMeasuredHeight() * (avatarScale - (AVATAR_SIZE_DP + 18f) / AVATAR_SIZE_DP) / 2f;
+        onlineX = AndroidUtilities.dp(-21f) + avatarContainer.getMeasuredWidth() * (avatarScale - (AVATAR_SIZE_DP + 18f) / AVATAR_SIZE_DP);
         onlineY = (float) Math.floor(avatarY) + AndroidUtilities.dp(24)
                 + (float) Math.floor(11 * AndroidUtilities.density)
-                + avatarContainer.getMeasuredHeight() * (avatarScale - (42f + 18f) / 42f) / 2f;
+                + avatarContainer.getMeasuredHeight() * (avatarScale - (AVATAR_SIZE_DP + 18f) / AVATAR_SIZE_DP) / 2f;
     }
 
     public RecyclerListView getListView() {
@@ -7702,14 +7694,14 @@ public class ProfileActivity extends BaseFragment
         if (isOpen) {
             if (imageUpdater != null) {
                 transitionIndex = getNotificationCenter().setAnimationInProgress(transitionIndex,
-                        new int[] { NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats,
+                        new int[]{NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats,
                                 NotificationCenter.mediaCountDidLoad, NotificationCenter.mediaCountsDidLoad,
-                                NotificationCenter.userInfoDidLoad, NotificationCenter.needCheckSystemBarColors });
+                                NotificationCenter.userInfoDidLoad, NotificationCenter.needCheckSystemBarColors});
             } else {
                 transitionIndex = getNotificationCenter().setAnimationInProgress(transitionIndex,
-                        new int[] { NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats,
+                        new int[]{NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats,
                                 NotificationCenter.mediaCountDidLoad, NotificationCenter.mediaCountsDidLoad,
-                                NotificationCenter.needCheckSystemBarColors });
+                                NotificationCenter.needCheckSystemBarColors});
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !backward && getParentActivity() != null) {
                 navigationBarAnimationColorFrom = getParentActivity().getWindow().getNavigationBarColor();
@@ -7754,8 +7746,6 @@ public class ProfileActivity extends BaseFragment
     public float getAvatarAnimationProgress() {
         return avatarAnimationProgress;
     }
-
-
 
 
     private int getAverageColor(ImageReceiver imageReceiver) {
@@ -8088,7 +8078,7 @@ public class ProfileActivity extends BaseFragment
             if (UserObject.isUserSelf(user) && !myProfile) {
                 if (avatarBig == null
                         && (user.photo == null || !(user.photo.photo_big instanceof TLRPC.TL_fileLocation_layer97)
-                                && !(user.photo.photo_big instanceof TLRPC.TL_fileLocationToBeDeprecated))
+                        && !(user.photo.photo_big instanceof TLRPC.TL_fileLocationToBeDeprecated))
                         && (avatarsViewPager == null || avatarsViewPager.getRealCount() == 0)) {
                     setAvatarRow = rowCount++;
                     setAvatarSectionRow = rowCount++;
@@ -8165,7 +8155,7 @@ public class ProfileActivity extends BaseFragment
 
                 if (userInfo != null && (userInfo.flags2 & 64) != 0
                         && (profileChannelMessageFetcher == null || !profileChannelMessageFetcher.loaded
-                                || profileChannelMessageFetcher.messageObject != null)) {
+                        || profileChannelMessageFetcher.messageObject != null)) {
                     final TLRPC.Chat channel = getMessagesController().getChat(userInfo.personal_channel_id);
                     if (channel != null && (ChatObject.isPublic(channel) || !ChatObject.isNotInChat(channel))) {
                         channelRow = rowCount++;
@@ -8344,7 +8334,7 @@ public class ProfileActivity extends BaseFragment
                     if (chatInfo != null &&
                             chatInfo.can_view_stars_revenue
                             && (BotStarsController.getInstance(currentAccount).getBotStarsBalance(-chatId).amount > 0 ||
-                                    BotStarsController.getInstance(currentAccount).hasTransactions(-chatId))
+                            BotStarsController.getInstance(currentAccount).hasTransactions(-chatId))
                             ||
                             chatInfo != null &&
                                     chatInfo.can_view_revenue &&
@@ -8358,7 +8348,7 @@ public class ProfileActivity extends BaseFragment
                 if (chatInfo != null &&
                         chatInfo.can_view_stars_revenue
                         && (BotStarsController.getInstance(currentAccount).getBotStarsBalance(-chatId).amount > 0 ||
-                                BotStarsController.getInstance(currentAccount).hasTransactions(-chatId))
+                        BotStarsController.getInstance(currentAccount).hasTransactions(-chatId))
                         ||
                         chatInfo != null &&
                                 chatInfo.can_view_revenue &&
@@ -8475,7 +8465,7 @@ public class ProfileActivity extends BaseFragment
         }
         final int actionBarHeight = actionBar != null
                 ? ActionBar.getCurrentActionBarHeight()
-                        + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0)
+                + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0)
                 : 0;
         if (profileDetailsListView == null || prevRowsCount > rowCount || listContentHeight != 0 && listContentHeight
                 + actionBarHeight + collapsedAreaHeight < profileDetailsListView.getMeasuredHeight()) {
@@ -8510,11 +8500,11 @@ public class ProfileActivity extends BaseFragment
                         peerColor.hasColor6(Theme.isCurrentThemeDark()) ? peerColor.getColor5() : peerColor.getColor3(),
                         +.1f, Theme.isCurrentThemeDark() ? -.1f : -.08f);
                 verifiedDrawable[1].setColorFilter(AndroidUtilities.getOffsetColor(color,
-                        getThemedColor(Theme.key_player_actionBarTitle), mediaHeaderAnimationProgress, 1.0f),
+                                getThemedColor(Theme.key_player_actionBarTitle), mediaHeaderAnimationProgress, 1.0f),
                         PorterDuff.Mode.MULTIPLY);
                 color = Color.WHITE;
                 verifiedCheckDrawable[1].setColorFilter(AndroidUtilities.getOffsetColor(color,
-                        getThemedColor(Theme.key_windowBackgroundWhite), mediaHeaderAnimationProgress, 1.0f),
+                                getThemedColor(Theme.key_windowBackgroundWhite), mediaHeaderAnimationProgress, 1.0f),
                         PorterDuff.Mode.MULTIPLY);
             }
             verifiedCrossfadeDrawable[a] = new CrossfadeDrawable(
@@ -8559,7 +8549,7 @@ public class ProfileActivity extends BaseFragment
     }
 
     private Drawable getEmojiStatusDrawable(TLRPC.EmojiStatus emojiStatus, boolean switchable, boolean animated,
-            int a) {
+                                            int a) {
         if (emojiStatusDrawable[a] == null) {
             emojiStatusDrawable[a] = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(nameTextView[a],
                     AndroidUtilities.dp(24),
@@ -8638,7 +8628,7 @@ public class ProfileActivity extends BaseFragment
                 nameTextView[1].getX() + nameTextView[1].getRightDrawableX() * nameTextView[1].getScaleX(),
                 nameTextView[1].getY() + (nameTextView[1].getHeight()
                         - (nameTextView[1].getHeight() - nameTextView[1].getRightDrawableY())
-                                * nameTextView[1].getScaleY()));
+                        * nameTextView[1].getScaleY()));
     }
 
     private void updateProfileData(boolean reload) {
@@ -8788,8 +8778,8 @@ public class ProfileActivity extends BaseFragment
                         shortStatus ? new boolean[1] : null);
                 hiddenStatusButton = user != null && !isOnline[0] && !getUserConfig().isPremium() && user.status != null
                         && (user.status instanceof TLRPC.TL_userStatusRecently
-                                || user.status instanceof TLRPC.TL_userStatusLastMonth
-                                || user.status instanceof TLRPC.TL_userStatusLastWeek)
+                        || user.status instanceof TLRPC.TL_userStatusLastMonth
+                        || user.status instanceof TLRPC.TL_userStatusLastWeek)
                         && user.status.by_me;
                 if (onlineTextView[1] != null && !mediaHeaderVisible) {
                     int key = isOnline[0] && peerColor == null ? Theme.key_profile_status
@@ -9029,7 +9019,7 @@ public class ProfileActivity extends BaseFragment
                 previousTransitionFragment.checkAndUpdateAvatar();
             }
             avatarImage.getImageReceiver().setVisible(!PhotoViewer.isShowingImage(photoBig)
-                    && (getLastStoryViewer() == null || getLastStoryViewer().transitionViewHolder.view != avatarImage),
+                            && (getLastStoryViewer() == null || getLastStoryViewer().transitionViewHolder.view != avatarImage),
                     storyView != null);
         } else if (chatId != 0) {
             TLRPC.Chat chat = getMessagesController().getChat(chatId);
@@ -9371,7 +9361,7 @@ public class ProfileActivity extends BaseFragment
                 getFileLoader().loadFile(imageLocation, chat, null, FileLoader.PRIORITY_LOW, 1);
             }
             avatarImage.getImageReceiver().setVisible(!PhotoViewer.isShowingImage(photoBig)
-                    && (getLastStoryViewer() == null || getLastStoryViewer().transitionViewHolder.view != avatarImage),
+                            && (getLastStoryViewer() == null || getLastStoryViewer().transitionViewHolder.view != avatarImage),
                     storyView != null);
         }
 
@@ -9411,18 +9401,18 @@ public class ProfileActivity extends BaseFragment
                     ColorUtils.blendARGB(
                             peerColor != null ? Theme.ACTION_BAR_WHITE_SELECTOR_COLOR
                                     : peerColor != null ? 0x20ffffff
-                                            : getThemedColor(Theme.key_avatar_actionBarSelectorBlue),
+                                    : getThemedColor(Theme.key_avatar_actionBarSelectorBlue),
                             getThemedColor(Theme.key_actionBarActionModeDefaultSelector), mediaHeaderAnimationProgress),
                     false);
         }
         if (verifiedDrawable[1] != null) {
             final int color1 = peerColor != null
                     ? Theme.adaptHSV(
-                            ColorUtils.blendARGB(peerColor.getColor2(),
-                                    peerColor.hasColor6(Theme.isCurrentThemeDark()) ? peerColor.getColor5()
-                                            : peerColor.getColor3(),
-                                    .4f),
-                            +.1f, Theme.isCurrentThemeDark() ? -.1f : -.08f)
+                    ColorUtils.blendARGB(peerColor.getColor2(),
+                            peerColor.hasColor6(Theme.isCurrentThemeDark()) ? peerColor.getColor5()
+                                    : peerColor.getColor3(),
+                            .4f),
+                    +.1f, Theme.isCurrentThemeDark() ? -.1f : -.08f)
                     : getThemedColor(Theme.key_profile_verifiedBackground);
             final int color2 = getThemedColor(Theme.key_player_actionBarTitle);
             verifiedDrawable[1].setColorFilter(
@@ -9927,7 +9917,7 @@ public class ProfileActivity extends BaseFragment
 
     @Override
     public boolean didSelectDialogs(DialogsActivity fragment, ArrayList<MessagesStorage.TopicKey> dialogIds,
-            CharSequence message, boolean param, boolean notify, int scheduleDate, TopicsFragment topicsFragment) {
+                                    CharSequence message, boolean param, boolean notify, int scheduleDate, TopicsFragment topicsFragment) {
         long dialogId = dialogIds.get(0).dialogId;
         Bundle args = new Bundle();
         args.putBoolean("scrollToTopOnResume", true);
@@ -10222,8 +10212,8 @@ public class ProfileActivity extends BaseFragment
 
     @Override
     public void didUploadPhoto(final TLRPC.InputFile photo, final TLRPC.InputFile video, double videoStartTimestamp,
-            String videoPath, TLRPC.PhotoSize bigSize, final TLRPC.PhotoSize smallSize, boolean isVideo,
-            TLRPC.VideoSize emojiMarkup) {
+                               String videoPath, TLRPC.PhotoSize bigSize, final TLRPC.PhotoSize smallSize, boolean isVideo,
+                               TLRPC.VideoSize emojiMarkup) {
         AndroidUtilities.runOnUIThread(() -> {
             if (photo != null || video != null || emojiMarkup != null) {
                 if (avatar == null) {
@@ -10560,12 +10550,12 @@ public class ProfileActivity extends BaseFragment
                 Theme.key_avatar_backgroundActionBarBlue));
         arrayList.add(new ThemeDescription(profileDetailsListView, ThemeDescription.FLAG_SELECTOR, null, null, null,
                 null, Theme.key_listSelector));
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { View.class }, Theme.dividerPaint,
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{View.class}, Theme.dividerPaint,
                 null, null, Theme.key_divider));
 
         arrayList.add(
                 new ThemeDescription(avatarImage, 0, null, null, Theme.avatarDrawables, null, Theme.key_avatar_text));
-        arrayList.add(new ThemeDescription(avatarImage, 0, null, null, new Drawable[] { avatarDrawable }, null,
+        arrayList.add(new ThemeDescription(avatarImage, 0, null, null, new Drawable[]{avatarDrawable}, null,
                 Theme.key_avatar_backgroundInProfileBlue));
 
         arrayList.add(new ThemeDescription(writeButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null,
@@ -10577,85 +10567,85 @@ public class ProfileActivity extends BaseFragment
                 null, Theme.key_profile_actionPressedBackground));
 
         arrayList.add(new ThemeDescription(profileDetailsListView, ThemeDescription.FLAG_CHECKTAG,
-                new Class[] { TextCell.class }, new String[] { "textView" }, null, null, null,
+                new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null,
                 Theme.key_windowBackgroundWhiteBlackText));
         arrayList.add(new ThemeDescription(profileDetailsListView, ThemeDescription.FLAG_CHECKTAG,
-                new Class[] { TextCell.class }, new String[] { "textView" }, null, null, null,
+                new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null,
                 Theme.key_windowBackgroundWhiteGreenText2));
         arrayList.add(new ThemeDescription(profileDetailsListView, ThemeDescription.FLAG_CHECKTAG,
-                new Class[] { TextCell.class }, new String[] { "textView" }, null, null, null,
+                new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null,
                 Theme.key_text_RedRegular));
         arrayList.add(new ThemeDescription(profileDetailsListView, ThemeDescription.FLAG_CHECKTAG,
-                new Class[] { TextCell.class }, new String[] { "textView" }, null, null, null,
+                new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null,
                 Theme.key_windowBackgroundWhiteBlueText2));
         arrayList.add(new ThemeDescription(profileDetailsListView, ThemeDescription.FLAG_CHECKTAG,
-                new Class[] { TextCell.class }, new String[] { "textView" }, null, null, null,
+                new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null,
                 Theme.key_windowBackgroundWhiteBlueButton));
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { TextCell.class },
-                new String[] { "valueTextView" }, null, null, null, Theme.key_windowBackgroundWhiteValueText));
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{TextCell.class},
+                new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText));
         arrayList.add(new ThemeDescription(profileDetailsListView, ThemeDescription.FLAG_CHECKTAG,
-                new Class[] { TextCell.class }, new String[] { "imageView" }, null, null, null,
+                new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null,
                 Theme.key_windowBackgroundWhiteGrayIcon));
         arrayList.add(new ThemeDescription(profileDetailsListView, ThemeDescription.FLAG_CHECKTAG,
-                new Class[] { TextCell.class }, new String[] { "imageView" }, null, null, null,
+                new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null,
                 Theme.key_windowBackgroundWhiteBlueIcon));
 
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { TextDetailCell.class },
-                new String[] { "textView" }, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { TextDetailCell.class },
-                new String[] { "valueTextView" }, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{TextDetailCell.class},
+                new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{TextDetailCell.class},
+                new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
 
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { HeaderCell.class },
-                new String[] { "textView" }, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{HeaderCell.class},
+                new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
 
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { SettingsSuggestionCell.class },
-                new String[] { "textView" }, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { SettingsSuggestionCell.class },
-                new String[] { "detailTextView" }, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{SettingsSuggestionCell.class},
+                new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{SettingsSuggestionCell.class},
+                new String[]{"detailTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
         arrayList.add(new ThemeDescription(profileDetailsListView, ThemeDescription.FLAG_LINKCOLOR,
-                new Class[] { SettingsSuggestionCell.class }, new String[] { "detailTextView" }, null, null, null,
+                new Class[]{SettingsSuggestionCell.class}, new String[]{"detailTextView"}, null, null, null,
                 Theme.key_windowBackgroundWhiteLinkText));
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { SettingsSuggestionCell.class },
-                new String[] { "yesButton" }, null, null, null, Theme.key_featuredStickers_buttonText));
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{SettingsSuggestionCell.class},
+                new String[]{"yesButton"}, null, null, null, Theme.key_featuredStickers_buttonText));
         arrayList.add(new ThemeDescription(profileDetailsListView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE,
-                new Class[] { SettingsSuggestionCell.class }, new String[] { "yesButton" }, null, null, null,
+                new Class[]{SettingsSuggestionCell.class}, new String[]{"yesButton"}, null, null, null,
                 Theme.key_featuredStickers_addButton));
         arrayList.add(new ThemeDescription(profileDetailsListView,
                 ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE,
-                new Class[] { SettingsSuggestionCell.class }, new String[] { "yesButton" }, null, null, null,
+                new Class[]{SettingsSuggestionCell.class}, new String[]{"yesButton"}, null, null, null,
                 Theme.key_featuredStickers_addButtonPressed));
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { SettingsSuggestionCell.class },
-                new String[] { "noButton" }, null, null, null, Theme.key_featuredStickers_buttonText));
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{SettingsSuggestionCell.class},
+                new String[]{"noButton"}, null, null, null, Theme.key_featuredStickers_buttonText));
         arrayList.add(new ThemeDescription(profileDetailsListView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE,
-                new Class[] { SettingsSuggestionCell.class }, new String[] { "noButton" }, null, null, null,
+                new Class[]{SettingsSuggestionCell.class}, new String[]{"noButton"}, null, null, null,
                 Theme.key_featuredStickers_addButton));
         arrayList.add(new ThemeDescription(profileDetailsListView,
                 ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE,
-                new Class[] { SettingsSuggestionCell.class }, new String[] { "noButton" }, null, null, null,
+                new Class[]{SettingsSuggestionCell.class}, new String[]{"noButton"}, null, null, null,
                 Theme.key_featuredStickers_addButtonPressed));
 
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { NotificationsCheckCell.class },
-                new String[] { "textView" }, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { NotificationsCheckCell.class },
-                new String[] { "valueTextView" }, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { NotificationsCheckCell.class },
-                new String[] { "checkBox" }, null, null, null, Theme.key_switchTrack));
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { NotificationsCheckCell.class },
-                new String[] { "checkBox" }, null, null, null, Theme.key_switchTrackChecked));
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{NotificationsCheckCell.class},
+                new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{NotificationsCheckCell.class},
+                new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{NotificationsCheckCell.class},
+                new String[]{"checkBox"}, null, null, null, Theme.key_switchTrack));
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{NotificationsCheckCell.class},
+                new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackChecked));
 
         arrayList.add(new ThemeDescription(profileDetailsListView, ThemeDescription.FLAG_TEXTCOLOR,
-                new Class[] { UserCell.class }, new String[] { "adminTextView" }, null, null, null,
+                new Class[]{UserCell.class}, new String[]{"adminTextView"}, null, null, null,
                 Theme.key_profile_creatorIcon));
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { UserCell.class },
-                new String[] { "imageView" }, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon));
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { UserCell.class },
-                new String[] { "nameTextView" }, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { UserCell.class },
-                new String[] { "statusColor" }, null, null, themeDelegate, Theme.key_windowBackgroundWhiteGrayText));
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { UserCell.class },
-                new String[] { "statusOnlineColor" }, null, null, themeDelegate,
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{UserCell.class},
+                new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon));
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{UserCell.class},
+                new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{UserCell.class},
+                new String[]{"statusColor"}, null, null, themeDelegate, Theme.key_windowBackgroundWhiteGrayText));
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{UserCell.class},
+                new String[]{"statusOnlineColor"}, null, null, themeDelegate,
                 Theme.key_windowBackgroundWhiteBlueText));
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { UserCell.class }, null,
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{UserCell.class}, null,
                 Theme.avatarDrawables, null, Theme.key_avatar_text));
         arrayList.add(new ThemeDescription(null, 0, null, null, null, themeDelegate, Theme.key_avatar_backgroundRed));
         arrayList
@@ -10669,50 +10659,50 @@ public class ProfileActivity extends BaseFragment
 
         arrayList.add(new ThemeDescription(undoView, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null,
                 Theme.key_undo_background));
-        arrayList.add(new ThemeDescription(undoView, 0, new Class[] { UndoView.class },
-                new String[] { "undoImageView" }, null, null, null, Theme.key_undo_cancelColor));
-        arrayList.add(new ThemeDescription(undoView, 0, new Class[] { UndoView.class }, new String[] { "undoTextView" },
+        arrayList.add(new ThemeDescription(undoView, 0, new Class[]{UndoView.class},
+                new String[]{"undoImageView"}, null, null, null, Theme.key_undo_cancelColor));
+        arrayList.add(new ThemeDescription(undoView, 0, new Class[]{UndoView.class}, new String[]{"undoTextView"},
                 null, null, null, Theme.key_undo_cancelColor));
-        arrayList.add(new ThemeDescription(undoView, 0, new Class[] { UndoView.class }, new String[] { "infoTextView" },
+        arrayList.add(new ThemeDescription(undoView, 0, new Class[]{UndoView.class}, new String[]{"infoTextView"},
                 null, null, null, Theme.key_undo_infoColor));
-        arrayList.add(new ThemeDescription(undoView, 0, new Class[] { UndoView.class }, new String[] { "textPaint" },
+        arrayList.add(new ThemeDescription(undoView, 0, new Class[]{UndoView.class}, new String[]{"textPaint"},
                 null, null, null, Theme.key_undo_infoColor));
-        arrayList.add(new ThemeDescription(undoView, 0, new Class[] { UndoView.class },
-                new String[] { "progressPaint" }, null, null, null, Theme.key_undo_infoColor));
-        arrayList.add(new ThemeDescription(undoView, ThemeDescription.FLAG_IMAGECOLOR, new Class[] { UndoView.class },
-                new String[] { "leftImageView" }, null, null, null, Theme.key_undo_infoColor));
+        arrayList.add(new ThemeDescription(undoView, 0, new Class[]{UndoView.class},
+                new String[]{"progressPaint"}, null, null, null, Theme.key_undo_infoColor));
+        arrayList.add(new ThemeDescription(undoView, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{UndoView.class},
+                new String[]{"leftImageView"}, null, null, null, Theme.key_undo_infoColor));
 
         arrayList.add(new ThemeDescription(profileDetailsListView, ThemeDescription.FLAG_TEXTCOLOR,
-                new Class[] { AboutLinkCell.class }, Theme.profile_aboutTextPaint, null, null,
+                new Class[]{AboutLinkCell.class}, Theme.profile_aboutTextPaint, null, null,
                 Theme.key_windowBackgroundWhiteBlackText));
         arrayList.add(new ThemeDescription(profileDetailsListView, ThemeDescription.FLAG_LINKCOLOR,
-                new Class[] { AboutLinkCell.class }, Theme.profile_aboutTextPaint, null, null,
+                new Class[]{AboutLinkCell.class}, Theme.profile_aboutTextPaint, null, null,
                 Theme.key_windowBackgroundWhiteLinkText));
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { AboutLinkCell.class },
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{AboutLinkCell.class},
                 Theme.linkSelectionPaint, null, null, Theme.key_windowBackgroundWhiteLinkSelection));
 
         arrayList.add(new ThemeDescription(profileDetailsListView, ThemeDescription.FLAG_BACKGROUNDFILTER,
-                new Class[] { ShadowSectionCell.class }, null, null, null, Theme.key_windowBackgroundGrayShadow));
+                new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
 
         arrayList.add(new ThemeDescription(profileDetailsListView, ThemeDescription.FLAG_BACKGROUNDFILTER,
-                new Class[] { TextInfoPrivacyCell.class }, null, null, null, Theme.key_windowBackgroundGrayShadow));
-        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[] { TextInfoPrivacyCell.class },
-                new String[] { "textView" }, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
+                new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
+        arrayList.add(new ThemeDescription(profileDetailsListView, 0, new Class[]{TextInfoPrivacyCell.class},
+                new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
 
-        arrayList.add(new ThemeDescription(searchListView, 0, new Class[] { HeaderCell.class },
-                new String[] { "textView" }, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
+        arrayList.add(new ThemeDescription(searchListView, 0, new Class[]{HeaderCell.class},
+                new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
 
-        arrayList.add(new ThemeDescription(searchListView, 0, new Class[] { GraySectionCell.class },
-                new String[] { "textView" }, null, null, null, Theme.key_graySectionText));
+        arrayList.add(new ThemeDescription(searchListView, 0, new Class[]{GraySectionCell.class},
+                new String[]{"textView"}, null, null, null, Theme.key_graySectionText));
         arrayList.add(new ThemeDescription(searchListView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR,
-                new Class[] { GraySectionCell.class }, null, null, null, Theme.key_graySection));
+                new Class[]{GraySectionCell.class}, null, null, null, Theme.key_graySection));
 
-        arrayList.add(new ThemeDescription(searchListView, 0, new Class[] { SettingsSearchCell.class },
-                new String[] { "textView" }, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        arrayList.add(new ThemeDescription(searchListView, 0, new Class[] { SettingsSearchCell.class },
-                new String[] { "valueTextView" }, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
-        arrayList.add(new ThemeDescription(searchListView, 0, new Class[] { SettingsSearchCell.class },
-                new String[] { "imageView" }, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon));
+        arrayList.add(new ThemeDescription(searchListView, 0, new Class[]{SettingsSearchCell.class},
+                new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        arrayList.add(new ThemeDescription(searchListView, 0, new Class[]{SettingsSearchCell.class},
+                new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
+        arrayList.add(new ThemeDescription(searchListView, 0, new Class[]{SettingsSearchCell.class},
+                new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon));
 
         if (mediaHeaderVisible) {
             arrayList.add(new ThemeDescription(nameTextView[1], 0, null, null, verifiedCheckDrawable, null,
@@ -10838,7 +10828,7 @@ public class ProfileActivity extends BaseFragment
             }
             if (UserObject.areGiftsDisabled(userInfo)) {
                 BulletinFactory.of(this).createSimpleBulletin(R.raw.error, AndroidUtilities.replaceTags(
-                        LocaleController.formatString(R.string.UserDisallowedGifts, DialogObject.getShortName(userId))))
+                                LocaleController.formatString(R.string.UserDisallowedGifts, DialogObject.getShortName(userId))))
                         .show();
                 return;
             }
@@ -11886,8 +11876,8 @@ public class ProfileActivity extends BaseFragment
                 if (backgroundGradient == null || backgroundGradientColor1 != color1
                         || backgroundGradientColor2 != color2 || backgroundGradientHeight != gradientHeight) {
                     backgroundGradient = new LinearGradient(0, 0, 0, backgroundGradientHeight = gradientHeight,
-                            new int[] { backgroundGradientColor2 = color2, backgroundGradientColor1 = color1 },
-                            new float[] { 0, 1 }, Shader.TileMode.CLAMP);
+                            new int[]{backgroundGradientColor2 = color2, backgroundGradientColor1 = color1},
+                            new float[]{0, 1}, Shader.TileMode.CLAMP);
                     backgroundPaint.setShader(backgroundGradient);
                 }
                 final float progressToGradient = (playProfileAnimation == 0 ? 1f : avatarAnimationProgress)
@@ -11911,9 +11901,9 @@ public class ProfileActivity extends BaseFragment
                         float avatarCenterY = ActionBar.getCurrentActionBarHeight()
                                 + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0)
                                 + AndroidUtilities.dp(64); // Approximate avatar center
-                        float avatarRadius = AndroidUtilities.dp(42); // Standard avatar radius
+                        float avatarRadius = AndroidUtilities.dp(AVATAR_SIZE_DP); // Standard avatar radius
                         float emojiRadius = avatarRadius + AndroidUtilities.dp(24); // Distance from avatar center to
-                                                                                    // emojis
+                        // emojis
 
                         // Use our new circular pattern
                         StarGiftPatterns.drawCircularProfilePattern(canvas, emoji, avatarCenterX, avatarCenterY,
@@ -11960,7 +11950,7 @@ public class ProfileActivity extends BaseFragment
         private final GradientDrawable topOverlayGradient;
         private final GradientDrawable bottomOverlayGradient;
         private final ValueAnimator animator;
-        private final float[] animatorValues = new float[] { 0f, 1f };
+        private final float[] animatorValues = new float[]{0f, 1f};
         private final Paint backgroundPaint;
         private final Paint barPaint;
         private final Paint selectedBarPaint;
@@ -11992,17 +11982,17 @@ public class ProfileActivity extends BaseFragment
             selectedBarPaint.setColor(0xffffffff);
 
             topOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[] { 0x42000000, 0 });
+                    new int[]{0x42000000, 0});
             topOverlayGradient.setShape(GradientDrawable.RECTANGLE);
 
             bottomOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP,
-                    new int[] { 0x42000000, 0 });
+                    new int[]{0x42000000, 0});
             bottomOverlayGradient.setShape(GradientDrawable.RECTANGLE);
 
             for (int i = 0; i < 2; i++) {
                 final GradientDrawable.Orientation orientation = i == 0 ? GradientDrawable.Orientation.LEFT_RIGHT
                         : GradientDrawable.Orientation.RIGHT_LEFT;
-                pressedOverlayGradient[i] = new GradientDrawable(orientation, new int[] { 0x32000000, 0 });
+                pressedOverlayGradient[i] = new GradientDrawable(orientation, new int[]{0x32000000, 0});
                 pressedOverlayGradient[i].setShape(GradientDrawable.RECTANGLE);
             }
 
@@ -12282,7 +12272,7 @@ public class ProfileActivity extends BaseFragment
 
         @Override
         public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed,
-                int type, int[] consumed) {
+                                   int type, int[] consumed) {
             try {
                 if (target == profileDetailsListView && sharedMediaLayoutAttached) {
                     RecyclerListView innerListView = sharedMediaLayout.getCurrentListView();
@@ -12315,7 +12305,7 @@ public class ProfileActivity extends BaseFragment
 
         @Override
         public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed,
-                int type) {
+                                   int type) {
 
         }
 
@@ -12409,7 +12399,7 @@ public class ProfileActivity extends BaseFragment
         private final Paint backgroundPaint;
 
         private final ValueAnimator animator;
-        private final float[] animatorValues = new float[] { 0f, 1f };
+        private final float[] animatorValues = new float[]{0f, 1f};
 
         private final PagerAdapter adapter = avatarsViewPager.getAdapter();
 
@@ -13592,10 +13582,10 @@ public class ProfileActivity extends BaseFragment
                                 sb.append(AndroidUtilities
                                         .replaceSingleTag(getString(botOwner ? R.string.ProfileBotOpenAppInfoOwner
                                                 : R.string.ProfileBotOpenAppInfo), () -> {
-                                                    Browser.openUrl(getContext(),
-                                                            getString(botOwner ? R.string.ProfileBotOpenAppInfoOwnerLink
-                                                                    : R.string.ProfileBotOpenAppInfoLink));
-                                                }));
+                                            Browser.openUrl(getContext(),
+                                                    getString(botOwner ? R.string.ProfileBotOpenAppInfoOwnerLink
+                                                            : R.string.ProfileBotOpenAppInfoLink));
+                                        }));
                                 if (bot_verification != null) {
                                     sb.append("\n\n\n");
                                 }
@@ -13782,7 +13772,7 @@ public class ProfileActivity extends BaseFragment
         }
 
         private CharSequence alsoUsernamesString(String originalUsername, ArrayList<TLRPC.TL_username> alsoUsernames,
-                CharSequence fallback) {
+                                                 CharSequence fallback) {
             if (alsoUsernames == null) {
                 return fallback;
             }
@@ -13919,7 +13909,7 @@ public class ProfileActivity extends BaseFragment
             return type != VIEW_TYPE_HEADER && type != VIEW_TYPE_DIVIDER && type != VIEW_TYPE_SHADOW &&
                     type != VIEW_TYPE_EMPTY && type != VIEW_TYPE_BOTTOM_PADDING && type != VIEW_TYPE_SHARED_MEDIA &&
                     type != 9 && type != 10 && type != VIEW_TYPE_BOT_APP; // These are legacy ones, left for
-                                                                          // compatibility
+            // compatibility
         }
 
         @Override
@@ -14087,7 +14077,7 @@ public class ProfileActivity extends BaseFragment
         }
 
         private SearchResult[] onCreateSearchArray() {
-            return new SearchResult[] {
+            return new SearchResult[]{
                     new SearchResult(500, getString(R.string.EditName), 0,
                             () -> presentFragment(new ChangeNameActivity(resourcesProvider))),
                     new SearchResult(501, getString(R.string.ChangePhoneNumber), 0,
@@ -14160,16 +14150,16 @@ public class ProfileActivity extends BaseFragment
                             R.drawable.msg2_secret, () -> presentFragment(new TwoStepVerificationActivity())),
                     new SearchResult(124, getString(R.string.AutoDeleteMessages), getString(R.string.PrivacySettings),
                             R.drawable.msg2_secret, () -> {
-                                if (getUserConfig().getGlobalTTl() >= 0) {
-                                    presentFragment(new AutoDeleteMessagesActivity());
-                                }
-                            }),
+                        if (getUserConfig().getGlobalTTl() >= 0) {
+                            presentFragment(new AutoDeleteMessagesActivity());
+                        }
+                    }),
                     new SearchResult(108, getString(R.string.Passcode), getString(R.string.PrivacySettings),
                             R.drawable.msg2_secret, () -> presentFragment(PasscodeActivity.determineOpenFragment())),
                     SharedConfig.hasEmailLogin
                             ? new SearchResult(125, getString(R.string.EmailLogin), "emailLoginRow",
-                                    getString(R.string.PrivacySettings), R.drawable.msg2_secret,
-                                    () -> presentFragment(new PrivacySettingsActivity()))
+                            getString(R.string.PrivacySettings), R.drawable.msg2_secret,
+                            () -> presentFragment(new PrivacySettingsActivity()))
                             : null,
                     new SearchResult(101, getString(R.string.BlockedUsers), getString(R.string.PrivacySettings),
                             R.drawable.msg_secret, () -> presentFragment(new PrivacyUsersActivity().loadBlocked())),
@@ -14205,23 +14195,23 @@ public class ProfileActivity extends BaseFragment
                                     new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_INVITE, true))),
                     new SearchResult(123, getString(R.string.PrivacyVoiceMessages), getString(R.string.PrivacySettings),
                             R.drawable.msg_secret, () -> {
-                                if (!getUserConfig().isPremium()) {
-                                    try {
-                                        fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP,
-                                                HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-                                    } catch (Exception ignored) {
-                                    }
-                                    BulletinFactory.of(ProfileActivity.this)
-                                            .createRestrictVoiceMessagesPremiumBulletin().show();
-                                    return;
-                                }
-                                presentFragment(new PrivacyControlActivity(
-                                        ContactsController.PRIVACY_RULES_TYPE_VOICE_MESSAGES, true));
-                            }),
+                        if (!getUserConfig().isPremium()) {
+                            try {
+                                fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP,
+                                        HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                            } catch (Exception ignored) {
+                            }
+                            BulletinFactory.of(ProfileActivity.this)
+                                    .createRestrictVoiceMessagesPremiumBulletin().show();
+                            return;
+                        }
+                        presentFragment(new PrivacyControlActivity(
+                                ContactsController.PRIVACY_RULES_TYPE_VOICE_MESSAGES, true));
+                    }),
                     getMessagesController().autoarchiveAvailable
                             ? new SearchResult(121, getString(R.string.ArchiveAndMute), "newChatsRow",
-                                    getString(R.string.PrivacySettings), R.drawable.msg2_secret,
-                                    () -> presentFragment(new PrivacySettingsActivity()))
+                            getString(R.string.PrivacySettings), R.drawable.msg2_secret,
+                            () -> presentFragment(new PrivacySettingsActivity()))
                             : null,
                     new SearchResult(112, getString(R.string.DeleteAccountIfAwayFor2), "deleteAccountRow",
                             getString(R.string.PrivacySettings), R.drawable.msg2_secret,
@@ -14430,14 +14420,14 @@ public class ProfileActivity extends BaseFragment
 
                     isPremiumFeatureAvailable(-1)
                             ? new SearchResult(800, getString(R.string.TelegramPremium),
-                                    R.drawable.msg_settings_premium,
-                                    () -> presentFragment(new PremiumPreviewFragment("settings")))
+                            R.drawable.msg_settings_premium,
+                            () -> presentFragment(new PremiumPreviewFragment("settings")))
                             : null,
                     isPremiumFeatureAvailable(PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS)
                             ? new SearchResult(801, getString(R.string.PremiumPreviewLimits),
-                                    getString(R.string.TelegramPremium), R.drawable.msg_settings_premium,
-                                    () -> showDialog(new PremiumFeatureBottomSheet(ProfileActivity.this,
-                                            PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS, false).setForceAbout()))
+                            getString(R.string.TelegramPremium), R.drawable.msg_settings_premium,
+                            () -> showDialog(new PremiumFeatureBottomSheet(ProfileActivity.this,
+                                    PremiumPreviewFragment.PREMIUM_FEATURE_LIMITS, false).setForceAbout()))
                             : null,
                     isPremiumFeatureAvailable(PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI) ? new SearchResult(
                             802, getString(R.string.PremiumPreviewEmoji), getString(R.string.TelegramPremium),
@@ -14465,28 +14455,28 @@ public class ProfileActivity extends BaseFragment
                             : null,
                     isPremiumFeatureAvailable(PremiumPreviewFragment.PREMIUM_FEATURE_ADS)
                             ? new SearchResult(806, getString(R.string.PremiumPreviewNoAds),
-                                    getString(R.string.TelegramPremium), R.drawable.msg_settings_premium,
-                                    () -> showDialog(new PremiumFeatureBottomSheet(ProfileActivity.this,
-                                            PremiumPreviewFragment.PREMIUM_FEATURE_ADS, false).setForceAbout()))
+                            getString(R.string.TelegramPremium), R.drawable.msg_settings_premium,
+                            () -> showDialog(new PremiumFeatureBottomSheet(ProfileActivity.this,
+                                    PremiumPreviewFragment.PREMIUM_FEATURE_ADS, false).setForceAbout()))
                             : null,
                     isPremiumFeatureAvailable(PremiumPreviewFragment.PREMIUM_FEATURE_REACTIONS)
                             ? new SearchResult(807, getString(R.string.PremiumPreviewReactions),
-                                    getString(R.string.TelegramPremium), R.drawable.msg_settings_premium,
-                                    () -> showDialog(new PremiumFeatureBottomSheet(ProfileActivity.this,
-                                            PremiumPreviewFragment.PREMIUM_FEATURE_REACTIONS, false).setForceAbout()))
+                            getString(R.string.TelegramPremium), R.drawable.msg_settings_premium,
+                            () -> showDialog(new PremiumFeatureBottomSheet(ProfileActivity.this,
+                                    PremiumPreviewFragment.PREMIUM_FEATURE_REACTIONS, false).setForceAbout()))
                             : null,
                     isPremiumFeatureAvailable(PremiumPreviewFragment.PREMIUM_FEATURE_STICKERS)
                             ? new SearchResult(808, getString(R.string.PremiumPreviewStickers),
-                                    getString(R.string.TelegramPremium), R.drawable.msg_settings_premium,
-                                    () -> showDialog(new PremiumFeatureBottomSheet(ProfileActivity.this,
-                                            PremiumPreviewFragment.PREMIUM_FEATURE_STICKERS, false).setForceAbout()))
+                            getString(R.string.TelegramPremium), R.drawable.msg_settings_premium,
+                            () -> showDialog(new PremiumFeatureBottomSheet(ProfileActivity.this,
+                                    PremiumPreviewFragment.PREMIUM_FEATURE_STICKERS, false).setForceAbout()))
                             : null,
                     isPremiumFeatureAvailable(PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT)
                             ? new SearchResult(809, getString(R.string.PremiumPreviewAdvancedChatManagement),
-                                    getString(R.string.TelegramPremium), R.drawable.msg_settings_premium,
-                                    () -> showDialog(new PremiumFeatureBottomSheet(ProfileActivity.this,
-                                            PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT, false)
-                                            .setForceAbout()))
+                            getString(R.string.TelegramPremium), R.drawable.msg_settings_premium,
+                            () -> showDialog(new PremiumFeatureBottomSheet(ProfileActivity.this,
+                                    PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT, false)
+                                    .setForceAbout()))
                             : null,
                     isPremiumFeatureAvailable(PremiumPreviewFragment.PREMIUM_FEATURE_PROFILE_BADGE) ? new SearchResult(
                             810, getString(R.string.PremiumPreviewProfileBadge), getString(R.string.TelegramPremium),
@@ -14496,17 +14486,17 @@ public class ProfileActivity extends BaseFragment
                             : null,
                     isPremiumFeatureAvailable(PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS)
                             ? new SearchResult(811, getString(R.string.PremiumPreviewAnimatedProfiles),
-                                    getString(R.string.TelegramPremium), R.drawable.msg_settings_premium,
-                                    () -> showDialog(new PremiumFeatureBottomSheet(ProfileActivity.this,
-                                            PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS, false)
-                                            .setForceAbout()))
+                            getString(R.string.TelegramPremium), R.drawable.msg_settings_premium,
+                            () -> showDialog(new PremiumFeatureBottomSheet(ProfileActivity.this,
+                                    PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS, false)
+                                    .setForceAbout()))
                             : null,
                     isPremiumFeatureAvailable(PremiumPreviewFragment.PREMIUM_FEATURE_APPLICATION_ICONS)
                             ? new SearchResult(812, getString(R.string.PremiumPreviewAppIcon),
-                                    getString(R.string.TelegramPremium), R.drawable.msg_settings_premium,
-                                    () -> showDialog(new PremiumFeatureBottomSheet(ProfileActivity.this,
-                                            PremiumPreviewFragment.PREMIUM_FEATURE_APPLICATION_ICONS, false)
-                                            .setForceAbout()))
+                            getString(R.string.TelegramPremium), R.drawable.msg_settings_premium,
+                            () -> showDialog(new PremiumFeatureBottomSheet(ProfileActivity.this,
+                                    PremiumPreviewFragment.PREMIUM_FEATURE_APPLICATION_ICONS, false)
+                                    .setForceAbout()))
                             : null,
                     isPremiumFeatureAvailable(PremiumPreviewFragment.PREMIUM_FEATURE_EMOJI_STATUS) ? new SearchResult(
                             813, getString(R.string.PremiumPreviewEmojiStatus), getString(R.string.TelegramPremium),
@@ -14519,125 +14509,125 @@ public class ProfileActivity extends BaseFragment
                             () -> presentFragment(new LiteModeSettingsActivity())),
                     new SearchResult(901, getString(R.string.LiteOptionsStickers), getString(R.string.PowerUsage),
                             R.drawable.msg2_battery, () -> {
-                                LiteModeSettingsActivity set = new LiteModeSettingsActivity();
-                                presentFragment(set);
-                                set.scrollToFlags(LiteMode.FLAGS_ANIMATED_STICKERS);
-                            }),
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        presentFragment(set);
+                        set.scrollToFlags(LiteMode.FLAGS_ANIMATED_STICKERS);
+                    }),
                     new SearchResult(902, getString(R.string.LiteOptionsAutoplayKeyboard), null,
                             getString(R.string.PowerUsage), getString(R.string.LiteOptionsStickers),
                             R.drawable.msg2_battery, () -> {
-                                LiteModeSettingsActivity set = new LiteModeSettingsActivity();
-                                presentFragment(set);
-                                set.setExpanded(LiteMode.FLAGS_ANIMATED_STICKERS, true);
-                                set.scrollToFlags(LiteMode.FLAG_ANIMATED_STICKERS_KEYBOARD);
-                            }),
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        presentFragment(set);
+                        set.setExpanded(LiteMode.FLAGS_ANIMATED_STICKERS, true);
+                        set.scrollToFlags(LiteMode.FLAG_ANIMATED_STICKERS_KEYBOARD);
+                    }),
                     new SearchResult(903, getString(R.string.LiteOptionsAutoplayChat), null,
                             getString(R.string.PowerUsage), getString(R.string.LiteOptionsStickers),
                             R.drawable.msg2_battery, () -> {
-                                LiteModeSettingsActivity set = new LiteModeSettingsActivity();
-                                presentFragment(set);
-                                set.setExpanded(LiteMode.FLAGS_ANIMATED_STICKERS, true);
-                                set.scrollToFlags(LiteMode.FLAG_ANIMATED_STICKERS_CHAT);
-                            }),
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        presentFragment(set);
+                        set.setExpanded(LiteMode.FLAGS_ANIMATED_STICKERS, true);
+                        set.scrollToFlags(LiteMode.FLAG_ANIMATED_STICKERS_CHAT);
+                    }),
                     new SearchResult(904, getString(R.string.LiteOptionsEmoji), getString(R.string.PowerUsage),
                             R.drawable.msg2_battery, () -> {
-                                LiteModeSettingsActivity set = new LiteModeSettingsActivity();
-                                presentFragment(set);
-                                set.scrollToFlags(LiteMode.FLAGS_ANIMATED_EMOJI);
-                            }),
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        presentFragment(set);
+                        set.scrollToFlags(LiteMode.FLAGS_ANIMATED_EMOJI);
+                    }),
                     new SearchResult(905, getString(R.string.LiteOptionsAutoplayKeyboard), null,
                             getString(R.string.PowerUsage), getString(R.string.LiteOptionsEmoji),
                             R.drawable.msg2_battery, () -> {
-                                LiteModeSettingsActivity set = new LiteModeSettingsActivity();
-                                presentFragment(set);
-                                set.setExpanded(LiteMode.FLAGS_ANIMATED_EMOJI, true);
-                                set.scrollToFlags(LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD);
-                            }),
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        presentFragment(set);
+                        set.setExpanded(LiteMode.FLAGS_ANIMATED_EMOJI, true);
+                        set.scrollToFlags(LiteMode.FLAG_ANIMATED_EMOJI_KEYBOARD);
+                    }),
                     new SearchResult(906, getString(R.string.LiteOptionsAutoplayReactions), null,
                             getString(R.string.PowerUsage), getString(R.string.LiteOptionsEmoji),
                             R.drawable.msg2_battery, () -> {
-                                LiteModeSettingsActivity set = new LiteModeSettingsActivity();
-                                presentFragment(set);
-                                set.setExpanded(LiteMode.FLAGS_ANIMATED_EMOJI, true);
-                                set.scrollToFlags(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS);
-                            }),
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        presentFragment(set);
+                        set.setExpanded(LiteMode.FLAGS_ANIMATED_EMOJI, true);
+                        set.scrollToFlags(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS);
+                    }),
                     new SearchResult(907, getString(R.string.LiteOptionsAutoplayChat), null,
                             getString(R.string.PowerUsage), getString(R.string.LiteOptionsEmoji),
                             R.drawable.msg2_battery, () -> {
-                                LiteModeSettingsActivity set = new LiteModeSettingsActivity();
-                                presentFragment(set);
-                                set.setExpanded(LiteMode.FLAGS_ANIMATED_EMOJI, true);
-                                set.scrollToFlags(LiteMode.FLAG_ANIMATED_EMOJI_CHAT);
-                            }),
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        presentFragment(set);
+                        set.setExpanded(LiteMode.FLAGS_ANIMATED_EMOJI, true);
+                        set.scrollToFlags(LiteMode.FLAG_ANIMATED_EMOJI_CHAT);
+                    }),
                     new SearchResult(908, getString(R.string.LiteOptionsChat), getString(R.string.PowerUsage),
                             R.drawable.msg2_battery, () -> {
-                                LiteModeSettingsActivity set = new LiteModeSettingsActivity();
-                                presentFragment(set);
-                                set.scrollToFlags(LiteMode.FLAGS_CHAT);
-                            }),
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        presentFragment(set);
+                        set.scrollToFlags(LiteMode.FLAGS_CHAT);
+                    }),
                     new SearchResult(909, getString(R.string.LiteOptionsBackground), null,
                             getString(R.string.PowerUsage), getString(R.string.LiteOptionsChat),
                             R.drawable.msg2_battery, () -> {
-                                LiteModeSettingsActivity set = new LiteModeSettingsActivity();
-                                presentFragment(set);
-                                set.setExpanded(LiteMode.FLAGS_CHAT, true);
-                                set.scrollToFlags(LiteMode.FLAG_CHAT_BACKGROUND);
-                            }),
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        presentFragment(set);
+                        set.setExpanded(LiteMode.FLAGS_CHAT, true);
+                        set.scrollToFlags(LiteMode.FLAG_CHAT_BACKGROUND);
+                    }),
                     new SearchResult(910, getString(R.string.LiteOptionsTopics), null, getString(R.string.PowerUsage),
                             getString(R.string.LiteOptionsChat), R.drawable.msg2_battery, () -> {
-                                LiteModeSettingsActivity set = new LiteModeSettingsActivity();
-                                presentFragment(set);
-                                set.setExpanded(LiteMode.FLAGS_CHAT, true);
-                                set.scrollToFlags(LiteMode.FLAG_CHAT_FORUM_TWOCOLUMN);
-                            }),
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        presentFragment(set);
+                        set.setExpanded(LiteMode.FLAGS_CHAT, true);
+                        set.scrollToFlags(LiteMode.FLAG_CHAT_FORUM_TWOCOLUMN);
+                    }),
                     new SearchResult(911, getString(R.string.LiteOptionsSpoiler), null, getString(R.string.PowerUsage),
                             getString(R.string.LiteOptionsChat), R.drawable.msg2_battery, () -> {
-                                LiteModeSettingsActivity set = new LiteModeSettingsActivity();
-                                presentFragment(set);
-                                set.setExpanded(LiteMode.FLAGS_CHAT, true);
-                                set.scrollToFlags(LiteMode.FLAG_CHAT_SPOILER);
-                            }),
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        presentFragment(set);
+                        set.setExpanded(LiteMode.FLAGS_CHAT, true);
+                        set.scrollToFlags(LiteMode.FLAG_CHAT_SPOILER);
+                    }),
                     SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_AVERAGE
                             ? new SearchResult(326 /* for compatibility */, getString(R.string.LiteOptionsBlur), null,
-                                    getString(R.string.PowerUsage), getString(R.string.LiteOptionsChat),
-                                    R.drawable.msg2_battery, () -> {
-                                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
-                                        presentFragment(set);
-                                        set.setExpanded(LiteMode.FLAGS_CHAT, true);
-                                        set.scrollToFlags(LiteMode.FLAG_CHAT_BLUR);
-                                    })
+                            getString(R.string.PowerUsage), getString(R.string.LiteOptionsChat),
+                            R.drawable.msg2_battery, () -> {
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        presentFragment(set);
+                        set.setExpanded(LiteMode.FLAGS_CHAT, true);
+                        set.scrollToFlags(LiteMode.FLAG_CHAT_BLUR);
+                    })
                             : null,
                     new SearchResult(912, getString(R.string.LiteOptionsScale), null, getString(R.string.PowerUsage),
                             getString(R.string.LiteOptionsChat), R.drawable.msg2_battery, () -> {
-                                LiteModeSettingsActivity set = new LiteModeSettingsActivity();
-                                presentFragment(set);
-                                set.setExpanded(LiteMode.FLAGS_CHAT, true);
-                                set.scrollToFlags(LiteMode.FLAG_CHAT_SCALE);
-                            }),
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        presentFragment(set);
+                        set.setExpanded(LiteMode.FLAGS_CHAT, true);
+                        set.scrollToFlags(LiteMode.FLAG_CHAT_SCALE);
+                    }),
                     new SearchResult(913, getString(R.string.LiteOptionsCalls), getString(R.string.PowerUsage),
                             R.drawable.msg2_battery, () -> {
-                                LiteModeSettingsActivity set = new LiteModeSettingsActivity();
-                                presentFragment(set);
-                                set.scrollToFlags(LiteMode.FLAG_CALLS_ANIMATIONS);
-                            }),
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        presentFragment(set);
+                        set.scrollToFlags(LiteMode.FLAG_CALLS_ANIMATIONS);
+                    }),
                     new SearchResult(214 /* for compatibility */, getString(R.string.LiteOptionsAutoplayVideo),
                             getString(R.string.PowerUsage), R.drawable.msg2_battery, () -> {
-                                LiteModeSettingsActivity set = new LiteModeSettingsActivity();
-                                presentFragment(set);
-                                set.scrollToFlags(LiteMode.FLAG_AUTOPLAY_VIDEOS);
-                            }),
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        presentFragment(set);
+                        set.scrollToFlags(LiteMode.FLAG_AUTOPLAY_VIDEOS);
+                    }),
                     new SearchResult(213 /* for compatibility */, getString(R.string.LiteOptionsAutoplayGifs),
                             getString(R.string.PowerUsage), R.drawable.msg2_battery, () -> {
-                                LiteModeSettingsActivity set = new LiteModeSettingsActivity();
-                                presentFragment(set);
-                                set.scrollToFlags(LiteMode.FLAG_AUTOPLAY_GIFS);
-                            }),
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        presentFragment(set);
+                        set.scrollToFlags(LiteMode.FLAG_AUTOPLAY_GIFS);
+                    }),
                     new SearchResult(914, getString(R.string.LiteSmoothTransitions), getString(R.string.PowerUsage),
                             R.drawable.msg2_battery, () -> {
-                                LiteModeSettingsActivity set = new LiteModeSettingsActivity();
-                                presentFragment(set);
-                                set.scrollToType(LiteModeSettingsActivity.SWITCH_TYPE_SMOOTH_TRANSITIONS);
-                            }),
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        presentFragment(set);
+                        set.scrollToType(LiteModeSettingsActivity.SWITCH_TYPE_SMOOTH_TRANSITIONS);
+                    }),
 
                     new SearchResult(400, getString(R.string.Language), R.drawable.msg2_language,
                             () -> presentFragment(new LanguageSelectActivity())),
@@ -14645,7 +14635,7 @@ public class ProfileActivity extends BaseFragment
                             R.drawable.msg2_language, () -> presentFragment(new LanguageSelectActivity())),
                     MessagesController.getInstance(currentAccount).getTranslateController().isContextTranslateEnabled()
                             ? new SearchResult(406, getString(R.string.DoNotTranslate), getString(R.string.Language),
-                                    R.drawable.msg2_language, () -> presentFragment(new LanguageSelectActivity()))
+                            R.drawable.msg2_language, () -> presentFragment(new LanguageSelectActivity()))
                             : null,
 
                     new SearchResult(402, getString(R.string.AskAQuestion), getString(R.string.SettingsHelp),
@@ -14717,11 +14707,11 @@ public class ProfileActivity extends BaseFragment
                                         }
                                         String[] path;
                                         if (paragraph != null) {
-                                            path = new String[] {
-                                                    LocaleController.getString(R.string.SettingsSearchFaq), paragraph };
+                                            path = new String[]{
+                                                    LocaleController.getString(R.string.SettingsSearchFaq), paragraph};
                                         } else {
-                                            path = new String[] {
-                                                    LocaleController.getString(R.string.SettingsSearchFaq) };
+                                            path = new String[]{
+                                                    LocaleController.getString(R.string.SettingsSearchFaq)};
                                         }
                                         arrayList.add(new MessagesController.FaqSearchResult(text, path, url));
                                     }
@@ -15053,16 +15043,16 @@ public class ProfileActivity extends BaseFragment
             }
 
             public SearchResult(int g, String search, String row, String pathArg1, String pathArg2, int icon,
-                    Runnable open) {
+                                Runnable open) {
                 guid = g;
                 searchTitle = search;
                 rowName = row;
                 openRunnable = open;
                 iconResId = icon;
                 if (pathArg1 != null && pathArg2 != null) {
-                    path = new String[] { pathArg1, pathArg2 };
+                    path = new String[]{pathArg1, pathArg2};
                 } else if (pathArg1 != null) {
-                    path = new String[] { pathArg1 };
+                    path = new String[]{pathArg1};
                 }
             }
 
@@ -15259,6 +15249,7 @@ public class ProfileActivity extends BaseFragment
             clip[1] = getMeasuredHeight() - getPaddingBottom();
         }
     }
+
     //Animation for the profile transition
     @Override
     public AnimatorSet onCustomTransitionAnimation(final boolean isOpen, final Runnable callback) {
@@ -15588,6 +15579,7 @@ public class ProfileActivity extends BaseFragment
         }
         return null;
     }
+
     @Keep
     public void setAvatarAnimationProgress(float progress) {
         avatarAnimationProgress = currentExpandAnimatorValue = progress;
@@ -15685,6 +15677,7 @@ public class ProfileActivity extends BaseFragment
             }
         }
     }
+
     private void checkListViewScroll() {
         if (profileDetailsListView.getVisibility() != View.VISIBLE) {
             return;
@@ -15734,6 +15727,7 @@ public class ProfileActivity extends BaseFragment
             updateProfileLayout(true);
         }
     }
+
     private void updateProfileLayout(boolean animated) {
         System.out.println("ProfileActivity:: updateProfileLayout: animated = " + animated);
         final int newTop = calculateActionBarTopOffset();
@@ -15765,6 +15759,7 @@ public class ProfileActivity extends BaseFragment
 
         updateEmojiStatusEffectPosition();
     }
+
     private void updateProfileLayoutText(float diff) {
         FrameLayout.LayoutParams layoutParams;
         float scale = nameTextView[1].getScaleX();
@@ -16324,6 +16319,7 @@ public class ProfileActivity extends BaseFragment
             }
         };
     }
+
     private void setupMainLayout() {
         mainLayout = ((NestedFrameLayout) fragmentView);
         mainLayout.needBlur = true;
@@ -16366,6 +16362,7 @@ public class ProfileActivity extends BaseFragment
                     LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 51, Gravity.LEFT | Gravity.BOTTOM));
         }
     }
+
     private void setupMainProfileContainer(Context context) {
         mainProfileViewContainer = new FrameLayout(context) {
 
@@ -16455,7 +16452,7 @@ public class ProfileActivity extends BaseFragment
 
 
         mainProfileViewContainer.addView(avatarContainer,
-                LayoutHelper.createFrame(42, 42, Gravity.TOP | Gravity.LEFT, 64, 0, 0, 0));
+                LayoutHelper.createFrame(64, 64, Gravity.TOP | Gravity.LEFT, 64, 0, 0, 0));
         mainProfileViewContainer.addView(avatarsViewPager);
         mainProfileViewContainer.addView(overlaysView);
         mainProfileViewContainer.addView(avatarsViewPagerIndicatorView,
@@ -16473,6 +16470,15 @@ public class ProfileActivity extends BaseFragment
 
     }
 
-
+    /// Avatar adjustments
+    private int getSmallAvatarRoundRadius() {
+        if (chatId != 0) {
+            TLRPC.Chat chatLocal = getMessagesController().getChat(chatId);
+            if (ChatObject.isForum(chatLocal)) {
+                return AndroidUtilities.dp(needInsetForStories() ? 17 : 24); // Scaled from 11→17, 16→24
+            }
+        }
+        return AndroidUtilities.dp(32); // Scaled from 21→32 (maintaining 50% roundness)
+    }
 
 }
