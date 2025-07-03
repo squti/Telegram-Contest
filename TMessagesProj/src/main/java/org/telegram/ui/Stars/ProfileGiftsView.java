@@ -255,7 +255,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         canvas.save();
         canvas.clipRect(0, 0, getWidth(), expandY);
 
-        final float acx = ax + aw / 2.0f;
+        final float acx = getWidth() / 2.0f;
         final float cacx = Math.min(acx, dp(48));
         final float acy = ay + ah / 2.0f;
         final float ar = Math.min(aw, ah) / 2.0f + dp(6);
