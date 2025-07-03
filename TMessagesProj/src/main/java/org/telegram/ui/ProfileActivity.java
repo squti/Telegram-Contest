@@ -1851,8 +1851,8 @@ public class ProfileActivity extends BaseFragment
 
     private void setupAvatarContainer(Context context) {
         avatarContainer = new FrameLayout(context);
-        avatarContainer.setPivotX(0);
-        avatarContainer.setPivotY(0);
+        avatarContainer.setPivotX(avatarContainer.getMeasuredWidth() / 2f);
+        avatarContainer.setPivotY(avatarContainer.getMeasuredHeight() / 2f);
 
         avatarContainer.addView(avatarImage,
                 LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
