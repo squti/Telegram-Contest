@@ -2009,112 +2009,6 @@ public class ProfileActivity extends BaseFragment
         }
     }
 
-    private void setupMainProfileContainer(Context context) {
-        mainProfileViewContainer = new FrameLayout(context) {
-
-            CanvasButton canvasButton;
-
-            @Override
-            protected void dispatchDraw(Canvas canvas) {
-                super.dispatchDraw(canvas);
-                if (transitionOnlineText != null) {
-                    canvas.save();
-                    canvas.translate(onlineTextView[0].getX(), onlineTextView[0].getY());
-                    canvas.saveLayerAlpha(0, 0, transitionOnlineText.getMeasuredWidth(),
-                            transitionOnlineText.getMeasuredHeight(), (int) (255 * (1f - avatarAnimationProgress)),
-                            Canvas.ALL_SAVE_FLAG);
-                    transitionOnlineText.draw(canvas);
-                    canvas.restore();
-                    canvas.restore();
-                    invalidate();
-                }
-                if (hasFallbackPhoto && photoDescriptionProgress != 0 && customAvatarProgress != 1f) {
-                    float cy = onlineTextView[1].getY() + onlineTextView[1].getMeasuredHeight() / 2f;
-                    float size = AndroidUtilities.dp(22);
-                    float x = AndroidUtilities.dp(28) - customPhotoOffset + onlineTextView[1].getX() - size;
-
-                    avatarPlaceholderImage.setImageCoords(x, cy - size / 2f, size, size);
-                    avatarPlaceholderImage.setAlpha(photoDescriptionProgress);
-                    canvas.save();
-                    float s = photoDescriptionProgress;
-                    canvas.scale(s, s, avatarPlaceholderImage.getCenterX(), avatarPlaceholderImage.getCenterY());
-                    avatarPlaceholderImage.draw(canvas);
-                    canvas.restore();
-
-                    if (customAvatarProgress == 0) {
-                        if (canvasButton == null) {
-                            canvasButton = new CanvasButton(this);
-                            canvasButton.setDelegate(() -> {
-                                if (customAvatarProgress != 1f) {
-                                    avatarsViewPager.scrollToLastItem();
-                                }
-                            });
-                        }
-                        AndroidUtilities.rectTmp.set(x - AndroidUtilities.dp(4), cy - AndroidUtilities.dp(14),
-                                x + onlineTextView[2].getTextWidth()
-                                        + AndroidUtilities.dp(28) * (1f - customAvatarProgress)
-                                        + AndroidUtilities.dp(4),
-                                cy + AndroidUtilities.dp(14));
-                        canvasButton.setRect(AndroidUtilities.rectTmp);
-                        canvasButton.setRounded(true);
-                        canvasButton.setColor(Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, 50));
-                        canvasButton.draw(canvas);
-                    } else {
-                        if (canvasButton != null) {
-                            canvasButton.cancelRipple();
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public boolean onInterceptTouchEvent(MotionEvent ev) {
-                return (canvasButton != null && canvasButton.checkTouchEvent(ev)) || super.onInterceptTouchEvent(ev);
-            }
-
-            @Override
-            public boolean onTouchEvent(MotionEvent event) {
-                return (canvasButton != null && canvasButton.checkTouchEvent(event)) || super.onTouchEvent(event);
-            }
-
-            @Override
-            protected void onAttachedToWindow() {
-                super.onAttachedToWindow();
-                avatarPlaceholderImage.onAttachedToWindow();
-            }
-
-            @Override
-            protected void onDetachedFromWindow() {
-                super.onDetachedFromWindow();
-                avatarPlaceholderImage.onDetachedFromWindow();
-            }
-
-            @Override
-            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-                super.onLayout(changed, left, top, right, bottom);
-                updateCollectibleHint();
-            }
-        };
-
-
-        mainProfileViewContainer.addView(avatarContainer,
-                LayoutHelper.createFrame(42, 42, Gravity.TOP | Gravity.LEFT, 64, 0, 0, 0));
-        mainProfileViewContainer.addView(avatarsViewPager);
-        mainProfileViewContainer.addView(overlaysView);
-        mainProfileViewContainer.addView(avatarsViewPagerIndicatorView,
-                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        setupNameTextView(context);
-        setupOnlineTextView(context);
-        mainProfileViewContainer.addView(animatedStatusView);
-        mainProfileViewContainer.addView(mediaCounterTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT,
-                LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 118.33f, -2, 8, 0));
-        mainProfileViewContainer.addView(storyView,
-                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        mainProfileViewContainer.addView(giftsView,
-                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-
-
-    }
 
     private void setupWriteButton(Context context) {
         writeButton = new RLottieImageView(context);
@@ -2180,48 +2074,6 @@ public class ProfileActivity extends BaseFragment
         return initialTab;
     }
 
-    private void setupMainLayout() {
-        mainLayout = ((NestedFrameLayout) fragmentView);
-        mainLayout.needBlur = true;
-        mainLayout.addView(topView);
-        mainLayout.blurBehindViews.add(topView);
-        mainLayout.addView(profileDetailsListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,
-                LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
-        mainLayout.addView(mainProfileViewContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,
-                LayoutHelper.MATCH_PARENT, Gravity.START, 0, 0, 0, 0));
-        mainLayout.addView(timeItem, LayoutHelper.createFrame(34, 34, Gravity.TOP | Gravity.LEFT));
-        mainLayout.addView(starBgItem, LayoutHelper.createFrame(20, 20, Gravity.TOP | Gravity.LEFT));
-        mainLayout.addView(starFgItem, LayoutHelper.createFrame(20, 20, Gravity.TOP | Gravity.LEFT));
-        mainLayout.addView(actionBar);
-        mainLayout.addView(writeButton, LayoutHelper.createFrame(60, 60, Gravity.RIGHT | Gravity.TOP, 0, 0, 16, 0));
-        mainLayout.addView(undoView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT,
-                Gravity.BOTTOM | Gravity.LEFT, 8, 0, 8, 8));
-        mainLayout.addView(fwdRestrictedHint, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT,
-                LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 12, 0, 12, 0));
-        mainLayout.blurBehindViews.add(sharedMediaLayout);
-        mainLayout.addView(blurredView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-
-        if (floatingButtonContainer != null) {
-            mainLayout.addView(floatingButtonContainer,
-                    LayoutHelper.createFrame((Build.VERSION.SDK_INT >= 21 ? 56 : 60),
-                            (Build.VERSION.SDK_INT >= 21 ? 56 : 60),
-                            (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM,
-                            LocaleController.isRTL ? 14 : 0, 0, LocaleController.isRTL ? 0 : 14, 14));
-        }
-        if (myProfile) {
-            mainLayout.addView(bottomButtonsContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,
-                    72 + (1 / AndroidUtilities.density), Gravity.BOTTOM | Gravity.FILL_HORIZONTAL));
-        }
-        if (searchItem != null) {
-            mainLayout.addView(searchListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,
-                    LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
-            mainLayout.addView(emptyView);
-        }
-        if (banFromGroup != 0) {
-            mainLayout.addView(banFromGroupContainer,
-                    LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 51, Gravity.LEFT | Gravity.BOTTOM));
-        }
-    }
 
     private void setupActionBarMenu(Context context) {
         ActionBarMenu menu = actionBar.createMenu();
@@ -4006,495 +3858,6 @@ public class ProfileActivity extends BaseFragment
         }
     }
 
-    private void setupRootView(Context context) {
-        fragmentView = new NestedFrameLayout(context) {
-
-            private final ArrayList<View> sortedChildren = new ArrayList<>();
-            private final Comparator<View> viewComparator = (view, view2) -> (int) (view.getY() - view2.getY());
-            private final Paint grayPaint = new Paint();
-            private boolean ignoreLayout;
-            private boolean wasPortrait;
-
-            @Override
-            public boolean dispatchTouchEvent(MotionEvent ev) {
-                if (pinchToZoomHelper.isInOverlayMode()) {
-                    return pinchToZoomHelper.onTouchEvent(ev);
-                }
-                if (sharedMediaLayout != null && sharedMediaLayout.isInFastScroll()
-                        && sharedMediaLayout.isPinnedToTop()) {
-                    return sharedMediaLayout.dispatchFastScrollEvent(ev);
-                }
-                if (sharedMediaLayout != null && sharedMediaLayout.checkPinchToZoom(ev)) {
-                    return true;
-                }
-                return super.dispatchTouchEvent(ev);
-            }
-
-            @Override
-            public boolean hasOverlappingRendering() {
-                return false;
-            }
-
-            @Override
-            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                final int actionBarHeight = ActionBar.getCurrentActionBarHeight()
-                        + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0);
-                if (profileDetailsListView != null) {
-                    LayoutParams layoutParams = (LayoutParams) profileDetailsListView.getLayoutParams();
-                    if (layoutParams.topMargin != actionBarHeight) {
-                        layoutParams.topMargin = actionBarHeight;
-                    }
-                }
-                if (searchListView != null) {
-                    LayoutParams layoutParams = (LayoutParams) searchListView.getLayoutParams();
-                    if (layoutParams.topMargin != actionBarHeight) {
-                        layoutParams.topMargin = actionBarHeight;
-                    }
-                }
-
-                int height = MeasureSpec.getSize(heightMeasureSpec);
-                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
-
-                boolean changed = false;
-                if (lastMeasuredContentWidth != getMeasuredWidth()
-                        || lastMeasuredContentHeight != getMeasuredHeight()) {
-                    changed = lastMeasuredContentWidth != 0 && lastMeasuredContentWidth != getMeasuredWidth();
-                    listContentHeight = 0;
-                    int count = listAdapter.getItemCount();
-                    lastMeasuredContentWidth = getMeasuredWidth();
-                    lastMeasuredContentHeight = getMeasuredHeight();
-                    int ws = MeasureSpec.makeMeasureSpec(getMeasuredWidth(), MeasureSpec.EXACTLY);
-                    int hs = MeasureSpec.makeMeasureSpec(profileDetailsListView.getMeasuredHeight(),
-                            MeasureSpec.UNSPECIFIED);
-                    positionToOffset.clear();
-                    for (int i = 0; i < count; i++) {
-                        int type = listAdapter.getItemViewType(i);
-                        positionToOffset.put(i, listContentHeight);
-                        if (type == ListAdapter.VIEW_TYPE_SHARED_MEDIA) {
-                            listContentHeight += profileDetailsListView.getMeasuredHeight();
-                        } else {
-                            RecyclerView.ViewHolder holder = listAdapter.createViewHolder(null, type);
-                            listAdapter.onBindViewHolder(holder, i);
-                            holder.itemView.measure(ws, hs);
-                            listContentHeight += holder.itemView.getMeasuredHeight();
-                        }
-                    }
-
-                    if (emptyView != null) {
-                        ((LayoutParams) emptyView.getLayoutParams()).topMargin = collapsedAreaHeight
-                                + AndroidUtilities.statusBarHeight;
-                    }
-                }
-
-                if (previousTransitionFragment != null) {
-                    nameTextView[0].setRightPadding(nameTextView[0].getMeasuredWidth()
-                            - previousTransitionFragment.getAvatarContainer().getTitleTextView().getMeasuredWidth());
-                }
-
-                if (!fragmentOpened && (expandPhoto || openAnimationInProgress && playProfileAnimation == 2)) {
-                    ignoreLayout = true;
-
-                    if (expandPhoto) {
-                        if (searchItem != null) {
-                            searchItem.setAlpha(0.0f);
-                            searchItem.setEnabled(false);
-                            searchItem.setVisibility(GONE);
-                        }
-                        nameTextView[1].setTextColor(Color.WHITE);
-                        nameTextView[1].setPivotY(nameTextView[1].getMeasuredHeight());
-                        nameTextView[1].setScaleX(1.67f);
-                        nameTextView[1].setScaleY(1.67f);
-                        if (scamDrawable != null) {
-                            scamDrawable.setColor(Color.argb(179, 255, 255, 255));
-                        }
-                        if (lockIconDrawable != null) {
-                            lockIconDrawable.setColorFilter(Color.WHITE, PorterDuff.Mode.MULTIPLY);
-                        }
-                        if (verifiedCrossfadeDrawable[0] != null) {
-                            verifiedCrossfadeDrawable[0].setProgress(1f);
-                        }
-                        if (verifiedCrossfadeDrawable[1] != null) {
-                            verifiedCrossfadeDrawable[1].setProgress(1f);
-                        }
-                        if (premiumCrossfadeDrawable[0] != null) {
-                            premiumCrossfadeDrawable[0].setProgress(1f);
-                        }
-                        if (premiumCrossfadeDrawable[1] != null) {
-                            premiumCrossfadeDrawable[1].setProgress(1f);
-                        }
-                        updateEmojiStatusDrawableColor(1f);
-                        onlineTextView[1].setTextColor(0xB3FFFFFF);
-                        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR, false);
-                        actionBar.setItemsColor(Color.WHITE, false);
-                        overlaysView.setOverlaysVisible();
-                        overlaysView.setAlphaValue(1.0f, false);
-                        avatarImage.setForegroundAlpha(1.0f);
-                        avatarContainer.setVisibility(View.GONE);
-                        avatarsViewPager.resetCurrentItem();
-                        avatarsViewPager.setVisibility(View.VISIBLE);
-                        if (showStatusButton != null) {
-                            showStatusButton.setBackgroundColor(0x23ffffff);
-                        }
-                        if (storyView != null) {
-                            storyView.setExpandProgress(1f);
-                        }
-                        if (giftsView != null) {
-                            giftsView.setExpandProgress(1f);
-                        }
-                        expandPhoto = false;
-                        updateCollectibleHint();
-                    }
-
-                    allowPullingDown = true;
-                    isPulledDown = true;
-                    NotificationCenter.getGlobalInstance()
-                            .postNotificationName(NotificationCenter.needCheckSystemBarColors, true);
-                    if (mainMenuItem != null) {
-                        if (!getMessagesController().isChatNoForwards(currentChat)) {
-                            mainMenuItem.showSubItem(gallery_menu_save);
-                        } else {
-                            mainMenuItem.hideSubItem(gallery_menu_save);
-                        }
-                        if (imageUpdater != null) {
-                            mainMenuItem.showSubItem(edit_avatar);
-                            mainMenuItem.showSubItem(delete_avatar);
-                            mainMenuItem.hideSubItem(logout);
-                        }
-                    }
-                    currentExpanAnimatorFracture = 1.0f;
-
-                    int paddingTop;
-                    int paddingBottom;
-                    if (isInLandscapeMode) {
-                        paddingTop = collapsedAreaHeight;
-                        paddingBottom = 0;
-                    } else {
-                        paddingTop = maxAvatarExpansionHeight;
-                        paddingBottom = Math.max(0,
-                                getMeasuredHeight() - (listContentHeight + collapsedAreaHeight + actionBarHeight));
-                    }
-                    if (banFromGroup != 0) {
-                        paddingBottom += AndroidUtilities.dp(48);
-                        profileDetailsListView.setBottomGlowOffset(AndroidUtilities.dp(48));
-                    } else {
-                        profileDetailsListView.setBottomGlowOffset(0);
-                    }
-                    initialAnimationExtraHeight = paddingTop - actionBarHeight;
-                    if (playProfileAnimation == 0) {
-                        extraHeight = initialAnimationExtraHeight;
-                    }
-                    layoutManager.scrollToPositionWithOffset(0, -actionBarHeight);
-                    profileDetailsListView.setPadding(0, paddingTop, 0, paddingBottom);
-                    measureChildWithMargins(profileDetailsListView, widthMeasureSpec, 0, heightMeasureSpec, 0);
-                    profileDetailsListView.layout(0, actionBarHeight, profileDetailsListView.getMeasuredWidth(),
-                            actionBarHeight + profileDetailsListView.getMeasuredHeight());
-                    ignoreLayout = false;
-                } else if (fragmentOpened && !openAnimationInProgress && !firstLayout) {
-                    ignoreLayout = true;
-
-                    int paddingTop;
-                    int paddingBottom;
-                    if (isInLandscapeMode || AndroidUtilities.isTablet()) {
-                        paddingTop = collapsedAreaHeight;
-                        paddingBottom = 0;
-                    } else {
-                        paddingTop = maxAvatarExpansionHeight;
-                        paddingBottom = Math.max(0,
-                                getMeasuredHeight() - (listContentHeight + collapsedAreaHeight + actionBarHeight));
-                    }
-                    if (banFromGroup != 0) {
-                        paddingBottom += AndroidUtilities.dp(48);
-                        profileDetailsListView.setBottomGlowOffset(AndroidUtilities.dp(48));
-                    } else {
-                        profileDetailsListView.setBottomGlowOffset(0);
-                    }
-                    int currentPaddingTop = profileDetailsListView.getPaddingTop();
-                    View view = null;
-                    int pos = RecyclerView.NO_POSITION;
-                    for (int i = 0; i < profileDetailsListView.getChildCount(); i++) {
-                        int p = profileDetailsListView.getChildAdapterPosition(profileDetailsListView.getChildAt(i));
-                        if (p != RecyclerView.NO_POSITION) {
-                            view = profileDetailsListView.getChildAt(i);
-                            pos = p;
-                            break;
-                        }
-                    }
-                    if (view == null) {
-                        view = profileDetailsListView.getChildAt(0);
-                        if (view != null) {
-                            RecyclerView.ViewHolder holder = profileDetailsListView.findContainingViewHolder(view);
-                            pos = holder.getAdapterPosition();
-                            if (pos == RecyclerView.NO_POSITION) {
-                                pos = holder.getPosition();
-                            }
-                        }
-                    }
-
-                    int top = paddingTop;
-                    if (view != null) {
-                        top = view.getTop();
-                    }
-                    boolean layout = false;
-                    if ((actionBar.isSearchFieldVisible()) && sharedMediaRow >= 0) {
-                        layoutManager.scrollToPositionWithOffset(sharedMediaRow, -paddingTop);
-                        layout = true;
-                    } else if (invalidateScroll || currentPaddingTop != paddingTop) {
-                        if (savedScrollPosition >= 0) {
-                            layoutManager.scrollToPositionWithOffset(savedScrollPosition,
-                                    savedScrollOffset - paddingTop);
-                        } else if ((!changed || !allowPullingDown) && view != null) {
-                            if (pos == 0 && !allowPullingDown && top > collapsedAreaHeight) {
-                                top = collapsedAreaHeight;
-                            }
-                            layoutManager.scrollToPositionWithOffset(pos, top - paddingTop);
-                            layout = true;
-                        } else {
-                            layoutManager.scrollToPositionWithOffset(0, collapsedAreaHeight - paddingTop);
-                        }
-                    }
-                    if (currentPaddingTop != paddingTop || profileDetailsListView.getPaddingBottom() != paddingBottom) {
-                        profileDetailsListView.setPadding(0, paddingTop, 0, paddingBottom);
-                        layout = true;
-                    }
-                    if (layout) {
-                        measureChildWithMargins(profileDetailsListView, widthMeasureSpec, 0, heightMeasureSpec, 0);
-                        try {
-                            profileDetailsListView.layout(0, actionBarHeight, profileDetailsListView.getMeasuredWidth(),
-                                    actionBarHeight + profileDetailsListView.getMeasuredHeight());
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                    }
-                    ignoreLayout = false;
-                }
-
-                boolean portrait = height > MeasureSpec.getSize(widthMeasureSpec);
-                if (portrait != wasPortrait) {
-                    post(() -> {
-                        if (selectAnimatedEmojiDialog != null) {
-                            selectAnimatedEmojiDialog.dismiss();
-                            selectAnimatedEmojiDialog = null;
-                        }
-                    });
-                    wasPortrait = portrait;
-                }
-
-                if (searchItem != null && qrItem != null) {
-                    float translation = AndroidUtilities.dp(48) * currentExpandAnimatorValue;
-                    // qrItem.setTranslationX(translation);
-                }
-            }
-
-            @Override
-            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-                super.onLayout(changed, left, top, right, bottom);
-                savedScrollPosition = -1;
-                firstLayout = false;
-                invalidateScroll = false;
-                checkListViewScroll();
-            }
-
-            @Override
-            public void requestLayout() {
-                if (ignoreLayout) {
-                    return;
-                }
-                super.requestLayout();
-            }
-
-            @Override
-            protected void dispatchDraw(Canvas canvas) {
-                whitePaint.setColor(getThemedColor(Theme.key_windowBackgroundWhite));
-                if (profileDetailsListView.getVisibility() == VISIBLE) {
-                    grayPaint.setColor(getThemedColor(Theme.key_windowBackgroundGray));
-                    if (transitionAnimationInProress) {
-                        whitePaint.setAlpha((int) (255 * profileDetailsListView.getAlpha()));
-                    }
-                    if (transitionAnimationInProress) {
-                        grayPaint.setAlpha((int) (255 * profileDetailsListView.getAlpha()));
-                    }
-
-                    int count = profileDetailsListView.getChildCount();
-                    sortedChildren.clear();
-                    boolean hasRemovingItems = false;
-                    for (int i = 0; i < count; i++) {
-                        View child = profileDetailsListView.getChildAt(i);
-                        if (profileDetailsListView.getChildAdapterPosition(child) != RecyclerView.NO_POSITION) {
-                            sortedChildren.add(profileDetailsListView.getChildAt(i));
-                        } else {
-                            hasRemovingItems = true;
-                        }
-                    }
-                    Collections.sort(sortedChildren, viewComparator);
-                    boolean hasBackground = false;
-                    float lastY = profileDetailsListView.getY();
-                    count = sortedChildren.size();
-                    if (!openAnimationInProgress && count > 0 && !hasRemovingItems) {
-                        lastY += sortedChildren.get(0).getY();
-                    }
-                    float alpha = 1f;
-                    for (int i = 0; i < count; i++) {
-                        View child = sortedChildren.get(i);
-                        boolean currentHasBackground = child.getBackground() != null;
-                        int currentY = (int) (profileDetailsListView.getY() + child.getY());
-                        if (hasBackground == currentHasBackground) {
-                            if (child.getAlpha() == 1f) {
-                                alpha = 1f;
-                            }
-                            continue;
-                        }
-                        if (hasBackground) {
-                            canvas.drawRect(profileDetailsListView.getX(), lastY,
-                                    profileDetailsListView.getX() + profileDetailsListView.getMeasuredWidth(), currentY,
-                                    grayPaint);
-                        } else {
-                            if (alpha != 1f) {
-                                canvas.drawRect(profileDetailsListView.getX(), lastY,
-                                        profileDetailsListView.getX() + profileDetailsListView.getMeasuredWidth(),
-                                        currentY, grayPaint);
-                                whitePaint.setAlpha((int) (255 * alpha));
-                                canvas.drawRect(profileDetailsListView.getX(), lastY,
-                                        profileDetailsListView.getX() + profileDetailsListView.getMeasuredWidth(),
-                                        currentY, whitePaint);
-                                whitePaint.setAlpha(255);
-                            } else {
-                                canvas.drawRect(profileDetailsListView.getX(), lastY,
-                                        profileDetailsListView.getX() + profileDetailsListView.getMeasuredWidth(),
-                                        currentY, whitePaint);
-                            }
-                        }
-                        hasBackground = currentHasBackground;
-                        lastY = currentY;
-                        alpha = child.getAlpha();
-                    }
-
-                    if (hasBackground) {
-                        canvas.drawRect(profileDetailsListView.getX(), lastY,
-                                profileDetailsListView.getX() + profileDetailsListView.getMeasuredWidth(),
-                                profileDetailsListView.getBottom(), grayPaint);
-                    } else {
-                        if (alpha != 1f) {
-                            canvas.drawRect(profileDetailsListView.getX(), lastY,
-                                    profileDetailsListView.getX() + profileDetailsListView.getMeasuredWidth(),
-                                    profileDetailsListView.getBottom(), grayPaint);
-                            whitePaint.setAlpha((int) (255 * alpha));
-                            canvas.drawRect(profileDetailsListView.getX(), lastY,
-                                    profileDetailsListView.getX() + profileDetailsListView.getMeasuredWidth(),
-                                    profileDetailsListView.getBottom(), whitePaint);
-                            whitePaint.setAlpha(255);
-                        } else {
-                            canvas.drawRect(profileDetailsListView.getX(), lastY,
-                                    profileDetailsListView.getX() + profileDetailsListView.getMeasuredWidth(),
-                                    profileDetailsListView.getBottom(), whitePaint);
-                        }
-                    }
-                } else {
-                    int top = searchListView.getTop();
-                    canvas.drawRect(0, top + extraHeight + searchTransitionOffset, getMeasuredWidth(),
-                            top + getMeasuredHeight(), whitePaint);
-                }
-                super.dispatchDraw(canvas);
-                if (profileTransitionInProgress && parentLayout.getFragmentStack().size() > 1) {
-                    BaseFragment fragment = parentLayout.getFragmentStack()
-                            .get(parentLayout.getFragmentStack().size() - 2);
-                    if (fragment instanceof ChatActivity) {
-                        ChatActivity chatActivity = (ChatActivity) fragment;
-                        FragmentContextView fragmentContextView = chatActivity.getFragmentContextView();
-
-                        if (fragmentContextView != null && fragmentContextView.isCallStyle()) {
-                            float progress = extraHeight / AndroidUtilities.dpf2(fragmentContextView.getStyleHeight());
-                            if (progress > 1f) {
-                                progress = 1f;
-                            }
-                            canvas.save();
-                            canvas.translate(fragmentContextView.getX(), fragmentContextView.getY());
-                            fragmentContextView.setDrawOverlay(true);
-                            fragmentContextView.setCollapseTransition(true, extraHeight, progress);
-                            fragmentContextView.draw(canvas);
-                            fragmentContextView.setCollapseTransition(false, extraHeight, progress);
-                            fragmentContextView.setDrawOverlay(false);
-                            canvas.restore();
-                        }
-                    }
-                }
-
-                if (scrimPaint.getAlpha() > 0) {
-                    canvas.drawRect(0, 0, getWidth(), getHeight(), scrimPaint);
-                }
-                if (scrimView != null) {
-                    int c = canvas.save();
-                    canvas.translate(scrimView.getLeft(), scrimView.getTop());
-                    if (scrimView == actionBar.getBackButton()) {
-                        int r = Math.max(scrimView.getMeasuredWidth(), scrimView.getMeasuredHeight()) / 2;
-                        int wasAlpha = actionBarBackgroundPaint.getAlpha();
-                        actionBarBackgroundPaint.setAlpha((int) (wasAlpha * (scrimPaint.getAlpha() / 255f) / 0.3f));
-                        canvas.drawCircle(r, r, r * 0.7f, actionBarBackgroundPaint);
-                        actionBarBackgroundPaint.setAlpha(wasAlpha);
-                    }
-                    scrimView.draw(canvas);
-                    canvas.restoreToCount(c);
-                }
-                if (blurredView != null && blurredView.getVisibility() == View.VISIBLE) {
-                    if (blurredView.getAlpha() != 1f) {
-                        if (blurredView.getAlpha() != 0) {
-                            canvas.saveLayerAlpha(blurredView.getLeft(), blurredView.getTop(), blurredView.getRight(),
-                                    blurredView.getBottom(), (int) (255 * blurredView.getAlpha()),
-                                    Canvas.ALL_SAVE_FLAG);
-                            canvas.translate(blurredView.getLeft(), blurredView.getTop());
-                            blurredView.draw(canvas);
-                            canvas.restore();
-                        }
-                    } else {
-                        blurredView.draw(canvas);
-                    }
-                }
-            }
-
-            @Override
-            protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
-                if (pinchToZoomHelper.isInOverlayMode()
-                        && (child == mainProfileViewContainer || child == actionBar || child == writeButton)) {
-                    return true;
-                }
-                if (child == blurredView) {
-                    return true;
-                }
-                return super.drawChild(canvas, child, drawingTime);
-            }
-
-            @Override
-            protected void onAttachedToWindow() {
-                super.onAttachedToWindow();
-                fragmentViewAttached = true;
-                for (int i = 0; i < emojiStatusDrawable.length; i++) {
-                    if (emojiStatusDrawable[i] != null) {
-                        emojiStatusDrawable[i].attach();
-                    }
-                }
-                for (int i = 0; i < botVerificationDrawable.length; ++i) {
-                    if (botVerificationDrawable[i] != null) {
-                        botVerificationDrawable[i].attach();
-                    }
-                }
-            }
-
-            @Override
-            protected void onDetachedFromWindow() {
-                super.onDetachedFromWindow();
-                fragmentViewAttached = false;
-                for (int i = 0; i < emojiStatusDrawable.length; i++) {
-                    if (emojiStatusDrawable[i] != null) {
-                        emojiStatusDrawable[i].detach();
-                    }
-                }
-                for (int i = 0; i < botVerificationDrawable.length; ++i) {
-                    if (botVerificationDrawable[i] != null) {
-                        botVerificationDrawable[i].detach();
-                    }
-                }
-            }
-        };
-    }
 
     private void setupActionBarMenuItemsClickListener() {
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -5272,6 +4635,7 @@ public class ProfileActivity extends BaseFragment
         if (allowPullingDown && currentExpandAnimatorValue > 0) {
             layoutManager.scrollToPositionWithOffset(0, collapsedAreaHeight - profileDetailsListView.getPaddingTop());
             profileDetailsListView.post(() -> {
+                System.out.println("ProfileActivity:: collapseAvatarInstant : " + currentExpandAnimatorValue);
                 updateProfileLayout(true);
                 if (expandAnimator.isRunning()) {
                     expandAnimator.cancel();
@@ -6986,52 +6350,7 @@ public class ProfileActivity extends BaseFragment
         presentFragment(fragment);
     }
 
-    private void checkListViewScroll() {
-        if (profileDetailsListView.getVisibility() != View.VISIBLE) {
-            return;
-        }
-        if (sharedMediaLayoutAttached) {
-            sharedMediaLayout.setVisibleHeight(profileDetailsListView.getMeasuredHeight() - sharedMediaLayout.getTop());
-        }
 
-        if (profileDetailsListView.getChildCount() <= 0 || openAnimationInProgress) {
-            return;
-        }
-
-        int newOffset = 0;
-        View child = null;
-        for (int i = 0; i < profileDetailsListView.getChildCount(); i++) {
-            if (profileDetailsListView.getChildAdapterPosition(profileDetailsListView.getChildAt(i)) == 0) {
-                child = profileDetailsListView.getChildAt(i);
-                break;
-            }
-        }
-        RecyclerListView.Holder holder = child == null ? null
-                : (RecyclerListView.Holder) profileDetailsListView.findContainingViewHolder(child);
-        int top = child == null ? 0 : child.getTop();
-        int adapterPosition = holder != null ? holder.getAdapterPosition() : RecyclerView.NO_POSITION;
-        if (top >= 0 && adapterPosition == 0) {
-            newOffset = top;
-        }
-        boolean mediaHeaderVisible;
-        boolean searchVisible = imageUpdater == null && actionBar.isSearchFieldVisible();
-        if (sharedMediaRow != -1 && !searchVisible) {
-            holder = (RecyclerListView.Holder) profileDetailsListView.findViewHolderForAdapterPosition(sharedMediaRow);
-            mediaHeaderVisible = holder != null && holder.itemView.getTop() <= 0;
-        } else {
-            mediaHeaderVisible = searchVisible;
-        }
-        setMediaHeaderVisible(mediaHeaderVisible);
-
-        if (extraHeight != newOffset && !transitionAnimationInProress) {
-            extraHeight = newOffset;
-            topView.invalidate();
-            if (playProfileAnimation != 0) {
-                allowProfileAnimation = extraHeight != 0;
-            }
-            updateProfileLayout(true);
-        }
-    }
 
     public void updateSelectedMediaTabText() {
         if (sharedMediaLayout == null || mediaCounterTextView == null) {
@@ -7131,36 +6450,6 @@ public class ProfileActivity extends BaseFragment
         }
     }
 
-    private void updateProfileLayout(boolean animated) {
-        final int newTop = calculateActionBarTopOffset();
-
-        updateListViewLayout(newTop);
-
-        if (avatarContainer != null) {
-            final float collapseProgress = Math.min(1f, extraHeight / collapsedAreaHeight);
-
-            configureListViewScrollBehavior(newTop);
-            handleWriteButtonLayout(animated, collapseProgress, newTop);
-            updateAvatarPosition(collapseProgress);
-
-            float currentHeight = openAnimationInProgress ? initialAnimationExtraHeight : extraHeight;
-
-            if (currentHeight > collapsedAreaHeight || isPulledDown) {
-                handleExpandedState(currentHeight, newTop);
-            } else {
-                handleCollapsedState(collapseProgress);
-            }
-
-            handleProfileAnimation(newTop);
-            updateOverlaysLayout(newTop);
-
-            if (!openAnimationInProgress && (expandAnimator == null || !expandAnimator.isRunning())) {
-                updateProfileLayoutText(collapseProgress);
-            }
-        }
-
-        updateEmojiStatusEffectPosition();
-    }
 
     private int calculateActionBarTopOffset() {
         return (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0)
@@ -7780,73 +7069,6 @@ public class ProfileActivity extends BaseFragment
         return profileDetailsListView;
     }
 
-    private void updateProfileLayoutText(float diff) {
-        FrameLayout.LayoutParams layoutParams;
-        float scale = nameTextView[1].getScaleX();
-        float maxScale = extraHeight > collapsedAreaHeight ? 1.67f : 1.12f;
-
-        if (extraHeight > collapsedAreaHeight && scale != maxScale) {
-            return;
-        }
-
-        int viewWidth = AndroidUtilities.isTablet() ? AndroidUtilities.dp(490) : AndroidUtilities.displaySize.x;
-        ActionBarMenuItem item = avatarsViewPagerIndicatorView.getSecondaryMenuItem();
-        int extra = 0;
-        if (editItemVisible) {
-            extra += 48;
-        }
-        if (callItemVisible) {
-            extra += 48;
-        }
-        if (videoCallItemVisible) {
-            extra += 48;
-        }
-        if (searchItem != null) {
-            extra += 48;
-        }
-        int buttonsWidth = AndroidUtilities.dp(118 + 8 + (40 + extra * (1.0f - mediaHeaderAnimationProgress)));
-        int minWidth = viewWidth - buttonsWidth;
-
-        int width = (int) (viewWidth
-                - buttonsWidth * Math.max(0.0f, 1.0f - (diff != 1.0f ? diff * 0.15f / (1.0f - diff) : 1.0f))
-                - nameTextView[1].getTranslationX());
-        float width2 = nameTextView[1].getPaint().measureText(nameTextView[1].getText().toString()) * scale
-                + nameTextView[1].getSideDrawablesSize();
-        layoutParams = (FrameLayout.LayoutParams) nameTextView[1].getLayoutParams();
-        int prevWidth = layoutParams.width;
-        if (width < width2) {
-            layoutParams.width = Math.max(minWidth,
-                    (int) Math.ceil((width - AndroidUtilities.dp(24)) / (scale + ((maxScale - scale) * 7.0f))));
-        } else {
-            layoutParams.width = (int) Math.ceil(width2);
-        }
-        layoutParams.width = (int) Math.min((viewWidth - nameTextView[1].getX()) / scale - AndroidUtilities.dp(8),
-                layoutParams.width);
-        if (layoutParams.width != prevWidth) {
-            nameTextView[1].requestLayout();
-        }
-
-        width2 = onlineTextView[1].getPaint().measureText(onlineTextView[1].getText().toString())
-                + onlineTextView[1].getRightDrawableWidth();
-        layoutParams = (FrameLayout.LayoutParams) onlineTextView[1].getLayoutParams();
-        FrameLayout.LayoutParams layoutParams2 = (FrameLayout.LayoutParams) mediaCounterTextView.getLayoutParams();
-        prevWidth = layoutParams.width;
-        layoutParams2.rightMargin = layoutParams.rightMargin = (int) Math.ceil(
-                onlineTextView[1].getTranslationX() + AndroidUtilities.dp(8) + AndroidUtilities.dp(40) * (1.0f - diff));
-        if (width < width2) {
-            layoutParams2.width = layoutParams.width = (int) Math.ceil(width);
-        } else {
-            layoutParams2.width = layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        }
-        if (prevWidth != layoutParams.width) {
-            onlineTextView[2].getLayoutParams().width = layoutParams.width;
-            onlineTextView[2].requestLayout();
-            onlineTextView[3].getLayoutParams().width = layoutParams.width;
-            onlineTextView[3].requestLayout();
-            onlineTextView[1].requestLayout();
-            mediaCounterTextView.requestLayout();
-        }
-    }
 
     private void fixLayout() {
         if (fragmentView == null) {
@@ -7857,6 +7079,8 @@ public class ProfileActivity extends BaseFragment
             public boolean onPreDraw() {
                 if (fragmentView != null) {
                     checkListViewScroll();
+                    System.out.println("ProfileActivity:: fixLayout:");
+
                     updateProfileLayout(true);
                     fragmentView.getViewTreeObserver().removeOnPreDrawListener(this);
                 }
@@ -8095,6 +7319,7 @@ public class ProfileActivity extends BaseFragment
                         updateSelectedMediaTabText();
                         if (sharedMediaPreloader == null || sharedMediaPreloader.isMediaWasLoaded()) {
                             resumeDelayedFragmentAnimation();
+                            System.out.println("ProfileActivity:: didReceivedNotification: resumeDelayedFragmentAnimation");
                             updateProfileLayout(true);
                         }
                     }
@@ -8530,427 +7755,8 @@ public class ProfileActivity extends BaseFragment
         return avatarAnimationProgress;
     }
 
-    @Keep
-    public void setAvatarAnimationProgress(float progress) {
-        avatarAnimationProgress = currentExpandAnimatorValue = progress;
-        checkPhotoDescriptionAlpha();
-        if (playProfileAnimation == 2) {
-            avatarImage.setProgressToExpand(progress);
-        }
 
-        profileDetailsListView.setAlpha(progress);
 
-        profileDetailsListView.setTranslationX(AndroidUtilities.dp(48) - AndroidUtilities.dp(48) * progress);
-
-        int color;
-        if (playProfileAnimation == 2 && avatarColor != 0) {
-            color = avatarColor;
-        } else {
-            color = AvatarDrawable.getProfileBackColorForId(
-                    userId != 0 || ChatObject.isChannel(chatId, currentAccount) && !currentChat.megagroup ? 5 : chatId,
-                    resourcesProvider);
-        }
-
-        int actionBarColor = actionBarAnimationColorFrom != 0 ? actionBarAnimationColorFrom
-                : getThemedColor(Theme.key_actionBarDefault);
-        int actionBarColor2 = actionBarColor;
-        if (SharedConfig.chatBlurEnabled()) {
-            actionBarColor = ColorUtils.setAlphaComponent(actionBarColor, 0);
-        }
-        topView.setBackgroundColor(ColorUtils.blendARGB(actionBarColor, color, progress));
-        timerDrawable.setBackgroundColor(ColorUtils.blendARGB(actionBarColor2, color, progress));
-
-        color = AvatarDrawable.getIconColorForId(
-                userId != 0 || ChatObject.isChannel(chatId, currentAccount) && !currentChat.megagroup ? 5 : chatId,
-                resourcesProvider);
-        int iconColor = peerColor != null ? Color.WHITE : getThemedColor(Theme.key_actionBarDefaultIcon);
-        actionBar.setItemsColor(ColorUtils.blendARGB(iconColor, color, avatarAnimationProgress), false);
-
-        color = getThemedColor(Theme.key_profile_title);
-        int titleColor = getThemedColor(Theme.key_actionBarDefaultTitle);
-        for (int i = 0; i < 2; i++) {
-            if (nameTextView[i] == null || i == 1 && playProfileAnimation == 2) {
-                continue;
-            }
-            nameTextView[i].setTextColor(ColorUtils.blendARGB(titleColor, color, progress));
-        }
-
-        color = isOnline[0] ? getThemedColor(Theme.key_profile_status)
-                : AvatarDrawable.getProfileTextColorForId(
-                        userId != 0 || ChatObject.isChannel(chatId, currentAccount) && !currentChat.megagroup ? 5
-                                : chatId,
-                        resourcesProvider);
-        int subtitleColor = getThemedColor(isOnline[0] ? Theme.key_chat_status : Theme.key_actionBarDefaultSubtitle);
-        for (int i = 0; i < 3; i++) {
-            if (onlineTextView[i] == null || i == 1 || i == 2 && playProfileAnimation == 2) {
-                continue;
-            }
-            onlineTextView[i].setTextColor(
-                    ColorUtils.blendARGB(i == 0 ? subtitleColor : applyPeerColor(subtitleColor, true, isOnline[0]),
-                            i == 0 ? color : applyPeerColor(color, true, isOnline[0]), progress));
-        }
-        extraHeight = initialAnimationExtraHeight * progress;
-        color = AvatarDrawable.getProfileColorForId(userId != 0 ? userId : chatId, resourcesProvider);
-        int color2 = AvatarDrawable.getColorForId(userId != 0 ? userId : chatId);
-        if (color != color2) {
-            avatarDrawable.setColor(ColorUtils.blendARGB(color2, color, progress));
-            avatarImage.invalidate();
-        }
-
-        if (navigationBarAnimationColorFrom != 0) {
-            color = ColorUtils.blendARGB(navigationBarAnimationColorFrom, getNavigationBarColor(), progress);
-            setNavigationBarColor(color);
-        }
-
-        topView.invalidate();
-
-        updateProfileLayout(true);
-        if (fragmentView != null) {
-            fragmentView.invalidate();
-        }
-
-        if (aboutLinkCell != null) {
-            aboutLinkCell.invalidate();
-        }
-
-        if (getDialogId() > 0) {
-            if (avatarImage != null) {
-                avatarImage.setProgressToStoriesInsets(avatarAnimationProgress);
-            }
-            if (storyView != null) {
-                storyView.setProgressToStoriesInsets(avatarAnimationProgress);
-            }
-            if (giftsView != null) {
-                giftsView.setProgressToStoriesInsets(avatarAnimationProgress);
-            }
-        }
-    }
-
-    @Override
-    public AnimatorSet onCustomTransitionAnimation(final boolean isOpen, final Runnable callback) {
-        if (playProfileAnimation != 0 && allowProfileAnimation && !isPulledDown && !disableProfileAnimation) {
-            if (timeItem != null) {
-                timeItem.setAlpha(1.0f);
-            }
-            if (starFgItem != null) {
-                starFgItem.setAlpha(1.0f);
-                starFgItem.setScaleX(1.0f);
-                starFgItem.setScaleY(1.0f);
-            }
-            if (starBgItem != null) {
-                starBgItem.setAlpha(1.0f);
-                starBgItem.setScaleX(1.0f);
-                starBgItem.setScaleY(1.0f);
-            }
-            previousTransitionMainFragment = null;
-            if (parentLayout != null && parentLayout.getFragmentStack().size() >= 2) {
-                BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2);
-                if (fragment instanceof ChatActivityInterface) {
-                    previousTransitionFragment = (ChatActivityInterface) fragment;
-                }
-                if (fragment instanceof DialogsActivity) {
-                    DialogsActivity dialogsActivity = (DialogsActivity) fragment;
-                    if (dialogsActivity.rightSlidingDialogContainer != null
-                            && dialogsActivity.rightSlidingDialogContainer.currentFragment instanceof ChatActivityInterface) {
-                        previousTransitionMainFragment = dialogsActivity;
-                        previousTransitionFragment = (ChatActivityInterface) dialogsActivity.rightSlidingDialogContainer.currentFragment;
-                    }
-                }
-            }
-            final boolean fromChat = previousTransitionFragment instanceof ChatActivity
-                    && previousTransitionFragment.getCurrentChat() != null;
-            if (previousTransitionFragment != null) {
-                updateTimeItem();
-                updateStar();
-            }
-            final AnimatorSet animatorSet = new AnimatorSet();
-            animatorSet.setDuration(playProfileAnimation == 2 ? 250 : 180);
-            profileDetailsListView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-            ActionBarMenu menu = actionBar.createMenu();
-            if (menu.getItem(10) == null) {
-                if (animatingItem == null) {
-                    animatingItem = menu.addItem(10, R.drawable.ic_ab_other);
-                }
-            }
-            if (isOpen) {
-                for (int i = 0; i < 2; i++) {
-                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) onlineTextView[i + 1]
-                            .getLayoutParams();
-                    layoutParams.rightMargin = (int) (-21 * AndroidUtilities.density + AndroidUtilities.dp(8));
-                    onlineTextView[i + 1].setLayoutParams(layoutParams);
-                }
-
-                if (playProfileAnimation != 2) {
-                    int width = (int) Math.ceil(AndroidUtilities.displaySize.x - AndroidUtilities.dp(118 + 8)
-                            + 21 * AndroidUtilities.density);
-                    float width2 = nameTextView[1].getPaint().measureText(nameTextView[1].getText().toString()) * 1.12f
-                            + nameTextView[1].getSideDrawablesSize();
-                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) nameTextView[1]
-                            .getLayoutParams();
-                    if (width < width2) {
-                        layoutParams.width = (int) Math.ceil(width / 1.12f);
-                    } else {
-                        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-                    }
-                    nameTextView[1].setLayoutParams(layoutParams);
-
-                    initialAnimationExtraHeight = collapsedAreaHeight;
-                } else {
-                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) nameTextView[1]
-                            .getLayoutParams();
-                    layoutParams.width = (int) ((AndroidUtilities.displaySize.x - AndroidUtilities.dp(32)) / 1.67f);
-                    nameTextView[1].setLayoutParams(layoutParams);
-                }
-                fragmentView.setBackgroundColor(0);
-                setAvatarAnimationProgress(0);
-                ArrayList<Animator> animators = new ArrayList<>();
-                animators.add(ObjectAnimator.ofFloat(this, "avatarAnimationProgress", 0.0f, 1.0f));
-                if (writeButton != null && writeButton.getTag() == null) {
-                    writeButton.setScaleX(0.2f);
-                    writeButton.setScaleY(0.2f);
-                    writeButton.setAlpha(0.0f);
-                    animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_X, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_Y, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(writeButton, View.ALPHA, 1.0f));
-                }
-                if (playProfileAnimation == 2) {
-                    avatarColor = getAverageColor(avatarImage.getImageReceiver());
-                    nameTextView[1].setTextColor(Color.WHITE);
-                    onlineTextView[1].setTextColor(0xB3FFFFFF);
-                    actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR, false);
-                    if (showStatusButton != null) {
-                        showStatusButton.setBackgroundColor(0x23ffffff);
-                    }
-                    overlaysView.setOverlaysVisible();
-                }
-                for (int a = 0; a < 2; a++) {
-                    nameTextView[a].setAlpha(a == 0 ? 1.0f : 0.0f);
-                    animators.add(ObjectAnimator.ofFloat(nameTextView[a], View.ALPHA, a == 0 ? 0.0f : 1.0f));
-                }
-                if (storyView != null) {
-                    if (getDialogId() > 0) {
-                        storyView.setAlpha(0f);
-                        animators.add(ObjectAnimator.ofFloat(storyView, View.ALPHA, 1.0f));
-                    } else {
-                        storyView.setAlpha(1f);
-                        storyView.setFragmentTransitionProgress(0);
-                        animators.add(ObjectAnimator.ofFloat(storyView, ProfileStoriesView.FRAGMENT_TRANSITION_PROPERTY,
-                                1.0f));
-                    }
-                }
-                if (giftsView != null) {
-                    giftsView.setAlpha(0f);
-                    animators.add(ObjectAnimator.ofFloat(giftsView, View.ALPHA, 1.0f));
-                }
-                if (timeItem.getTag() != null) {
-                    animators.add(ObjectAnimator.ofFloat(timeItem, View.ALPHA, 1.0f, 0.0f));
-                    animators.add(ObjectAnimator.ofFloat(timeItem, View.SCALE_X, 1.0f, 0.0f));
-                    animators.add(ObjectAnimator.ofFloat(timeItem, View.SCALE_Y, 1.0f, 0.0f));
-                }
-                if (starFgItem.getTag() != null) {
-                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.ALPHA, 1.0f, 0.0f));
-                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.SCALE_X, 1.0f, 0.0f));
-                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.SCALE_Y, 1.0f, 0.0f));
-                }
-                if (starBgItem.getTag() != null) {
-                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.ALPHA, 1.0f, 0.0f));
-                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.SCALE_X, 1.0f, 0.0f));
-                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.SCALE_Y, 1.0f, 0.0f));
-                }
-                if (animatingItem != null) {
-                    animatingItem.setAlpha(1.0f);
-                    animators.add(ObjectAnimator.ofFloat(animatingItem, View.ALPHA, 0.0f));
-                }
-                if (callItemVisible && (chatId != 0 || fromChat)) {
-                    callItem.setAlpha(0.0f);
-                    animators.add(ObjectAnimator.ofFloat(callItem, View.ALPHA, 1.0f));
-                }
-                if (videoCallItemVisible) {
-                    videoCallItem.setAlpha(0.0f);
-                    animators.add(ObjectAnimator.ofFloat(videoCallItem, View.ALPHA, 1.0f));
-                }
-                if (editItemVisible) {
-                    editItem.setAlpha(0.0f);
-                    animators.add(ObjectAnimator.ofFloat(editItem, View.ALPHA, 1.0f));
-                }
-                if (ttlIconView.getTag() != null) {
-                    ttlIconView.setAlpha(0f);
-                    animators.add(ObjectAnimator.ofFloat(ttlIconView, View.ALPHA, 1.0f));
-                }
-                if (floatingButtonContainer != null) {
-                    floatingButtonContainer.setAlpha(0f);
-                    animators.add(ObjectAnimator.ofFloat(floatingButtonContainer, View.ALPHA, 1.0f));
-                }
-                if (avatarImage != null) {
-                    avatarImage.setCrossfadeProgress(1.0f);
-                    animators.add(ObjectAnimator.ofFloat(avatarImage, AvatarImageView.CROSSFADE_PROGRESS, 0.0f));
-                }
-
-                boolean onlineTextCrosafade = false;
-
-                if (previousTransitionFragment != null) {
-                    ChatAvatarContainer avatarContainer = previousTransitionFragment.getAvatarContainer();
-                    if (avatarContainer != null && avatarContainer.getSubtitleTextView() instanceof SimpleTextView
-                            && ((SimpleTextView) avatarContainer.getSubtitleTextView()).getLeftDrawable() != null
-                            || avatarContainer.statusMadeShorter[0]) {
-                        transitionOnlineText = avatarContainer.getSubtitleTextView();
-                        mainProfileViewContainer.invalidate();
-                        onlineTextCrosafade = true;
-                        onlineTextView[0].setAlpha(0f);
-                        onlineTextView[1].setAlpha(0f);
-                        animators.add(ObjectAnimator.ofFloat(onlineTextView[1], View.ALPHA, 1.0f));
-                    }
-                }
-
-                if (!onlineTextCrosafade) {
-                    for (int a = 0; a < 2; a++) {
-                        onlineTextView[a].setAlpha(a == 0 ? 1.0f : 0.0f);
-                        animators.add(ObjectAnimator.ofFloat(onlineTextView[a], View.ALPHA, a == 0 ? 0.0f : 1.0f));
-                    }
-                }
-                animatorSet.playTogether(animators);
-            } else {
-                initialAnimationExtraHeight = extraHeight;
-                ArrayList<Animator> animators = new ArrayList<>();
-                animators.add(ObjectAnimator.ofFloat(this, "avatarAnimationProgress", 1.0f, 0.0f));
-                if (writeButton != null) {
-                    animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_X, 0.2f));
-                    animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_Y, 0.2f));
-                    animators.add(ObjectAnimator.ofFloat(writeButton, View.ALPHA, 0.0f));
-                }
-                for (int a = 0; a < 2; a++) {
-                    animators.add(ObjectAnimator.ofFloat(nameTextView[a], View.ALPHA, a == 0 ? 1.0f : 0.0f));
-                }
-                if (storyView != null) {
-                    if (mDialogId > 0) {
-                        animators.add(ObjectAnimator.ofFloat(storyView, View.ALPHA, 0.0f));
-                    } else {
-                        animators.add(ObjectAnimator.ofFloat(storyView, ProfileStoriesView.FRAGMENT_TRANSITION_PROPERTY,
-                                0.0f));
-                    }
-                }
-                if (giftsView != null) {
-                    animators.add(ObjectAnimator.ofFloat(giftsView, View.ALPHA, 0.0f));
-                }
-                if (timeItem.getTag() != null) {
-                    timeItem.setAlpha(0f);
-                    animators.add(ObjectAnimator.ofFloat(timeItem, View.ALPHA, 0.0f, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(timeItem, View.SCALE_X, 0.0f, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(timeItem, View.SCALE_Y, 0.0f, 1.0f));
-                }
-                if (starFgItem.getTag() != null) {
-                    starFgItem.setAlpha(0f);
-                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.ALPHA, 0.0f, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.SCALE_X, 0.0f, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.SCALE_Y, 0.0f, 1.0f));
-                }
-                if (starBgItem.getTag() != null) {
-                    starBgItem.setAlpha(0f);
-                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.ALPHA, 0.0f, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.SCALE_X, 0.0f, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.SCALE_Y, 0.0f, 1.0f));
-                }
-                if (animatingItem != null) {
-                    animatingItem.setAlpha(0.0f);
-                    animators.add(ObjectAnimator.ofFloat(animatingItem, View.ALPHA, 1.0f));
-                }
-                if (callItemVisible && (chatId != 0 || fromChat)) {
-                    callItem.setAlpha(1.0f);
-                    animators.add(ObjectAnimator.ofFloat(callItem, View.ALPHA, 0.0f));
-                }
-                if (videoCallItemVisible) {
-                    videoCallItem.setAlpha(1.0f);
-                    animators.add(ObjectAnimator.ofFloat(videoCallItem, View.ALPHA, 0.0f));
-                }
-                if (editItemVisible) {
-                    editItem.setAlpha(1.0f);
-                    animators.add(ObjectAnimator.ofFloat(editItem, View.ALPHA, 0.0f));
-                }
-                if (ttlIconView != null) {
-                    animators.add(ObjectAnimator.ofFloat(ttlIconView, View.ALPHA, ttlIconView.getAlpha(), 0.0f));
-                }
-                if (floatingButtonContainer != null) {
-                    animators.add(ObjectAnimator.ofFloat(floatingButtonContainer, View.ALPHA, 0.0f));
-                }
-                if (avatarImage != null) {
-                    animators.add(ObjectAnimator.ofFloat(avatarImage, AvatarImageView.CROSSFADE_PROGRESS, 1.0f));
-                }
-
-                boolean crossfadeOnlineText = false;
-                BaseFragment previousFragment = parentLayout.getFragmentStack().size() > 1
-                        ? parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2)
-                        : null;
-                if (previousFragment instanceof ChatActivity) {
-                    ChatAvatarContainer avatarContainer = ((ChatActivity) previousFragment).getAvatarContainer();
-                    View subtitleTextView = avatarContainer.getSubtitleTextView();
-                    if (subtitleTextView instanceof SimpleTextView
-                            && ((SimpleTextView) subtitleTextView).getLeftDrawable() != null
-                            || avatarContainer.statusMadeShorter[0]) {
-                        transitionOnlineText = avatarContainer.getSubtitleTextView();
-                        mainProfileViewContainer.invalidate();
-                        crossfadeOnlineText = true;
-                        animators.add(ObjectAnimator.ofFloat(onlineTextView[0], View.ALPHA, 0.0f));
-                        animators.add(ObjectAnimator.ofFloat(onlineTextView[1], View.ALPHA, 0.0f));
-                    }
-                }
-                if (!crossfadeOnlineText) {
-                    for (int a = 0; a < 2; a++) {
-                        animators.add(ObjectAnimator.ofFloat(onlineTextView[a], View.ALPHA, a == 0 ? 1.0f : 0.0f));
-                    }
-                }
-                animatorSet.playTogether(animators);
-                if (birthdayEffect != null) {
-                    birthdayEffect.hide();
-                }
-            }
-            profileTransitionInProgress = true;
-            ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1f);
-            valueAnimator.addUpdateListener(valueAnimator1 -> {
-                if (fragmentView != null) {
-                    fragmentView.invalidate();
-                }
-                updateStoriesViewBounds(true);
-            });
-            animatorSet.playTogether(valueAnimator);
-
-            animatorSet.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    if (fragmentView == null) {
-                        callback.run();
-                        return;
-                    }
-                    avatarImage.setProgressToExpand(0);
-                    profileDetailsListView.setLayerType(View.LAYER_TYPE_NONE, null);
-                    if (animatingItem != null) {
-                        ActionBarMenu menu = actionBar.createMenu();
-                        menu.clearItems();
-                        animatingItem = null;
-                    }
-                    callback.run();
-                    if (playProfileAnimation == 2) {
-                        playProfileAnimation = 1;
-                        avatarImage.setForegroundAlpha(1.0f);
-                        avatarContainer.setVisibility(View.GONE);
-                        avatarsViewPager.resetCurrentItem();
-                        avatarsViewPager.setVisibility(View.VISIBLE);
-                    }
-                    transitionOnlineText = null;
-                    mainProfileViewContainer.invalidate();
-                    profileTransitionInProgress = false;
-                    previousTransitionFragment = null;
-                    previousTransitionMainFragment = null;
-                    fragmentView.invalidate();
-                }
-            });
-            animatorSet.setInterpolator(
-                    playProfileAnimation == 2 ? CubicBezierInterpolator.DEFAULT : new DecelerateInterpolator());
-
-            AndroidUtilities.runOnUIThread(animatorSet::start, 50);
-            return animatorSet;
-        }
-        return null;
-    }
 
     private int getAverageColor(ImageReceiver imageReceiver) {
         if (imageReceiver.getDrawable() instanceof VectorAvatarThumbDrawable) {
@@ -9939,6 +8745,7 @@ public class ProfileActivity extends BaseFragment
 
             if (thumbLocation != null && setAvatarRow != -1 || thumbLocation == null && setAvatarRow == -1) {
                 updateListAnimated(false);
+                System.out.println("ProfileActivity:: updateProfileData: setAvatarRow = " + setAvatarRow);
                 updateProfileLayout(true);
             }
             if (imageLocation != null
@@ -10511,6 +9318,7 @@ public class ProfileActivity extends BaseFragment
                 }
             }
             if (changed) {
+                System.out.println("ProfileActivity:: updateProfileData: updateNameTextViews changed");
                 updateProfileLayout(true);
             }
 
@@ -11223,7 +10031,7 @@ public class ProfileActivity extends BaseFragment
         searchItem.setVisibility(View.VISIBLE);
 
         profileDetailsListView.setVisibility(View.VISIBLE);
-
+        System.out.println("ProfileActivity:: searchExpandTransition: " + enter);
         updateProfileLayout(true);
 
         avatarContainer.setVisibility(View.VISIBLE);
@@ -11264,6 +10072,8 @@ public class ProfileActivity extends BaseFragment
             profileDetailsListView.setScaleX(1f - 0.01f * (1f - searchTransitionProgress));
             profileDetailsListView.setScaleY(1f - 0.01f * (1f - searchTransitionProgress));
             profileDetailsListView.setAlpha(searchTransitionProgress);
+            System.out.println("ProfileActivity:: searchExpandTransition: "
+                    + searchTransitionProgress + " " + progressHalf + " " + progressHalfEnd);
             updateProfileLayout(true);
 
             profileDetailsListView.setAlpha(progressHalf);
@@ -11319,6 +10129,8 @@ public class ProfileActivity extends BaseFragment
                 if (enter) {
                     searchItem.requestFocusOnSearchView();
                 }
+                System.out.println("ProfileActivity:: searchExpandTransition: onAnimationEnd: "
+                        + searchTransitionProgress + " " + enter);
                 updateProfileLayout(true);
                 searchViewTransition = null;
                 fragmentView.invalidate();
@@ -11518,6 +10330,7 @@ public class ProfileActivity extends BaseFragment
                     if (listAdapter != null) {
                         listAdapter.notifyDataSetChanged();
                     }
+                    System.out.println("ProfileActivity:: didUploadPhoto: updateRowsState: " + setAvatarRow);
                     updateProfileLayout(true);
                 }
                 avatarsViewPager.addUploadingImage(uploadingImageLocation = ImageLocation.getForLocal(avatarBig),
@@ -16446,5 +15259,1220 @@ public class ProfileActivity extends BaseFragment
             clip[1] = getMeasuredHeight() - getPaddingBottom();
         }
     }
+    //Animation for the profile transition
+    @Override
+    public AnimatorSet onCustomTransitionAnimation(final boolean isOpen, final Runnable callback) {
+        if (playProfileAnimation != 0 && allowProfileAnimation && !isPulledDown && !disableProfileAnimation) {
+            if (timeItem != null) {
+                timeItem.setAlpha(1.0f);
+            }
+            if (starFgItem != null) {
+                starFgItem.setAlpha(1.0f);
+                starFgItem.setScaleX(1.0f);
+                starFgItem.setScaleY(1.0f);
+            }
+            if (starBgItem != null) {
+                starBgItem.setAlpha(1.0f);
+                starBgItem.setScaleX(1.0f);
+                starBgItem.setScaleY(1.0f);
+            }
+            previousTransitionMainFragment = null;
+            if (parentLayout != null && parentLayout.getFragmentStack().size() >= 2) {
+                BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2);
+                if (fragment instanceof ChatActivityInterface) {
+                    previousTransitionFragment = (ChatActivityInterface) fragment;
+                }
+                if (fragment instanceof DialogsActivity) {
+                    DialogsActivity dialogsActivity = (DialogsActivity) fragment;
+                    if (dialogsActivity.rightSlidingDialogContainer != null
+                            && dialogsActivity.rightSlidingDialogContainer.currentFragment instanceof ChatActivityInterface) {
+                        previousTransitionMainFragment = dialogsActivity;
+                        previousTransitionFragment = (ChatActivityInterface) dialogsActivity.rightSlidingDialogContainer.currentFragment;
+                    }
+                }
+            }
+            final boolean fromChat = previousTransitionFragment instanceof ChatActivity
+                    && previousTransitionFragment.getCurrentChat() != null;
+            if (previousTransitionFragment != null) {
+                updateTimeItem();
+                updateStar();
+            }
+            final AnimatorSet animatorSet = new AnimatorSet();
+            animatorSet.setDuration(playProfileAnimation == 2 ? 250 : 180);
+            profileDetailsListView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+            ActionBarMenu menu = actionBar.createMenu();
+            if (menu.getItem(10) == null) {
+                if (animatingItem == null) {
+                    animatingItem = menu.addItem(10, R.drawable.ic_ab_other);
+                }
+            }
+            System.out.println("ProfileActivity:: onCustomTransitionAnimation : isOpen = " + isOpen
+                    + ", playProfileAnimation = " + playProfileAnimation + ", allowProfileAnimation = "
+                    + allowProfileAnimation + ", disableProfileAnimation = " + disableProfileAnimation);
+            if (isOpen) {
+                for (int i = 0; i < 2; i++) {
+                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) onlineTextView[i + 1]
+                            .getLayoutParams();
+                    layoutParams.rightMargin = (int) (-21 * AndroidUtilities.density + AndroidUtilities.dp(8));
+                    onlineTextView[i + 1].setLayoutParams(layoutParams);
+                }
+
+                if (playProfileAnimation != 2) {
+                    int width = (int) Math.ceil(AndroidUtilities.displaySize.x - AndroidUtilities.dp(118 + 8)
+                            + 21 * AndroidUtilities.density);
+                    float width2 = nameTextView[1].getPaint().measureText(nameTextView[1].getText().toString()) * 1.12f
+                            + nameTextView[1].getSideDrawablesSize();
+                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) nameTextView[1]
+                            .getLayoutParams();
+                    if (width < width2) {
+                        layoutParams.width = (int) Math.ceil(width / 1.12f);
+                    } else {
+                        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+                    }
+                    nameTextView[1].setLayoutParams(layoutParams);
+
+                    initialAnimationExtraHeight = collapsedAreaHeight;
+                } else {
+                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) nameTextView[1]
+                            .getLayoutParams();
+                    layoutParams.width = (int) ((AndroidUtilities.displaySize.x - AndroidUtilities.dp(32)) / 1.67f);
+                    nameTextView[1].setLayoutParams(layoutParams);
+                }
+                fragmentView.setBackgroundColor(0);
+                setAvatarAnimationProgress(0);
+                ArrayList<Animator> animators = new ArrayList<>();
+                animators.add(ObjectAnimator.ofFloat(this, "avatarAnimationProgress", 0.0f, 1.0f));
+                if (writeButton != null && writeButton.getTag() == null) {
+                    writeButton.setScaleX(0.2f);
+                    writeButton.setScaleY(0.2f);
+                    writeButton.setAlpha(0.0f);
+                    animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_X, 1.0f));
+                    animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_Y, 1.0f));
+                    animators.add(ObjectAnimator.ofFloat(writeButton, View.ALPHA, 1.0f));
+                }
+                if (playProfileAnimation == 2) {
+                    avatarColor = getAverageColor(avatarImage.getImageReceiver());
+                    nameTextView[1].setTextColor(Color.WHITE);
+                    onlineTextView[1].setTextColor(0xB3FFFFFF);
+                    actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR, false);
+                    if (showStatusButton != null) {
+                        showStatusButton.setBackgroundColor(0x23ffffff);
+                    }
+                    overlaysView.setOverlaysVisible();
+                }
+                for (int a = 0; a < 2; a++) {
+                    nameTextView[a].setAlpha(a == 0 ? 1.0f : 0.0f);
+                    animators.add(ObjectAnimator.ofFloat(nameTextView[a], View.ALPHA, a == 0 ? 0.0f : 1.0f));
+                }
+                if (storyView != null) {
+                    if (getDialogId() > 0) {
+                        storyView.setAlpha(0f);
+                        animators.add(ObjectAnimator.ofFloat(storyView, View.ALPHA, 1.0f));
+                    } else {
+                        storyView.setAlpha(1f);
+                        storyView.setFragmentTransitionProgress(0);
+                        animators.add(ObjectAnimator.ofFloat(storyView, ProfileStoriesView.FRAGMENT_TRANSITION_PROPERTY,
+                                1.0f));
+                    }
+                }
+                if (giftsView != null) {
+                    giftsView.setAlpha(0f);
+                    animators.add(ObjectAnimator.ofFloat(giftsView, View.ALPHA, 1.0f));
+                }
+                if (timeItem.getTag() != null) {
+                    animators.add(ObjectAnimator.ofFloat(timeItem, View.ALPHA, 1.0f, 0.0f));
+                    animators.add(ObjectAnimator.ofFloat(timeItem, View.SCALE_X, 1.0f, 0.0f));
+                    animators.add(ObjectAnimator.ofFloat(timeItem, View.SCALE_Y, 1.0f, 0.0f));
+                }
+                if (starFgItem.getTag() != null) {
+                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.ALPHA, 1.0f, 0.0f));
+                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.SCALE_X, 1.0f, 0.0f));
+                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.SCALE_Y, 1.0f, 0.0f));
+                }
+                if (starBgItem.getTag() != null) {
+                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.ALPHA, 1.0f, 0.0f));
+                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.SCALE_X, 1.0f, 0.0f));
+                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.SCALE_Y, 1.0f, 0.0f));
+                }
+                if (animatingItem != null) {
+                    animatingItem.setAlpha(1.0f);
+                    animators.add(ObjectAnimator.ofFloat(animatingItem, View.ALPHA, 0.0f));
+                }
+                if (callItemVisible && (chatId != 0 || fromChat)) {
+                    callItem.setAlpha(0.0f);
+                    animators.add(ObjectAnimator.ofFloat(callItem, View.ALPHA, 1.0f));
+                }
+                if (videoCallItemVisible) {
+                    videoCallItem.setAlpha(0.0f);
+                    animators.add(ObjectAnimator.ofFloat(videoCallItem, View.ALPHA, 1.0f));
+                }
+                if (editItemVisible) {
+                    editItem.setAlpha(0.0f);
+                    animators.add(ObjectAnimator.ofFloat(editItem, View.ALPHA, 1.0f));
+                }
+                if (ttlIconView.getTag() != null) {
+                    ttlIconView.setAlpha(0f);
+                    animators.add(ObjectAnimator.ofFloat(ttlIconView, View.ALPHA, 1.0f));
+                }
+                if (floatingButtonContainer != null) {
+                    floatingButtonContainer.setAlpha(0f);
+                    animators.add(ObjectAnimator.ofFloat(floatingButtonContainer, View.ALPHA, 1.0f));
+                }
+                if (avatarImage != null) {
+                    avatarImage.setCrossfadeProgress(1.0f);
+                    animators.add(ObjectAnimator.ofFloat(avatarImage, AvatarImageView.CROSSFADE_PROGRESS, 0.0f));
+                }
+
+                boolean onlineTextCrosafade = false;
+
+                if (previousTransitionFragment != null) {
+                    ChatAvatarContainer avatarContainer = previousTransitionFragment.getAvatarContainer();
+                    if (avatarContainer != null && avatarContainer.getSubtitleTextView() instanceof SimpleTextView
+                            && ((SimpleTextView) avatarContainer.getSubtitleTextView()).getLeftDrawable() != null
+                            || avatarContainer.statusMadeShorter[0]) {
+                        transitionOnlineText = avatarContainer.getSubtitleTextView();
+                        mainProfileViewContainer.invalidate();
+                        onlineTextCrosafade = true;
+                        onlineTextView[0].setAlpha(0f);
+                        onlineTextView[1].setAlpha(0f);
+                        animators.add(ObjectAnimator.ofFloat(onlineTextView[1], View.ALPHA, 1.0f));
+                    }
+                }
+
+                if (!onlineTextCrosafade) {
+                    for (int a = 0; a < 2; a++) {
+                        onlineTextView[a].setAlpha(a == 0 ? 1.0f : 0.0f);
+                        animators.add(ObjectAnimator.ofFloat(onlineTextView[a], View.ALPHA, a == 0 ? 0.0f : 1.0f));
+                    }
+                }
+                animatorSet.playTogether(animators);
+            } else {
+                initialAnimationExtraHeight = extraHeight;
+                ArrayList<Animator> animators = new ArrayList<>();
+                animators.add(ObjectAnimator.ofFloat(this, "avatarAnimationProgress", 1.0f, 0.0f));
+                if (writeButton != null) {
+                    animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_X, 0.2f));
+                    animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_Y, 0.2f));
+                    animators.add(ObjectAnimator.ofFloat(writeButton, View.ALPHA, 0.0f));
+                }
+                for (int a = 0; a < 2; a++) {
+                    animators.add(ObjectAnimator.ofFloat(nameTextView[a], View.ALPHA, a == 0 ? 1.0f : 0.0f));
+                }
+                if (storyView != null) {
+                    if (mDialogId > 0) {
+                        animators.add(ObjectAnimator.ofFloat(storyView, View.ALPHA, 0.0f));
+                    } else {
+                        animators.add(ObjectAnimator.ofFloat(storyView, ProfileStoriesView.FRAGMENT_TRANSITION_PROPERTY,
+                                0.0f));
+                    }
+                }
+                if (giftsView != null) {
+                    animators.add(ObjectAnimator.ofFloat(giftsView, View.ALPHA, 0.0f));
+                }
+                if (timeItem.getTag() != null) {
+                    timeItem.setAlpha(0f);
+                    animators.add(ObjectAnimator.ofFloat(timeItem, View.ALPHA, 0.0f, 1.0f));
+                    animators.add(ObjectAnimator.ofFloat(timeItem, View.SCALE_X, 0.0f, 1.0f));
+                    animators.add(ObjectAnimator.ofFloat(timeItem, View.SCALE_Y, 0.0f, 1.0f));
+                }
+                if (starFgItem.getTag() != null) {
+                    starFgItem.setAlpha(0f);
+                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.ALPHA, 0.0f, 1.0f));
+                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.SCALE_X, 0.0f, 1.0f));
+                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.SCALE_Y, 0.0f, 1.0f));
+                }
+                if (starBgItem.getTag() != null) {
+                    starBgItem.setAlpha(0f);
+                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.ALPHA, 0.0f, 1.0f));
+                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.SCALE_X, 0.0f, 1.0f));
+                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.SCALE_Y, 0.0f, 1.0f));
+                }
+                if (animatingItem != null) {
+                    animatingItem.setAlpha(0.0f);
+                    animators.add(ObjectAnimator.ofFloat(animatingItem, View.ALPHA, 1.0f));
+                }
+                if (callItemVisible && (chatId != 0 || fromChat)) {
+                    callItem.setAlpha(1.0f);
+                    animators.add(ObjectAnimator.ofFloat(callItem, View.ALPHA, 0.0f));
+                }
+                if (videoCallItemVisible) {
+                    videoCallItem.setAlpha(1.0f);
+                    animators.add(ObjectAnimator.ofFloat(videoCallItem, View.ALPHA, 0.0f));
+                }
+                if (editItemVisible) {
+                    editItem.setAlpha(1.0f);
+                    animators.add(ObjectAnimator.ofFloat(editItem, View.ALPHA, 0.0f));
+                }
+                if (ttlIconView != null) {
+                    animators.add(ObjectAnimator.ofFloat(ttlIconView, View.ALPHA, ttlIconView.getAlpha(), 0.0f));
+                }
+                if (floatingButtonContainer != null) {
+                    animators.add(ObjectAnimator.ofFloat(floatingButtonContainer, View.ALPHA, 0.0f));
+                }
+                if (avatarImage != null) {
+                    animators.add(ObjectAnimator.ofFloat(avatarImage, AvatarImageView.CROSSFADE_PROGRESS, 1.0f));
+                }
+
+                boolean crossfadeOnlineText = false;
+                BaseFragment previousFragment = parentLayout.getFragmentStack().size() > 1
+                        ? parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2)
+                        : null;
+                if (previousFragment instanceof ChatActivity) {
+                    ChatAvatarContainer avatarContainer = ((ChatActivity) previousFragment).getAvatarContainer();
+                    View subtitleTextView = avatarContainer.getSubtitleTextView();
+                    if (subtitleTextView instanceof SimpleTextView
+                            && ((SimpleTextView) subtitleTextView).getLeftDrawable() != null
+                            || avatarContainer.statusMadeShorter[0]) {
+                        transitionOnlineText = avatarContainer.getSubtitleTextView();
+                        mainProfileViewContainer.invalidate();
+                        crossfadeOnlineText = true;
+                        animators.add(ObjectAnimator.ofFloat(onlineTextView[0], View.ALPHA, 0.0f));
+                        animators.add(ObjectAnimator.ofFloat(onlineTextView[1], View.ALPHA, 0.0f));
+                    }
+                }
+                if (!crossfadeOnlineText) {
+                    for (int a = 0; a < 2; a++) {
+                        animators.add(ObjectAnimator.ofFloat(onlineTextView[a], View.ALPHA, a == 0 ? 1.0f : 0.0f));
+                    }
+                }
+                animatorSet.playTogether(animators);
+                if (birthdayEffect != null) {
+                    birthdayEffect.hide();
+                }
+            }
+            profileTransitionInProgress = true;
+            ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1f);
+            valueAnimator.addUpdateListener(valueAnimator1 -> {
+                if (fragmentView != null) {
+                    fragmentView.invalidate();
+                }
+                updateStoriesViewBounds(true);
+            });
+            animatorSet.playTogether(valueAnimator);
+
+            animatorSet.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    if (fragmentView == null) {
+                        callback.run();
+                        return;
+                    }
+                    avatarImage.setProgressToExpand(0);
+                    profileDetailsListView.setLayerType(View.LAYER_TYPE_NONE, null);
+                    if (animatingItem != null) {
+                        ActionBarMenu menu = actionBar.createMenu();
+                        menu.clearItems();
+                        animatingItem = null;
+                    }
+                    callback.run();
+                    if (playProfileAnimation == 2) {
+                        playProfileAnimation = 1;
+                        avatarImage.setForegroundAlpha(1.0f);
+                        avatarContainer.setVisibility(View.GONE);
+                        avatarsViewPager.resetCurrentItem();
+                        avatarsViewPager.setVisibility(View.VISIBLE);
+                    }
+                    transitionOnlineText = null;
+                    mainProfileViewContainer.invalidate();
+                    profileTransitionInProgress = false;
+                    previousTransitionFragment = null;
+                    previousTransitionMainFragment = null;
+                    fragmentView.invalidate();
+                }
+            });
+            animatorSet.setInterpolator(
+                    playProfileAnimation == 2 ? CubicBezierInterpolator.DEFAULT : new DecelerateInterpolator());
+
+            AndroidUtilities.runOnUIThread(animatorSet::start, 50);
+            return animatorSet;
+        }
+        return null;
+    }
+    @Keep
+    public void setAvatarAnimationProgress(float progress) {
+        avatarAnimationProgress = currentExpandAnimatorValue = progress;
+        checkPhotoDescriptionAlpha();
+        if (playProfileAnimation == 2) {
+            avatarImage.setProgressToExpand(progress);
+        }
+
+        profileDetailsListView.setAlpha(progress);
+
+        profileDetailsListView.setTranslationX(AndroidUtilities.dp(48) - AndroidUtilities.dp(48) * progress);
+
+        int color;
+        if (playProfileAnimation == 2 && avatarColor != 0) {
+            color = avatarColor;
+        } else {
+            color = AvatarDrawable.getProfileBackColorForId(
+                    userId != 0 || ChatObject.isChannel(chatId, currentAccount) && !currentChat.megagroup ? 5 : chatId,
+                    resourcesProvider);
+        }
+
+        int actionBarColor = actionBarAnimationColorFrom != 0 ? actionBarAnimationColorFrom
+                : getThemedColor(Theme.key_actionBarDefault);
+        int actionBarColor2 = actionBarColor;
+        if (SharedConfig.chatBlurEnabled()) {
+            actionBarColor = ColorUtils.setAlphaComponent(actionBarColor, 0);
+        }
+        topView.setBackgroundColor(ColorUtils.blendARGB(actionBarColor, color, progress));
+        timerDrawable.setBackgroundColor(ColorUtils.blendARGB(actionBarColor2, color, progress));
+
+        color = AvatarDrawable.getIconColorForId(
+                userId != 0 || ChatObject.isChannel(chatId, currentAccount) && !currentChat.megagroup ? 5 : chatId,
+                resourcesProvider);
+        int iconColor = peerColor != null ? Color.WHITE : getThemedColor(Theme.key_actionBarDefaultIcon);
+        actionBar.setItemsColor(ColorUtils.blendARGB(iconColor, color, avatarAnimationProgress), false);
+
+        color = getThemedColor(Theme.key_profile_title);
+        int titleColor = getThemedColor(Theme.key_actionBarDefaultTitle);
+        for (int i = 0; i < 2; i++) {
+            if (nameTextView[i] == null || i == 1 && playProfileAnimation == 2) {
+                continue;
+            }
+            nameTextView[i].setTextColor(ColorUtils.blendARGB(titleColor, color, progress));
+        }
+
+        color = isOnline[0] ? getThemedColor(Theme.key_profile_status)
+                : AvatarDrawable.getProfileTextColorForId(
+                userId != 0 || ChatObject.isChannel(chatId, currentAccount) && !currentChat.megagroup ? 5
+                        : chatId,
+                resourcesProvider);
+        int subtitleColor = getThemedColor(isOnline[0] ? Theme.key_chat_status : Theme.key_actionBarDefaultSubtitle);
+        for (int i = 0; i < 3; i++) {
+            if (onlineTextView[i] == null || i == 1 || i == 2 && playProfileAnimation == 2) {
+                continue;
+            }
+            onlineTextView[i].setTextColor(
+                    ColorUtils.blendARGB(i == 0 ? subtitleColor : applyPeerColor(subtitleColor, true, isOnline[0]),
+                            i == 0 ? color : applyPeerColor(color, true, isOnline[0]), progress));
+        }
+        extraHeight = initialAnimationExtraHeight * progress;
+        color = AvatarDrawable.getProfileColorForId(userId != 0 ? userId : chatId, resourcesProvider);
+        int color2 = AvatarDrawable.getColorForId(userId != 0 ? userId : chatId);
+        if (color != color2) {
+            avatarDrawable.setColor(ColorUtils.blendARGB(color2, color, progress));
+            avatarImage.invalidate();
+        }
+
+        if (navigationBarAnimationColorFrom != 0) {
+            color = ColorUtils.blendARGB(navigationBarAnimationColorFrom, getNavigationBarColor(), progress);
+            setNavigationBarColor(color);
+        }
+
+        topView.invalidate();
+        System.out.println("ProfileActivity:: setAvatarAnimationProgress : progress = " + progress
+                + ", avatarAnimationProgress = " + avatarAnimationProgress + ", currentExpandAnimatorValue = "
+                + currentExpandAnimatorValue);
+        updateProfileLayout(true);
+        if (fragmentView != null) {
+            fragmentView.invalidate();
+        }
+
+        if (aboutLinkCell != null) {
+            aboutLinkCell.invalidate();
+        }
+
+        if (getDialogId() > 0) {
+            if (avatarImage != null) {
+                avatarImage.setProgressToStoriesInsets(avatarAnimationProgress);
+            }
+            if (storyView != null) {
+                storyView.setProgressToStoriesInsets(avatarAnimationProgress);
+            }
+            if (giftsView != null) {
+                giftsView.setProgressToStoriesInsets(avatarAnimationProgress);
+            }
+        }
+    }
+    private void checkListViewScroll() {
+        if (profileDetailsListView.getVisibility() != View.VISIBLE) {
+            return;
+        }
+        if (sharedMediaLayoutAttached) {
+            sharedMediaLayout.setVisibleHeight(profileDetailsListView.getMeasuredHeight() - sharedMediaLayout.getTop());
+        }
+
+        if (profileDetailsListView.getChildCount() <= 0 || openAnimationInProgress) {
+            return;
+        }
+
+        int newOffset = 0;
+        View child = null;
+        for (int i = 0; i < profileDetailsListView.getChildCount(); i++) {
+            if (profileDetailsListView.getChildAdapterPosition(profileDetailsListView.getChildAt(i)) == 0) {
+                child = profileDetailsListView.getChildAt(i);
+                break;
+            }
+        }
+        RecyclerListView.Holder holder = child == null ? null
+                : (RecyclerListView.Holder) profileDetailsListView.findContainingViewHolder(child);
+        int top = child == null ? 0 : child.getTop();
+        int adapterPosition = holder != null ? holder.getAdapterPosition() : RecyclerView.NO_POSITION;
+        if (top >= 0 && adapterPosition == 0) {
+            newOffset = top;
+        }
+        boolean mediaHeaderVisible;
+        boolean searchVisible = imageUpdater == null && actionBar.isSearchFieldVisible();
+        if (sharedMediaRow != -1 && !searchVisible) {
+            holder = (RecyclerListView.Holder) profileDetailsListView.findViewHolderForAdapterPosition(sharedMediaRow);
+            mediaHeaderVisible = holder != null && holder.itemView.getTop() <= 0;
+        } else {
+            mediaHeaderVisible = searchVisible;
+        }
+        setMediaHeaderVisible(mediaHeaderVisible);
+
+        if (extraHeight != newOffset && !transitionAnimationInProress) {
+            extraHeight = newOffset;
+            topView.invalidate();
+            if (playProfileAnimation != 0) {
+                allowProfileAnimation = extraHeight != 0;
+            }
+            System.out.println("ProfileActivity:: checkListViewScroll: " + extraHeight + " "
+                    + profileDetailsListView.getMeasuredHeight() + " " + sharedMediaLayout.getTop());
+
+            updateProfileLayout(true);
+        }
+    }
+    private void updateProfileLayout(boolean animated) {
+        System.out.println("ProfileActivity:: updateProfileLayout: animated = " + animated);
+        final int newTop = calculateActionBarTopOffset();
+
+        updateListViewLayout(newTop);
+
+        if (avatarContainer != null) {
+            final float collapseProgress = Math.min(1f, extraHeight / collapsedAreaHeight);
+
+            configureListViewScrollBehavior(newTop);
+            handleWriteButtonLayout(animated, collapseProgress, newTop);
+            updateAvatarPosition(collapseProgress);
+
+            float currentHeight = openAnimationInProgress ? initialAnimationExtraHeight : extraHeight;
+
+            if (currentHeight > collapsedAreaHeight || isPulledDown) {
+                handleExpandedState(currentHeight, newTop);
+            } else {
+                handleCollapsedState(collapseProgress);
+            }
+
+            handleProfileAnimation(newTop);
+            updateOverlaysLayout(newTop);
+
+            if (!openAnimationInProgress && (expandAnimator == null || !expandAnimator.isRunning())) {
+                updateProfileLayoutText(collapseProgress);
+            }
+        }
+
+        updateEmojiStatusEffectPosition();
+    }
+    private void updateProfileLayoutText(float diff) {
+        FrameLayout.LayoutParams layoutParams;
+        float scale = nameTextView[1].getScaleX();
+        float maxScale = extraHeight > collapsedAreaHeight ? 1.67f : 1.12f;
+
+        if (extraHeight > collapsedAreaHeight && scale != maxScale) {
+            return;
+        }
+
+        int viewWidth = AndroidUtilities.isTablet() ? AndroidUtilities.dp(490) : AndroidUtilities.displaySize.x;
+        ActionBarMenuItem item = avatarsViewPagerIndicatorView.getSecondaryMenuItem();
+        int extra = 0;
+        if (editItemVisible) {
+            extra += 48;
+        }
+        if (callItemVisible) {
+            extra += 48;
+        }
+        if (videoCallItemVisible) {
+            extra += 48;
+        }
+        if (searchItem != null) {
+            extra += 48;
+        }
+        int buttonsWidth = AndroidUtilities.dp(118 + 8 + (40 + extra * (1.0f - mediaHeaderAnimationProgress)));
+        int minWidth = viewWidth - buttonsWidth;
+
+        int width = (int) (viewWidth
+                - buttonsWidth * Math.max(0.0f, 1.0f - (diff != 1.0f ? diff * 0.15f / (1.0f - diff) : 1.0f))
+                - nameTextView[1].getTranslationX());
+        float width2 = nameTextView[1].getPaint().measureText(nameTextView[1].getText().toString()) * scale
+                + nameTextView[1].getSideDrawablesSize();
+        layoutParams = (FrameLayout.LayoutParams) nameTextView[1].getLayoutParams();
+        int prevWidth = layoutParams.width;
+        if (width < width2) {
+            layoutParams.width = Math.max(minWidth,
+                    (int) Math.ceil((width - AndroidUtilities.dp(24)) / (scale + ((maxScale - scale) * 7.0f))));
+        } else {
+            layoutParams.width = (int) Math.ceil(width2);
+        }
+        layoutParams.width = (int) Math.min((viewWidth - nameTextView[1].getX()) / scale - AndroidUtilities.dp(8),
+                layoutParams.width);
+        if (layoutParams.width != prevWidth) {
+            nameTextView[1].requestLayout();
+        }
+
+        width2 = onlineTextView[1].getPaint().measureText(onlineTextView[1].getText().toString())
+                + onlineTextView[1].getRightDrawableWidth();
+        layoutParams = (FrameLayout.LayoutParams) onlineTextView[1].getLayoutParams();
+        FrameLayout.LayoutParams layoutParams2 = (FrameLayout.LayoutParams) mediaCounterTextView.getLayoutParams();
+        prevWidth = layoutParams.width;
+        layoutParams2.rightMargin = layoutParams.rightMargin = (int) Math.ceil(
+                onlineTextView[1].getTranslationX() + AndroidUtilities.dp(8) + AndroidUtilities.dp(40) * (1.0f - diff));
+        if (width < width2) {
+            layoutParams2.width = layoutParams.width = (int) Math.ceil(width);
+        } else {
+            layoutParams2.width = layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        }
+        if (prevWidth != layoutParams.width) {
+            onlineTextView[2].getLayoutParams().width = layoutParams.width;
+            onlineTextView[2].requestLayout();
+            onlineTextView[3].getLayoutParams().width = layoutParams.width;
+            onlineTextView[3].requestLayout();
+            onlineTextView[1].requestLayout();
+            mediaCounterTextView.requestLayout();
+        }
+    }
+
+    private void setupRootView(Context context) {
+        fragmentView = new NestedFrameLayout(context) {
+
+            private final ArrayList<View> sortedChildren = new ArrayList<>();
+            private final Comparator<View> viewComparator = (view, view2) -> (int) (view.getY() - view2.getY());
+            private final Paint grayPaint = new Paint();
+            private boolean ignoreLayout;
+            private boolean wasPortrait;
+
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent ev) {
+                if (pinchToZoomHelper.isInOverlayMode()) {
+                    return pinchToZoomHelper.onTouchEvent(ev);
+                }
+                if (sharedMediaLayout != null && sharedMediaLayout.isInFastScroll()
+                        && sharedMediaLayout.isPinnedToTop()) {
+                    return sharedMediaLayout.dispatchFastScrollEvent(ev);
+                }
+                if (sharedMediaLayout != null && sharedMediaLayout.checkPinchToZoom(ev)) {
+                    return true;
+                }
+                return super.dispatchTouchEvent(ev);
+            }
+
+            @Override
+            public boolean hasOverlappingRendering() {
+                return false;
+            }
+
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                System.out.println("ProfileActivity:: onMeasure: " + MeasureSpec.toString(widthMeasureSpec) + " "
+                        + MeasureSpec.toString(heightMeasureSpec));
+                final int actionBarHeight = ActionBar.getCurrentActionBarHeight()
+                        + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0);
+                if (profileDetailsListView != null) {
+                    LayoutParams layoutParams = (LayoutParams) profileDetailsListView.getLayoutParams();
+                    if (layoutParams.topMargin != actionBarHeight) {
+                        layoutParams.topMargin = actionBarHeight;
+                    }
+                }
+                if (searchListView != null) {
+                    LayoutParams layoutParams = (LayoutParams) searchListView.getLayoutParams();
+                    if (layoutParams.topMargin != actionBarHeight) {
+                        layoutParams.topMargin = actionBarHeight;
+                    }
+                }
+
+                int height = MeasureSpec.getSize(heightMeasureSpec);
+                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
+
+                boolean changed = false;
+                if (lastMeasuredContentWidth != getMeasuredWidth()
+                        || lastMeasuredContentHeight != getMeasuredHeight()) {
+                    changed = lastMeasuredContentWidth != 0 && lastMeasuredContentWidth != getMeasuredWidth();
+                    listContentHeight = 0;
+                    int count = listAdapter.getItemCount();
+                    lastMeasuredContentWidth = getMeasuredWidth();
+                    lastMeasuredContentHeight = getMeasuredHeight();
+                    int ws = MeasureSpec.makeMeasureSpec(getMeasuredWidth(), MeasureSpec.EXACTLY);
+                    int hs = MeasureSpec.makeMeasureSpec(profileDetailsListView.getMeasuredHeight(),
+                            MeasureSpec.UNSPECIFIED);
+                    positionToOffset.clear();
+                    for (int i = 0; i < count; i++) {
+                        int type = listAdapter.getItemViewType(i);
+                        positionToOffset.put(i, listContentHeight);
+                        if (type == ListAdapter.VIEW_TYPE_SHARED_MEDIA) {
+                            listContentHeight += profileDetailsListView.getMeasuredHeight();
+                        } else {
+                            RecyclerView.ViewHolder holder = listAdapter.createViewHolder(null, type);
+                            listAdapter.onBindViewHolder(holder, i);
+                            holder.itemView.measure(ws, hs);
+                            listContentHeight += holder.itemView.getMeasuredHeight();
+                        }
+                    }
+
+                    if (emptyView != null) {
+                        ((LayoutParams) emptyView.getLayoutParams()).topMargin = collapsedAreaHeight
+                                + AndroidUtilities.statusBarHeight;
+                    }
+                }
+
+                if (previousTransitionFragment != null) {
+                    nameTextView[0].setRightPadding(nameTextView[0].getMeasuredWidth()
+                            - previousTransitionFragment.getAvatarContainer().getTitleTextView().getMeasuredWidth());
+                }
+
+                if (!fragmentOpened && (expandPhoto || openAnimationInProgress && playProfileAnimation == 2)) {
+                    ignoreLayout = true;
+
+                    if (expandPhoto) {
+                        if (searchItem != null) {
+                            searchItem.setAlpha(0.0f);
+                            searchItem.setEnabled(false);
+                            searchItem.setVisibility(GONE);
+                        }
+                        nameTextView[1].setTextColor(Color.WHITE);
+                        nameTextView[1].setPivotY(nameTextView[1].getMeasuredHeight());
+                        nameTextView[1].setScaleX(1.67f);
+                        nameTextView[1].setScaleY(1.67f);
+                        if (scamDrawable != null) {
+                            scamDrawable.setColor(Color.argb(179, 255, 255, 255));
+                        }
+                        if (lockIconDrawable != null) {
+                            lockIconDrawable.setColorFilter(Color.WHITE, PorterDuff.Mode.MULTIPLY);
+                        }
+                        if (verifiedCrossfadeDrawable[0] != null) {
+                            verifiedCrossfadeDrawable[0].setProgress(1f);
+                        }
+                        if (verifiedCrossfadeDrawable[1] != null) {
+                            verifiedCrossfadeDrawable[1].setProgress(1f);
+                        }
+                        if (premiumCrossfadeDrawable[0] != null) {
+                            premiumCrossfadeDrawable[0].setProgress(1f);
+                        }
+                        if (premiumCrossfadeDrawable[1] != null) {
+                            premiumCrossfadeDrawable[1].setProgress(1f);
+                        }
+                        updateEmojiStatusDrawableColor(1f);
+                        onlineTextView[1].setTextColor(0xB3FFFFFF);
+                        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR, false);
+                        actionBar.setItemsColor(Color.WHITE, false);
+                        overlaysView.setOverlaysVisible();
+                        overlaysView.setAlphaValue(1.0f, false);
+                        avatarImage.setForegroundAlpha(1.0f);
+                        avatarContainer.setVisibility(View.GONE);
+                        avatarsViewPager.resetCurrentItem();
+                        avatarsViewPager.setVisibility(View.VISIBLE);
+                        if (showStatusButton != null) {
+                            showStatusButton.setBackgroundColor(0x23ffffff);
+                        }
+                        if (storyView != null) {
+                            storyView.setExpandProgress(1f);
+                        }
+                        if (giftsView != null) {
+                            giftsView.setExpandProgress(1f);
+                        }
+                        expandPhoto = false;
+                        updateCollectibleHint();
+                    }
+
+                    allowPullingDown = true;
+                    isPulledDown = true;
+                    NotificationCenter.getGlobalInstance()
+                            .postNotificationName(NotificationCenter.needCheckSystemBarColors, true);
+                    if (mainMenuItem != null) {
+                        if (!getMessagesController().isChatNoForwards(currentChat)) {
+                            mainMenuItem.showSubItem(gallery_menu_save);
+                        } else {
+                            mainMenuItem.hideSubItem(gallery_menu_save);
+                        }
+                        if (imageUpdater != null) {
+                            mainMenuItem.showSubItem(edit_avatar);
+                            mainMenuItem.showSubItem(delete_avatar);
+                            mainMenuItem.hideSubItem(logout);
+                        }
+                    }
+                    currentExpanAnimatorFracture = 1.0f;
+
+                    int paddingTop;
+                    int paddingBottom;
+                    if (isInLandscapeMode) {
+                        paddingTop = collapsedAreaHeight;
+                        paddingBottom = 0;
+                    } else {
+                        paddingTop = maxAvatarExpansionHeight;
+                        paddingBottom = Math.max(0,
+                                getMeasuredHeight() - (listContentHeight + collapsedAreaHeight + actionBarHeight));
+                    }
+                    if (banFromGroup != 0) {
+                        paddingBottom += AndroidUtilities.dp(48);
+                        profileDetailsListView.setBottomGlowOffset(AndroidUtilities.dp(48));
+                    } else {
+                        profileDetailsListView.setBottomGlowOffset(0);
+                    }
+                    initialAnimationExtraHeight = paddingTop - actionBarHeight;
+                    if (playProfileAnimation == 0) {
+                        extraHeight = initialAnimationExtraHeight;
+                    }
+                    layoutManager.scrollToPositionWithOffset(0, -actionBarHeight);
+                    profileDetailsListView.setPadding(0, paddingTop, 0, paddingBottom);
+                    measureChildWithMargins(profileDetailsListView, widthMeasureSpec, 0, heightMeasureSpec, 0);
+                    profileDetailsListView.layout(0, actionBarHeight, profileDetailsListView.getMeasuredWidth(),
+                            actionBarHeight + profileDetailsListView.getMeasuredHeight());
+                    ignoreLayout = false;
+                } else if (fragmentOpened && !openAnimationInProgress && !firstLayout) {
+                    ignoreLayout = true;
+
+                    int paddingTop;
+                    int paddingBottom;
+                    if (isInLandscapeMode || AndroidUtilities.isTablet()) {
+                        paddingTop = collapsedAreaHeight;
+                        paddingBottom = 0;
+                    } else {
+                        paddingTop = maxAvatarExpansionHeight;
+                        paddingBottom = Math.max(0,
+                                getMeasuredHeight() - (listContentHeight + collapsedAreaHeight + actionBarHeight));
+                    }
+                    if (banFromGroup != 0) {
+                        paddingBottom += AndroidUtilities.dp(48);
+                        profileDetailsListView.setBottomGlowOffset(AndroidUtilities.dp(48));
+                    } else {
+                        profileDetailsListView.setBottomGlowOffset(0);
+                    }
+                    int currentPaddingTop = profileDetailsListView.getPaddingTop();
+                    View view = null;
+                    int pos = RecyclerView.NO_POSITION;
+                    for (int i = 0; i < profileDetailsListView.getChildCount(); i++) {
+                        int p = profileDetailsListView.getChildAdapterPosition(profileDetailsListView.getChildAt(i));
+                        if (p != RecyclerView.NO_POSITION) {
+                            view = profileDetailsListView.getChildAt(i);
+                            pos = p;
+                            break;
+                        }
+                    }
+                    if (view == null) {
+                        view = profileDetailsListView.getChildAt(0);
+                        if (view != null) {
+                            RecyclerView.ViewHolder holder = profileDetailsListView.findContainingViewHolder(view);
+                            pos = holder.getAdapterPosition();
+                            if (pos == RecyclerView.NO_POSITION) {
+                                pos = holder.getPosition();
+                            }
+                        }
+                    }
+
+                    int top = paddingTop;
+                    if (view != null) {
+                        top = view.getTop();
+                    }
+                    boolean layout = false;
+                    if ((actionBar.isSearchFieldVisible()) && sharedMediaRow >= 0) {
+                        layoutManager.scrollToPositionWithOffset(sharedMediaRow, -paddingTop);
+                        layout = true;
+                    } else if (invalidateScroll || currentPaddingTop != paddingTop) {
+                        if (savedScrollPosition >= 0) {
+                            layoutManager.scrollToPositionWithOffset(savedScrollPosition,
+                                    savedScrollOffset - paddingTop);
+                        } else if ((!changed || !allowPullingDown) && view != null) {
+                            if (pos == 0 && !allowPullingDown && top > collapsedAreaHeight) {
+                                top = collapsedAreaHeight;
+                            }
+                            layoutManager.scrollToPositionWithOffset(pos, top - paddingTop);
+                            layout = true;
+                        } else {
+                            layoutManager.scrollToPositionWithOffset(0, collapsedAreaHeight - paddingTop);
+                        }
+                    }
+                    if (currentPaddingTop != paddingTop || profileDetailsListView.getPaddingBottom() != paddingBottom) {
+                        profileDetailsListView.setPadding(0, paddingTop, 0, paddingBottom);
+                        layout = true;
+                    }
+                    if (layout) {
+                        measureChildWithMargins(profileDetailsListView, widthMeasureSpec, 0, heightMeasureSpec, 0);
+                        try {
+                            profileDetailsListView.layout(0, actionBarHeight, profileDetailsListView.getMeasuredWidth(),
+                                    actionBarHeight + profileDetailsListView.getMeasuredHeight());
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    }
+                    ignoreLayout = false;
+                }
+
+                boolean portrait = height > MeasureSpec.getSize(widthMeasureSpec);
+                if (portrait != wasPortrait) {
+                    post(() -> {
+                        if (selectAnimatedEmojiDialog != null) {
+                            selectAnimatedEmojiDialog.dismiss();
+                            selectAnimatedEmojiDialog = null;
+                        }
+                    });
+                    wasPortrait = portrait;
+                }
+
+                if (searchItem != null && qrItem != null) {
+                    float translation = AndroidUtilities.dp(48) * currentExpandAnimatorValue;
+                    // qrItem.setTranslationX(translation);
+                }
+            }
+
+            @Override
+            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+                super.onLayout(changed, left, top, right, bottom);
+                savedScrollPosition = -1;
+                firstLayout = false;
+                invalidateScroll = false;
+                checkListViewScroll();
+            }
+
+            @Override
+            public void requestLayout() {
+                if (ignoreLayout) {
+                    return;
+                }
+                super.requestLayout();
+            }
+
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                whitePaint.setColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                if (profileDetailsListView.getVisibility() == VISIBLE) {
+                    grayPaint.setColor(getThemedColor(Theme.key_windowBackgroundGray));
+                    if (transitionAnimationInProress) {
+                        whitePaint.setAlpha((int) (255 * profileDetailsListView.getAlpha()));
+                    }
+                    if (transitionAnimationInProress) {
+                        grayPaint.setAlpha((int) (255 * profileDetailsListView.getAlpha()));
+                    }
+
+                    int count = profileDetailsListView.getChildCount();
+                    sortedChildren.clear();
+                    boolean hasRemovingItems = false;
+                    for (int i = 0; i < count; i++) {
+                        View child = profileDetailsListView.getChildAt(i);
+                        if (profileDetailsListView.getChildAdapterPosition(child) != RecyclerView.NO_POSITION) {
+                            sortedChildren.add(profileDetailsListView.getChildAt(i));
+                        } else {
+                            hasRemovingItems = true;
+                        }
+                    }
+                    Collections.sort(sortedChildren, viewComparator);
+                    boolean hasBackground = false;
+                    float lastY = profileDetailsListView.getY();
+                    count = sortedChildren.size();
+                    if (!openAnimationInProgress && count > 0 && !hasRemovingItems) {
+                        lastY += sortedChildren.get(0).getY();
+                    }
+                    float alpha = 1f;
+                    for (int i = 0; i < count; i++) {
+                        View child = sortedChildren.get(i);
+                        boolean currentHasBackground = child.getBackground() != null;
+                        int currentY = (int) (profileDetailsListView.getY() + child.getY());
+                        if (hasBackground == currentHasBackground) {
+                            if (child.getAlpha() == 1f) {
+                                alpha = 1f;
+                            }
+                            continue;
+                        }
+                        if (hasBackground) {
+                            canvas.drawRect(profileDetailsListView.getX(), lastY,
+                                    profileDetailsListView.getX() + profileDetailsListView.getMeasuredWidth(), currentY,
+                                    grayPaint);
+                        } else {
+                            if (alpha != 1f) {
+                                canvas.drawRect(profileDetailsListView.getX(), lastY,
+                                        profileDetailsListView.getX() + profileDetailsListView.getMeasuredWidth(),
+                                        currentY, grayPaint);
+                                whitePaint.setAlpha((int) (255 * alpha));
+                                canvas.drawRect(profileDetailsListView.getX(), lastY,
+                                        profileDetailsListView.getX() + profileDetailsListView.getMeasuredWidth(),
+                                        currentY, whitePaint);
+                                whitePaint.setAlpha(255);
+                            } else {
+                                canvas.drawRect(profileDetailsListView.getX(), lastY,
+                                        profileDetailsListView.getX() + profileDetailsListView.getMeasuredWidth(),
+                                        currentY, whitePaint);
+                            }
+                        }
+                        hasBackground = currentHasBackground;
+                        lastY = currentY;
+                        alpha = child.getAlpha();
+                    }
+
+                    if (hasBackground) {
+                        canvas.drawRect(profileDetailsListView.getX(), lastY,
+                                profileDetailsListView.getX() + profileDetailsListView.getMeasuredWidth(),
+                                profileDetailsListView.getBottom(), grayPaint);
+                    } else {
+                        if (alpha != 1f) {
+                            canvas.drawRect(profileDetailsListView.getX(), lastY,
+                                    profileDetailsListView.getX() + profileDetailsListView.getMeasuredWidth(),
+                                    profileDetailsListView.getBottom(), grayPaint);
+                            whitePaint.setAlpha((int) (255 * alpha));
+                            canvas.drawRect(profileDetailsListView.getX(), lastY,
+                                    profileDetailsListView.getX() + profileDetailsListView.getMeasuredWidth(),
+                                    profileDetailsListView.getBottom(), whitePaint);
+                            whitePaint.setAlpha(255);
+                        } else {
+                            canvas.drawRect(profileDetailsListView.getX(), lastY,
+                                    profileDetailsListView.getX() + profileDetailsListView.getMeasuredWidth(),
+                                    profileDetailsListView.getBottom(), whitePaint);
+                        }
+                    }
+                } else {
+                    int top = searchListView.getTop();
+                    canvas.drawRect(0, top + extraHeight + searchTransitionOffset, getMeasuredWidth(),
+                            top + getMeasuredHeight(), whitePaint);
+                }
+                super.dispatchDraw(canvas);
+                if (profileTransitionInProgress && parentLayout.getFragmentStack().size() > 1) {
+                    BaseFragment fragment = parentLayout.getFragmentStack()
+                            .get(parentLayout.getFragmentStack().size() - 2);
+                    if (fragment instanceof ChatActivity) {
+                        ChatActivity chatActivity = (ChatActivity) fragment;
+                        FragmentContextView fragmentContextView = chatActivity.getFragmentContextView();
+
+                        if (fragmentContextView != null && fragmentContextView.isCallStyle()) {
+                            float progress = extraHeight / AndroidUtilities.dpf2(fragmentContextView.getStyleHeight());
+                            if (progress > 1f) {
+                                progress = 1f;
+                            }
+                            canvas.save();
+                            canvas.translate(fragmentContextView.getX(), fragmentContextView.getY());
+                            fragmentContextView.setDrawOverlay(true);
+                            fragmentContextView.setCollapseTransition(true, extraHeight, progress);
+                            fragmentContextView.draw(canvas);
+                            fragmentContextView.setCollapseTransition(false, extraHeight, progress);
+                            fragmentContextView.setDrawOverlay(false);
+                            canvas.restore();
+                        }
+                    }
+                }
+
+                if (scrimPaint.getAlpha() > 0) {
+                    canvas.drawRect(0, 0, getWidth(), getHeight(), scrimPaint);
+                }
+                if (scrimView != null) {
+                    int c = canvas.save();
+                    canvas.translate(scrimView.getLeft(), scrimView.getTop());
+                    if (scrimView == actionBar.getBackButton()) {
+                        int r = Math.max(scrimView.getMeasuredWidth(), scrimView.getMeasuredHeight()) / 2;
+                        int wasAlpha = actionBarBackgroundPaint.getAlpha();
+                        actionBarBackgroundPaint.setAlpha((int) (wasAlpha * (scrimPaint.getAlpha() / 255f) / 0.3f));
+                        canvas.drawCircle(r, r, r * 0.7f, actionBarBackgroundPaint);
+                        actionBarBackgroundPaint.setAlpha(wasAlpha);
+                    }
+                    scrimView.draw(canvas);
+                    canvas.restoreToCount(c);
+                }
+                if (blurredView != null && blurredView.getVisibility() == View.VISIBLE) {
+                    if (blurredView.getAlpha() != 1f) {
+                        if (blurredView.getAlpha() != 0) {
+                            canvas.saveLayerAlpha(blurredView.getLeft(), blurredView.getTop(), blurredView.getRight(),
+                                    blurredView.getBottom(), (int) (255 * blurredView.getAlpha()),
+                                    Canvas.ALL_SAVE_FLAG);
+                            canvas.translate(blurredView.getLeft(), blurredView.getTop());
+                            blurredView.draw(canvas);
+                            canvas.restore();
+                        }
+                    } else {
+                        blurredView.draw(canvas);
+                    }
+                }
+            }
+
+            @Override
+            protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                if (pinchToZoomHelper.isInOverlayMode()
+                        && (child == mainProfileViewContainer || child == actionBar || child == writeButton)) {
+                    return true;
+                }
+                if (child == blurredView) {
+                    return true;
+                }
+                return super.drawChild(canvas, child, drawingTime);
+            }
+
+            @Override
+            protected void onAttachedToWindow() {
+                super.onAttachedToWindow();
+                fragmentViewAttached = true;
+                for (int i = 0; i < emojiStatusDrawable.length; i++) {
+                    if (emojiStatusDrawable[i] != null) {
+                        emojiStatusDrawable[i].attach();
+                    }
+                }
+                for (int i = 0; i < botVerificationDrawable.length; ++i) {
+                    if (botVerificationDrawable[i] != null) {
+                        botVerificationDrawable[i].attach();
+                    }
+                }
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                super.onDetachedFromWindow();
+                fragmentViewAttached = false;
+                for (int i = 0; i < emojiStatusDrawable.length; i++) {
+                    if (emojiStatusDrawable[i] != null) {
+                        emojiStatusDrawable[i].detach();
+                    }
+                }
+                for (int i = 0; i < botVerificationDrawable.length; ++i) {
+                    if (botVerificationDrawable[i] != null) {
+                        botVerificationDrawable[i].detach();
+                    }
+                }
+            }
+        };
+    }
+    private void setupMainLayout() {
+        mainLayout = ((NestedFrameLayout) fragmentView);
+        mainLayout.needBlur = true;
+        mainLayout.addView(topView);
+        mainLayout.blurBehindViews.add(topView);
+        mainLayout.addView(profileDetailsListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,
+                LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
+        mainLayout.addView(mainProfileViewContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,
+                LayoutHelper.MATCH_PARENT, Gravity.START, 0, 0, 0, 0));
+        mainLayout.addView(timeItem, LayoutHelper.createFrame(34, 34, Gravity.TOP | Gravity.LEFT));
+        mainLayout.addView(starBgItem, LayoutHelper.createFrame(20, 20, Gravity.TOP | Gravity.LEFT));
+        mainLayout.addView(starFgItem, LayoutHelper.createFrame(20, 20, Gravity.TOP | Gravity.LEFT));
+        mainLayout.addView(actionBar);
+        mainLayout.addView(writeButton, LayoutHelper.createFrame(60, 60, Gravity.RIGHT | Gravity.TOP, 0, 0, 16, 0));
+        mainLayout.addView(undoView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT,
+                Gravity.BOTTOM | Gravity.LEFT, 8, 0, 8, 8));
+        mainLayout.addView(fwdRestrictedHint, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT,
+                LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 12, 0, 12, 0));
+        mainLayout.blurBehindViews.add(sharedMediaLayout);
+        mainLayout.addView(blurredView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+        if (floatingButtonContainer != null) {
+            mainLayout.addView(floatingButtonContainer,
+                    LayoutHelper.createFrame((Build.VERSION.SDK_INT >= 21 ? 56 : 60),
+                            (Build.VERSION.SDK_INT >= 21 ? 56 : 60),
+                            (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM,
+                            LocaleController.isRTL ? 14 : 0, 0, LocaleController.isRTL ? 0 : 14, 14));
+        }
+        if (myProfile) {
+            mainLayout.addView(bottomButtonsContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,
+                    72 + (1 / AndroidUtilities.density), Gravity.BOTTOM | Gravity.FILL_HORIZONTAL));
+        }
+        if (searchItem != null) {
+            mainLayout.addView(searchListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,
+                    LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
+            mainLayout.addView(emptyView);
+        }
+        if (banFromGroup != 0) {
+            mainLayout.addView(banFromGroupContainer,
+                    LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 51, Gravity.LEFT | Gravity.BOTTOM));
+        }
+    }
+    private void setupMainProfileContainer(Context context) {
+        mainProfileViewContainer = new FrameLayout(context) {
+
+            CanvasButton canvasButton;
+
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                super.dispatchDraw(canvas);
+                if (transitionOnlineText != null) {
+                    canvas.save();
+                    canvas.translate(onlineTextView[0].getX(), onlineTextView[0].getY());
+                    canvas.saveLayerAlpha(0, 0, transitionOnlineText.getMeasuredWidth(),
+                            transitionOnlineText.getMeasuredHeight(), (int) (255 * (1f - avatarAnimationProgress)),
+                            Canvas.ALL_SAVE_FLAG);
+                    transitionOnlineText.draw(canvas);
+                    canvas.restore();
+                    canvas.restore();
+                    invalidate();
+                }
+                if (hasFallbackPhoto && photoDescriptionProgress != 0 && customAvatarProgress != 1f) {
+                    float cy = onlineTextView[1].getY() + onlineTextView[1].getMeasuredHeight() / 2f;
+                    float size = AndroidUtilities.dp(22);
+                    float x = AndroidUtilities.dp(28) - customPhotoOffset + onlineTextView[1].getX() - size;
+
+                    avatarPlaceholderImage.setImageCoords(x, cy - size / 2f, size, size);
+                    avatarPlaceholderImage.setAlpha(photoDescriptionProgress);
+                    canvas.save();
+                    float s = photoDescriptionProgress;
+                    canvas.scale(s, s, avatarPlaceholderImage.getCenterX(), avatarPlaceholderImage.getCenterY());
+                    avatarPlaceholderImage.draw(canvas);
+                    canvas.restore();
+
+                    if (customAvatarProgress == 0) {
+                        if (canvasButton == null) {
+                            canvasButton = new CanvasButton(this);
+                            canvasButton.setDelegate(() -> {
+                                if (customAvatarProgress != 1f) {
+                                    avatarsViewPager.scrollToLastItem();
+                                }
+                            });
+                        }
+                        AndroidUtilities.rectTmp.set(x - AndroidUtilities.dp(4), cy - AndroidUtilities.dp(14),
+                                x + onlineTextView[2].getTextWidth()
+                                        + AndroidUtilities.dp(28) * (1f - customAvatarProgress)
+                                        + AndroidUtilities.dp(4),
+                                cy + AndroidUtilities.dp(14));
+                        canvasButton.setRect(AndroidUtilities.rectTmp);
+                        canvasButton.setRounded(true);
+                        canvasButton.setColor(Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, 50));
+                        canvasButton.draw(canvas);
+                    } else {
+                        if (canvasButton != null) {
+                            canvasButton.cancelRipple();
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public boolean onInterceptTouchEvent(MotionEvent ev) {
+                return (canvasButton != null && canvasButton.checkTouchEvent(ev)) || super.onInterceptTouchEvent(ev);
+            }
+
+            @Override
+            public boolean onTouchEvent(MotionEvent event) {
+                return (canvasButton != null && canvasButton.checkTouchEvent(event)) || super.onTouchEvent(event);
+            }
+
+            @Override
+            protected void onAttachedToWindow() {
+                super.onAttachedToWindow();
+                avatarPlaceholderImage.onAttachedToWindow();
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                super.onDetachedFromWindow();
+                avatarPlaceholderImage.onDetachedFromWindow();
+            }
+
+            @Override
+            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+                super.onLayout(changed, left, top, right, bottom);
+                updateCollectibleHint();
+            }
+        };
+
+
+        mainProfileViewContainer.addView(avatarContainer,
+                LayoutHelper.createFrame(42, 42, Gravity.TOP | Gravity.LEFT, 64, 0, 0, 0));
+        mainProfileViewContainer.addView(avatarsViewPager);
+        mainProfileViewContainer.addView(overlaysView);
+        mainProfileViewContainer.addView(avatarsViewPagerIndicatorView,
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        setupNameTextView(context);
+        setupOnlineTextView(context);
+        mainProfileViewContainer.addView(animatedStatusView);
+        mainProfileViewContainer.addView(mediaCounterTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT,
+                LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 118.33f, -2, 8, 0));
+        mainProfileViewContainer.addView(storyView,
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        mainProfileViewContainer.addView(giftsView,
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+
+    }
+
+
 
 }
