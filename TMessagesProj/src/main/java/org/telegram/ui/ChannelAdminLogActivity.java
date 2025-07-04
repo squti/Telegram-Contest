@@ -2998,7 +2998,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                         args.putLong("user_id", user.id);
                         addCanBanUser(args, user.id);
                         ProfileActivity fragment = new ProfileActivity(args);
-                        fragment.setPlayProfileAnimation(0);
+                        fragment.setProfileActivityOpeningAnimationType(ProfileActivity.ProfileOpeningAnimationType.NONE);
                         presentFragment(fragment);
                     }
 
@@ -3297,7 +3297,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             args.putLong("user_id", uid);
                             addCanBanUser(args, uid);
                             ProfileActivity fragment = new ProfileActivity(args);
-                            fragment.setPlayProfileAnimation(0);
+                            fragment.setProfileActivityOpeningAnimationType(ProfileActivity.ProfileOpeningAnimationType.NONE);
                             presentFragment(fragment);
                         }
                     }

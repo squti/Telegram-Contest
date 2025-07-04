@@ -573,7 +573,8 @@ public class ProfileActivity extends BaseFragment
     private boolean openAnimationInProgress;
     private boolean transitionAnimationInProress;
     private boolean recreateMenuAfterAnimation;
-    private int playProfileAnimation;
+    private ProfileOpeningAnimationType playProfileOpeningAnimationType = ProfileOpeningAnimationType.NONE;
+
     private boolean needTimerImage;
     private boolean needStarImage;
     private boolean allowProfileAnimation = true;
@@ -1925,7 +1926,7 @@ public class ProfileActivity extends BaseFragment
 
     private void setupNameTextView(Context context) {
         for (int a = 0; a < nameTextView.length; a++) {
-            if (playProfileAnimation == 0 && a == 0) {
+            if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.NONE && a == 0) {
                 continue;
             }
             nameTextView[a] = new SimpleTextView(context) {
@@ -3861,7 +3862,7 @@ public class ProfileActivity extends BaseFragment
                                                         NotificationCenter.closeChats);
                                                 getNotificationCenter()
                                                         .postNotificationName(NotificationCenter.closeChats);
-                                                playProfileAnimation = 0;
+                                                playProfileOpeningAnimationType = ProfileOpeningAnimationType.NONE;
                                                 finishFragment();
                                             } else {
                                                 getNotificationCenter().postNotificationName(
@@ -3974,7 +3975,7 @@ public class ProfileActivity extends BaseFragment
                         ArrayList<Integer> topicIds = new ArrayList<>();
                         topicIds.add((int) topicId);
                         getMessagesController().getTopicsController().deleteTopics(chatId, topicIds);
-                        playProfileAnimation = 0;
+                        playProfileOpeningAnimationType = ProfileOpeningAnimationType.NONE;
                         if (parentLayout != null && parentLayout.getFragmentStack() != null) {
                             for (int i = 0; i < parentLayout.getFragmentStack().size(); ++i) {
                                 BaseFragment fragment = parentLayout.getFragmentStack().get(i);
@@ -4991,7 +4992,7 @@ public class ProfileActivity extends BaseFragment
             }
         }
 
-        playProfileAnimation = 0;
+        playProfileOpeningAnimationType = ProfileOpeningAnimationType.NONE;
 
         Bundle args = new Bundle();
         args.putLong("chat_id", chatId);
@@ -5215,7 +5216,7 @@ public class ProfileActivity extends BaseFragment
                     setAvatarCell.getImageView().playAnimation();
                 }
             } else {
-                if (playProfileAnimation != 0 && parentLayout != null && parentLayout.getFragmentStack() != null
+                if (playProfileOpeningAnimationType != ProfileOpeningAnimationType.NONE && parentLayout != null && parentLayout.getFragmentStack() != null
                         && parentLayout.getFragmentStack().size() >= 2 && parentLayout.getFragmentStack()
                                 .get(parentLayout.getFragmentStack().size() - 2) instanceof ChatActivity) {
                     finishFragment();
@@ -6043,7 +6044,7 @@ public class ProfileActivity extends BaseFragment
         boolean isForum = ChatObject.isForum(currentChat);
         AlertsCreator.createClearOrDeleteDialogAlert(ProfileActivity.this, false, currentChat, null, false, isForum,
                 !isForum, (param) -> {
-                    playProfileAnimation = 0;
+                    playProfileOpeningAnimationType = ProfileOpeningAnimationType.NONE;
                     getNotificationCenter().removeObserver(ProfileActivity.this, NotificationCenter.closeChats);
                     getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
                     finishFragment();
@@ -6649,7 +6650,7 @@ public class ProfileActivity extends BaseFragment
     private void updateExpandedTextPositions(float currentHeight, int newTop) {
         if (!expandAnimator.isRunning()) {
             float additionalTranslationY = 0;
-            if (openAnimationInProgress && playProfileAnimation == 2) {
+            if (openAnimationInProgress && playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
                 additionalTranslationY = -(1.0f - avatarAnimationProgress) * AndroidUtilities.dp(50);
             }
 
@@ -7409,7 +7410,7 @@ public class ProfileActivity extends BaseFragment
 
     @Override
     public boolean needDelayOpenAnimation() {
-        return playProfileAnimation == 0;
+        return playProfileOpeningAnimationType == ProfileOpeningAnimationType.NONE;
     }
 
     @Override
@@ -7547,14 +7548,14 @@ public class ProfileActivity extends BaseFragment
         fullyVisible = false;
     }
 
-    public void setPlayProfileAnimation(int type) {
+    public void setProfileActivityOpeningAnimationType(ProfileOpeningAnimationType profileOpeningAnimationType) {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         if (!AndroidUtilities.isTablet()) {
-            needTimerImage = type != 0;
-            needStarImage = type != 0;
+            needTimerImage = profileOpeningAnimationType != ProfileOpeningAnimationType.NONE;
+            needStarImage = profileOpeningAnimationType != ProfileOpeningAnimationType.NONE;
             if (preferences.getBoolean("view_animations", true)) {
-                playProfileAnimation = type;
-            } else if (type == 2) {
+                playProfileOpeningAnimationType = profileOpeningAnimationType;
+            } else if (profileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
                 expandPhoto = true;
             }
         }
@@ -7571,7 +7572,7 @@ public class ProfileActivity extends BaseFragment
     public void onTransitionAnimationStart(boolean isOpen, boolean backward) {
         super.onTransitionAnimationStart(isOpen, backward);
         isFragmentOpened = isOpen;
-        if ((!isOpen && backward || isOpen && !backward) && playProfileAnimation != 0 && allowProfileAnimation
+        if ((!isOpen && backward || isOpen && !backward) && playProfileOpeningAnimationType != ProfileOpeningAnimationType.NONE && allowProfileAnimation
                 && !isPulledDown) {
             openAnimationInProgress = true;
         }
@@ -7599,8 +7600,8 @@ public class ProfileActivity extends BaseFragment
     public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         if (isOpen) {
             if (!backward) {
-                if (playProfileAnimation != 0 && allowProfileAnimation) {
-                    if (playProfileAnimation == 1) {
+                if (playProfileOpeningAnimationType != ProfileOpeningAnimationType.NONE && allowProfileAnimation) {
+                    if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_COLLAPSED_MODE) {
                         currentExpandAnimatorValue = 0f;
                     }
                     openAnimationInProgress = false;
@@ -7799,7 +7800,7 @@ public class ProfileActivity extends BaseFragment
             }
             getMessagesController().deleteParticipantFromChat(chatId,
                     getMessagesController().getUser(getUserConfig().getClientUserId()));
-            playProfileAnimation = 0;
+            playProfileOpeningAnimationType = ProfileOpeningAnimationType.NONE;
             finishFragment();
         }
     }
@@ -10832,9 +10833,9 @@ public class ProfileActivity extends BaseFragment
 
     private void checkPhotoDescriptionAlpha() {
         float p = photoDescriptionProgress;
-        if (playProfileAnimation == 1 && (!fragmentOpened || openAnimationInProgress)) {
+        if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_COLLAPSED_MODE && (!fragmentOpened || openAnimationInProgress)) {
             photoDescriptionProgress = 0;
-        } else if (playProfileAnimation == 2 && (!fragmentOpened || openAnimationInProgress)) {
+        } else if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE && (!fragmentOpened || openAnimationInProgress)) {
             photoDescriptionProgress = onlineTextView[1] == null ? 0 : onlineTextView[1].getAlpha();
         } else {
             if (userId == UserConfig.getInstance(currentAccount).clientUserId) {
@@ -11764,7 +11765,7 @@ public class ProfileActivity extends BaseFragment
                             new float[] { 0, 1 }, Shader.TileMode.CLAMP);
                     backgroundPaint.setShader(backgroundGradient);
                 }
-                final float progressToGradient = (playProfileAnimation == 0 ? 1f : avatarAnimationProgress)
+                final float progressToGradient = (playProfileOpeningAnimationType == ProfileOpeningAnimationType.NONE ? 1f : avatarAnimationProgress)
                         * hasColorAnimated.set(hasColorById);
                 if (progressToGradient < 1) {
                     canvas.drawRect(0, 0, getMeasuredWidth(), y1, paint);
@@ -15133,11 +15134,34 @@ public class ProfileActivity extends BaseFragment
             clip[1] = getMeasuredHeight() - getPaddingBottom();
         }
     }
+    public enum ProfileOpeningAnimationType {
+        NONE(0),
+        OPENING_IN_COLLAPSED_MODE(1),
+        OPENING_IN_EXPANDED_MODE(2);
 
+        private final int value;
+
+        ProfileOpeningAnimationType(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        public static ProfileOpeningAnimationType fromValue(int value) {
+            for (ProfileOpeningAnimationType type : values()) {
+                if (type.value == value) {
+                    return type;
+                }
+            }
+            return NONE;
+        }
+    }
     // Animation for the profile transition
     @Override
     public AnimatorSet onCustomTransitionAnimation(final boolean isOpen, final Runnable callback) {
-        if (playProfileAnimation != 0 && allowProfileAnimation && !isPulledDown && !disableProfileAnimation) {
+        if (playProfileOpeningAnimationType != ProfileOpeningAnimationType.NONE && allowProfileAnimation && !isPulledDown && !disableProfileAnimation) {
             if (timeItem != null) {
                 timeItem.setAlpha(1.0f);
             }
@@ -15173,7 +15197,7 @@ public class ProfileActivity extends BaseFragment
                 updateStar();
             }
             final AnimatorSet animatorSet = new AnimatorSet();
-            animatorSet.setDuration(playProfileAnimation == 2 ? 250 : 180);
+            animatorSet.setDuration(playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE ? 250 : 180);
             profileDetailsListView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
             ActionBarMenu menu = actionBar.createMenu();
             if (menu.getItem(10) == null) {
@@ -15182,7 +15206,7 @@ public class ProfileActivity extends BaseFragment
                 }
             }
             System.out.println("ProfileActivity:: onCustomTransitionAnimation : isOpen = " + isOpen
-                    + ", playProfileAnimation = " + playProfileAnimation + ", allowProfileAnimation = "
+                    + ", playProfileAnimation = " + playProfileOpeningAnimationType.value + ", allowProfileAnimation = "
                     + allowProfileAnimation + ", disableProfileAnimation = " + disableProfileAnimation);
             if (isOpen) {
                 for (int i = 0; i < 2; i++) {
@@ -15192,7 +15216,7 @@ public class ProfileActivity extends BaseFragment
                     onlineTextView[i + 1].setLayoutParams(layoutParams);
                 }
 
-                if (playProfileAnimation != 2) {
+                if (playProfileOpeningAnimationType != ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
                     int width = (int) Math.ceil(AndroidUtilities.displaySize.x - AndroidUtilities.dp(118 + 8)
                             + 21 * AndroidUtilities.density);
                     float width2 = nameTextView[1].getPaint().measureText(nameTextView[1].getText().toString()) * 1.12f
@@ -15225,7 +15249,7 @@ public class ProfileActivity extends BaseFragment
                     animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_Y, 1.0f));
                     animators.add(ObjectAnimator.ofFloat(writeButton, View.ALPHA, 1.0f));
                 }
-                if (playProfileAnimation == 2) {
+                if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
                     avatarColor = getAverageColor(avatarImage.getImageReceiver());
                     nameTextView[1].setTextColor(Color.WHITE);
                     onlineTextView[1].setTextColor(0xB3FFFFFF);
@@ -15440,8 +15464,8 @@ public class ProfileActivity extends BaseFragment
                         animatingItem = null;
                     }
                     callback.run();
-                    if (playProfileAnimation == 2) {
-                        playProfileAnimation = 1;
+                    if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
+                        playProfileOpeningAnimationType = ProfileOpeningAnimationType.OPENING_IN_COLLAPSED_MODE;
                         avatarImage.setForegroundAlpha(1.0f);
                         avatarContainer.setVisibility(View.GONE);
                         avatarsViewPager.resetCurrentItem();
@@ -15456,7 +15480,7 @@ public class ProfileActivity extends BaseFragment
                 }
             });
             animatorSet.setInterpolator(
-                    playProfileAnimation == 2 ? CubicBezierInterpolator.DEFAULT : new DecelerateInterpolator());
+                    playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE ? CubicBezierInterpolator.DEFAULT : new DecelerateInterpolator());
 
             AndroidUtilities.runOnUIThread(animatorSet::start, 50);
             return animatorSet;
@@ -15504,7 +15528,7 @@ public class ProfileActivity extends BaseFragment
         if (extraHeight != newOffset && !transitionAnimationInProress) {
             extraHeight = newOffset;
             topView.invalidate();
-            if (playProfileAnimation != 0) {
+            if (playProfileOpeningAnimationType != ProfileOpeningAnimationType.NONE) {
                 allowProfileAnimation = extraHeight != 0;
             }
             System.out.println("ProfileActivity:: checkListViewScroll: " + extraHeight + " "
@@ -15707,7 +15731,7 @@ public class ProfileActivity extends BaseFragment
                             - previousTransitionFragment.getAvatarContainer().getTitleTextView().getMeasuredWidth());
                 }
 
-                if (!fragmentOpened && (expandPhoto || openAnimationInProgress && playProfileAnimation == 2)) {
+                if (!fragmentOpened && (expandPhoto || openAnimationInProgress && playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE)) {
                     ignoreLayout = true;
 
                     if (expandPhoto) {
@@ -15796,7 +15820,7 @@ public class ProfileActivity extends BaseFragment
                         profileDetailsListView.setBottomGlowOffset(0);
                     }
                     initialAnimationExtraHeight = paddingTop - actionBarHeight;
-                    if (playProfileAnimation == 0) {
+                    if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.NONE) {
                         extraHeight = initialAnimationExtraHeight;
                     }
                     layoutManager.scrollToPositionWithOffset(0, -actionBarHeight);
@@ -16301,7 +16325,7 @@ public class ProfileActivity extends BaseFragment
         /// Type 0: No animation
         /// Type 1: Opening from chat list or other fragments
         /// Type 2: Opening with avatar expansion animation
-        if (openAnimationInProgress && playProfileAnimation == 2) {
+        if (openAnimationInProgress && playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
             float avX = 0;
             float avY = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) +
                     ActionBar.getCurrentActionBarHeight() / 2.0f - 21 * AndroidUtilities.density +
@@ -16365,7 +16389,7 @@ public class ProfileActivity extends BaseFragment
         // Update animation state and core avatar properties
         avatarAnimationProgress = currentExpandAnimatorValue = progress;
         checkPhotoDescriptionAlpha();
-        if (playProfileAnimation == 2) {
+        if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
             avatarImage.setProgressToExpand(progress);
         }
 
@@ -16375,7 +16399,7 @@ public class ProfileActivity extends BaseFragment
 
         // Calculate primary background color based on animation type
         int primaryBackgroundColor;
-        if (playProfileAnimation == 2 && avatarColor != 0) {
+        if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE && avatarColor != 0) {
             primaryBackgroundColor = avatarColor;
         } else {
             primaryBackgroundColor = AvatarDrawable.getProfileBackColorForId(
@@ -16404,7 +16428,7 @@ public class ProfileActivity extends BaseFragment
         int titleTargetColor = getThemedColor(Theme.key_profile_title);
         int titleSourceColor = getThemedColor(Theme.key_actionBarDefaultTitle);
         for (int i = 0; i < 2; i++) {
-            if (nameTextView[i] == null || (i == 1 && playProfileAnimation == 2)) {
+            if (nameTextView[i] == null || (i == 1 && playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE)) {
                 continue;
             }
             nameTextView[i].setTextColor(ColorUtils.blendARGB(titleSourceColor, titleTargetColor, progress));
@@ -16419,7 +16443,7 @@ public class ProfileActivity extends BaseFragment
         int onlineSourceColor = getThemedColor(
                 isOnline[0] ? Theme.key_chat_status : Theme.key_actionBarDefaultSubtitle);
         for (int i = 0; i < 3; i++) {
-            if (onlineTextView[i] == null || i == 1 || (i == 2 && playProfileAnimation == 2)) {
+            if (onlineTextView[i] == null || i == 1 || (i == 2 && playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE)) {
                 continue;
             }
             int sourceColor = i == 0 ? onlineSourceColor : applyPeerColor(onlineSourceColor, true, isOnline[0]);

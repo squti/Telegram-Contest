@@ -46,7 +46,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SavedMessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
@@ -578,7 +577,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                     fragment.setUserInfo(parentFragment.getCurrentUserInfo(), parentFragment.profileChannelMessageFetcher, parentFragment.birthdayAssetsFetcher);
                 }
                 if (fromChatAnimation) {
-                    fragment.setPlayProfileAnimation(byAvatar ? 2 : 1);
+                    fragment.setProfileActivityOpeningAnimationType(ProfileActivity.ProfileOpeningAnimationType.fromValue(byAvatar ? 2 : 1));
                 }
                 parentFragment.presentFragment(fragment, removeLast);
             }
@@ -595,7 +594,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 fragment.setChatInfo(parentFragment.getCurrentChatInfo());
             }
             if (fromChatAnimation) {
-                fragment.setPlayProfileAnimation(byAvatar ? 2 : 1);
+                fragment.setProfileActivityOpeningAnimationType(ProfileActivity.ProfileOpeningAnimationType.fromValue(byAvatar ? 2 : 1));
             }
             parentFragment.presentFragment(fragment, removeLast);
         }

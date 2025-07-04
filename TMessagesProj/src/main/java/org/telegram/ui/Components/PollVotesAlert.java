@@ -881,10 +881,10 @@ public class PollVotesAlert extends BottomSheet {
                 ProfileActivity fragment = new ProfileActivity(args);
                 if (userCell.currentUser != null) {
                     TLRPC.User currentUser = parentFragment.getCurrentUser();
-                    fragment.setPlayProfileAnimation(currentUser != null && currentUser.id == userCell.currentUser.id ? 1 : 0);
+                    fragment.setProfileActivityOpeningAnimationType(ProfileActivity.ProfileOpeningAnimationType.fromValue(currentUser != null && currentUser.id == userCell.currentUser.id ? 1 : 0));
                 } else {
                     TLRPC.Chat currentChat = parentFragment.getCurrentChat();
-                    fragment.setPlayProfileAnimation(currentChat != null && currentChat.id == userCell.currentChat.id ? 1 : 0);
+                    fragment.setProfileActivityOpeningAnimationType(ProfileActivity.ProfileOpeningAnimationType.fromValue(currentChat != null && currentChat.id == userCell.currentChat.id ? 1 : 0));
                 }
                 parentFragment.presentFragment(fragment);
             }
