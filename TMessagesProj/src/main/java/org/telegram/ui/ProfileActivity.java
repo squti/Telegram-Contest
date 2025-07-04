@@ -581,7 +581,7 @@ public class ProfileActivity extends BaseFragment
     private boolean disableProfileAnimation = false;
     private float extraHeight;
     private float initialAnimationExtraHeight;
-    private float avatarAnimationProgress;
+    private float openingProfileAnimationProgress;
     private int searchTransitionOffset;
     private float searchTransitionProgress;
     private Animator searchViewTransition;
@@ -6651,7 +6651,7 @@ public class ProfileActivity extends BaseFragment
         if (!expandAnimator.isRunning()) {
             float additionalTranslationY = 0;
             if (openAnimationInProgress && playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
-                additionalTranslationY = -(1.0f - avatarAnimationProgress) * AndroidUtilities.dp(50);
+                additionalTranslationY = -(1.0f - openingProfileAnimationProgress) * AndroidUtilities.dp(50);
             }
 
             onlineX = AndroidUtilities.dpf2(16f) - onlineTextView[1].getLeft();
@@ -6784,7 +6784,7 @@ public class ProfileActivity extends BaseFragment
     private void updateTextPositionsAndScales(float collapseProgress, float nameScale) {
         nameX = -21 * AndroidUtilities.density * collapseProgress;
         nameY = (float) Math.floor(avatarY) + AndroidUtilities.dp(1.3f) + AndroidUtilities.dp(7) * collapseProgress +
-                titleAnimationsYDiff * (1f - avatarAnimationProgress);
+                titleAnimationsYDiff * (1f - openingProfileAnimationProgress);
         onlineX = -21 * AndroidUtilities.density * collapseProgress;
         onlineY = (float) Math.floor(avatarY) + AndroidUtilities.dp(24) +
                 (float) Math.floor(11 * AndroidUtilities.density) * collapseProgress;
@@ -6828,19 +6828,19 @@ public class ProfileActivity extends BaseFragment
         if (scamDrawable != null) {
             scamDrawable.setColor(ColorUtils.blendARGB(
                     getThemedColor(Theme.key_avatar_subtitleInProfileBlue),
-                    Color.argb(179, 255, 255, 255), avatarAnimationProgress));
+                    Color.argb(179, 255, 255, 255), openingProfileAnimationProgress));
         }
         if (lockIconDrawable != null) {
             lockIconDrawable.setColorFilter(ColorUtils.blendARGB(
-                    getThemedColor(Theme.key_chat_lockIcon), Color.WHITE, avatarAnimationProgress),
+                    getThemedColor(Theme.key_chat_lockIcon), Color.WHITE, openingProfileAnimationProgress),
                     PorterDuff.Mode.MULTIPLY);
         }
         if (verifiedCrossfadeDrawable[1] != null) {
-            verifiedCrossfadeDrawable[1].setProgress(avatarAnimationProgress);
+            verifiedCrossfadeDrawable[1].setProgress(openingProfileAnimationProgress);
             nameTextView[1].invalidate();
         }
         if (premiumCrossfadeDrawable[1] != null) {
-            premiumCrossfadeDrawable[1].setProgress(avatarAnimationProgress);
+            premiumCrossfadeDrawable[1].setProgress(openingProfileAnimationProgress);
             nameTextView[1].invalidate();
         }
     }
@@ -7628,8 +7628,8 @@ public class ProfileActivity extends BaseFragment
     }
 
     @Keep
-    public float getAvatarAnimationProgress() {
-        return avatarAnimationProgress;
+    public float getOpeningProfileAnimationProgress() {
+        return openingProfileAnimationProgress;
     }
 
     private int getAverageColor(ImageReceiver imageReceiver) {
@@ -11765,7 +11765,7 @@ public class ProfileActivity extends BaseFragment
                             new float[] { 0, 1 }, Shader.TileMode.CLAMP);
                     backgroundPaint.setShader(backgroundGradient);
                 }
-                final float progressToGradient = (playProfileOpeningAnimationType == ProfileOpeningAnimationType.NONE ? 1f : avatarAnimationProgress)
+                final float progressToGradient = (playProfileOpeningAnimationType == ProfileOpeningAnimationType.NONE ? 1f : openingProfileAnimationProgress)
                         * hasColorAnimated.set(hasColorById);
                 if (progressToGradient < 1) {
                     canvas.drawRect(0, 0, getMeasuredWidth(), y1, paint);
@@ -11803,7 +11803,7 @@ public class ProfileActivity extends BaseFragment
                         int restoreCount = canvas.save();
                         canvas.translate(actionBar.getX() + menu.getX(), actionBar.getY() + menu.getY());
                         canvas.saveLayerAlpha(0, 0, menu.getMeasuredWidth(), menu.getMeasuredHeight(),
-                                (int) (255 * (1f - avatarAnimationProgress)), Canvas.ALL_SAVE_FLAG);
+                                (int) (255 * (1f - openingProfileAnimationProgress)), Canvas.ALL_SAVE_FLAG);
                         menu.draw(canvas);
                         canvas.restoreToCount(restoreCount);
                     }
@@ -15238,9 +15238,9 @@ public class ProfileActivity extends BaseFragment
                     nameTextView[1].setLayoutParams(layoutParams);
                 }
                 fragmentView.setBackgroundColor(0);
-                setAvatarAnimationProgress(0);
+                setOpeningProfileAnimationProgress(0);
                 ArrayList<Animator> animators = new ArrayList<>();
-                animators.add(ObjectAnimator.ofFloat(this, "avatarAnimationProgress", 0.0f, 1.0f));
+                animators.add(ObjectAnimator.ofFloat(this, "openingProfileAnimationProgress", 0.0f, 1.0f));
                 if (writeButton != null && writeButton.getTag() == null) {
                     writeButton.setScaleX(0.2f);
                     writeButton.setScaleY(0.2f);
@@ -15348,7 +15348,7 @@ public class ProfileActivity extends BaseFragment
             } else {
                 initialAnimationExtraHeight = extraHeight;
                 ArrayList<Animator> animators = new ArrayList<>();
-                animators.add(ObjectAnimator.ofFloat(this, "avatarAnimationProgress", 1.0f, 0.0f));
+                animators.add(ObjectAnimator.ofFloat(this, "openingProfileAnimationProgress", 1.0f, 0.0f));
                 if (writeButton != null) {
                     animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_X, 0.2f));
                     animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_Y, 0.2f));
@@ -16191,7 +16191,7 @@ public class ProfileActivity extends BaseFragment
                     canvas.save();
                     canvas.translate(onlineTextView[0].getX(), onlineTextView[0].getY());
                     canvas.saveLayerAlpha(0, 0, transitionOnlineText.getMeasuredWidth(),
-                            transitionOnlineText.getMeasuredHeight(), (int) (255 * (1f - avatarAnimationProgress)),
+                            transitionOnlineText.getMeasuredHeight(), (int) (255 * (1f - openingProfileAnimationProgress)),
                             Canvas.ALL_SAVE_FLAG);
                     transitionOnlineText.draw(canvas);
                     canvas.restore();
@@ -16346,7 +16346,7 @@ public class ProfileActivity extends BaseFragment
 
             // Update avatar
             avatarScale = AndroidUtilities.lerp(1.0f, (AVATAR_SIZE_DP + AVATAR_SIZE_DP + 18f) / AVATAR_SIZE_DP,
-                    avatarAnimationProgress);
+                    openingProfileAnimationProgress);
 
             if (storyView != null) {
                 storyView.setExpandProgress(1f);
@@ -16356,28 +16356,28 @@ public class ProfileActivity extends BaseFragment
             }
 
             avatarImage.setRoundRadius(
-                    (int) AndroidUtilities.lerp(getSmallAvatarRoundRadius(), 0f, avatarAnimationProgress));
+                    (int) AndroidUtilities.lerp(getSmallAvatarRoundRadius(), 0f, openingProfileAnimationProgress));
             avatarContainer.setTranslationX(avX);
-            avatarContainer.setTranslationY(AndroidUtilities.lerp((float) Math.ceil(avY), 0f, avatarAnimationProgress));
+            avatarContainer.setTranslationY(AndroidUtilities.lerp((float) Math.ceil(avY), 0f, openingProfileAnimationProgress));
 
             updateTimeAndStarItemsForAnimation();
             applyAvatarTransformations();
 
             // Update overlay and action bar colors
-            overlaysView.setAlphaValue(avatarAnimationProgress, false);
+            overlaysView.setAlphaValue(openingProfileAnimationProgress, false);
             actionBar.setItemsColor(ColorUtils.blendARGB(
                     peerColor != null ? Color.WHITE : getThemedColor(Theme.key_actionBarDefaultIcon),
-                    Color.WHITE, avatarAnimationProgress), false);
+                    Color.WHITE, openingProfileAnimationProgress), false);
 
             updateDrawableColors();
-            updateEmojiStatusDrawableColor(avatarAnimationProgress);
+            updateEmojiStatusDrawableColor(openingProfileAnimationProgress);
 
             // Update avatar container layout params
             final FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
             params.width = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(AVATAR_SIZE_DP),
-                    profileDetailsListView.getMeasuredWidth() / avatarScale, avatarAnimationProgress);
+                    profileDetailsListView.getMeasuredWidth() / avatarScale, openingProfileAnimationProgress);
             params.height = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(AVATAR_SIZE_DP),
-                    (extraHeight + newTop) / avatarScale, avatarAnimationProgress);
+                    (extraHeight + newTop) / avatarScale, openingProfileAnimationProgress);
             avatarContainer.requestLayout();
 
             updateCollectibleHint();
@@ -16385,9 +16385,9 @@ public class ProfileActivity extends BaseFragment
     }
 
     @Keep
-    public void setAvatarAnimationProgress(float progress) {
+    public void setOpeningProfileAnimationProgress(float progress) {
         // Update animation state and core avatar properties
-        avatarAnimationProgress = currentExpandAnimatorValue = progress;
+        openingProfileAnimationProgress = currentExpandAnimatorValue = progress;
         checkPhotoDescriptionAlpha();
         if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
             avatarImage.setProgressToExpand(progress);
@@ -16422,7 +16422,7 @@ public class ProfileActivity extends BaseFragment
                 userId != 0 || ChatObject.isChannel(chatId, currentAccount) && !currentChat.megagroup ? 5 : chatId,
                 resourcesProvider);
         int iconSourceColor = peerColor != null ? Color.WHITE : getThemedColor(Theme.key_actionBarDefaultIcon);
-        actionBar.setItemsColor(ColorUtils.blendARGB(iconSourceColor, iconTargetColor, avatarAnimationProgress), false);
+        actionBar.setItemsColor(ColorUtils.blendARGB(iconSourceColor, iconTargetColor, openingProfileAnimationProgress), false);
 
         // Apply name text view color animations
         int titleTargetColor = getThemedColor(Theme.key_profile_title);
@@ -16471,8 +16471,8 @@ public class ProfileActivity extends BaseFragment
 
         // Trigger view invalidations and layout updates
         topView.invalidate();
-        System.out.println("ProfileActivity:: setAvatarAnimationProgress : progress = " + progress
-                + ", avatarAnimationProgress = " + avatarAnimationProgress + ", currentExpandAnimatorValue = "
+        System.out.println("ProfileActivity:: setOpeningProfileAnimationProgress : progress = " + progress
+                + ", avatarAnimationProgress = " + openingProfileAnimationProgress + ", currentExpandAnimatorValue = "
                 + currentExpandAnimatorValue);
         updateProfileLayout(true);
         if (fragmentView != null) {
@@ -16485,13 +16485,13 @@ public class ProfileActivity extends BaseFragment
         // Apply stories-related animations for dialogs
         if (getDialogId() > 0) {
             if (avatarImage != null) {
-                avatarImage.setProgressToStoriesInsets(avatarAnimationProgress);
+                avatarImage.setProgressToStoriesInsets(openingProfileAnimationProgress);
             }
             if (storyView != null) {
-                storyView.setProgressToStoriesInsets(avatarAnimationProgress);
+                storyView.setProgressToStoriesInsets(openingProfileAnimationProgress);
             }
             if (giftsView != null) {
-                giftsView.setProgressToStoriesInsets(avatarAnimationProgress);
+                giftsView.setProgressToStoriesInsets(openingProfileAnimationProgress);
             }
         }
     }
