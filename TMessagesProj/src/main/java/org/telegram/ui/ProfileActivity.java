@@ -15161,331 +15161,396 @@ public class ProfileActivity extends BaseFragment
     // Animation for the profile transition
     @Override
     public AnimatorSet onCustomTransitionAnimation(final boolean isOpen, final Runnable callback) {
-        if (playProfileOpeningAnimationType != ProfileOpeningAnimationType.NONE && allowProfileAnimation && !isPulledDown && !disableProfileAnimation) {
-            if (timeItem != null) {
-                timeItem.setAlpha(1.0f);
-            }
-            if (starFgItem != null) {
-                starFgItem.setAlpha(1.0f);
-                starFgItem.setScaleX(1.0f);
-                starFgItem.setScaleY(1.0f);
-            }
-            if (starBgItem != null) {
-                starBgItem.setAlpha(1.0f);
-                starBgItem.setScaleX(1.0f);
-                starBgItem.setScaleY(1.0f);
-            }
-            previousTransitionMainFragment = null;
-            if (parentLayout != null && parentLayout.getFragmentStack().size() >= 2) {
-                BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2);
-                if (fragment instanceof ChatActivityInterface) {
-                    previousTransitionFragment = (ChatActivityInterface) fragment;
-                }
-                if (fragment instanceof DialogsActivity) {
-                    DialogsActivity dialogsActivity = (DialogsActivity) fragment;
-                    if (dialogsActivity.rightSlidingDialogContainer != null
-                            && dialogsActivity.rightSlidingDialogContainer.currentFragment instanceof ChatActivityInterface) {
-                        previousTransitionMainFragment = dialogsActivity;
-                        previousTransitionFragment = (ChatActivityInterface) dialogsActivity.rightSlidingDialogContainer.currentFragment;
-                    }
-                }
-            }
-            final boolean fromChat = previousTransitionFragment instanceof ChatActivity
-                    && previousTransitionFragment.getCurrentChat() != null;
-            if (previousTransitionFragment != null) {
-                updateTimeItem();
-                updateStar();
-            }
-            final AnimatorSet animatorSet = new AnimatorSet();
-            animatorSet.setDuration(playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE ? 250 : 180);
-            profileDetailsListView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-            ActionBarMenu menu = actionBar.createMenu();
-            if (menu.getItem(10) == null) {
-                if (animatingItem == null) {
-                    animatingItem = menu.addItem(10, R.drawable.ic_ab_other);
-                }
-            }
-            System.out.println("ProfileActivity:: onCustomTransitionAnimation : isOpen = " + isOpen
-                    + ", playProfileAnimation = " + playProfileOpeningAnimationType.value + ", allowProfileAnimation = "
-                    + allowProfileAnimation + ", disableProfileAnimation = " + disableProfileAnimation);
-            if (isOpen) {
-                for (int i = 0; i < 2; i++) {
-                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) onlineTextView[i + 1]
-                            .getLayoutParams();
-                    layoutParams.rightMargin = (int) (-21 * AndroidUtilities.density + AndroidUtilities.dp(8));
-                    onlineTextView[i + 1].setLayoutParams(layoutParams);
-                }
-
-                if (playProfileOpeningAnimationType != ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
-                    int width = (int) Math.ceil(AndroidUtilities.displaySize.x - AndroidUtilities.dp(118 + 8)
-                            + 21 * AndroidUtilities.density);
-                    float width2 = nameTextView[1].getPaint().measureText(nameTextView[1].getText().toString()) * 1.12f
-                            + nameTextView[1].getSideDrawablesSize();
-                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) nameTextView[1]
-                            .getLayoutParams();
-                    if (width < width2) {
-                        layoutParams.width = (int) Math.ceil(width / 1.12f);
-                    } else {
-                        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-                    }
-                    nameTextView[1].setLayoutParams(layoutParams);
-
-                    initialAnimationExtraHeight = collapsedAreaHeight;
-                } else {
-                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) nameTextView[1]
-                            .getLayoutParams();
-                    layoutParams.width = (int) ((AndroidUtilities.displaySize.x - AndroidUtilities.dp(32)) / 1.67f);
-                    nameTextView[1].setLayoutParams(layoutParams);
-                }
-                fragmentView.setBackgroundColor(0);
-                setOpeningProfileAnimationProgress(0);
-                ArrayList<Animator> animators = new ArrayList<>();
-                animators.add(ObjectAnimator.ofFloat(this, "openingProfileAnimationProgress", 0.0f, 1.0f));
-                if (writeButton != null && writeButton.getTag() == null) {
-                    writeButton.setScaleX(0.2f);
-                    writeButton.setScaleY(0.2f);
-                    writeButton.setAlpha(0.0f);
-                    animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_X, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_Y, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(writeButton, View.ALPHA, 1.0f));
-                }
-                if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
-                    avatarColor = getAverageColor(avatarImage.getImageReceiver());
-                    nameTextView[1].setTextColor(Color.WHITE);
-                    onlineTextView[1].setTextColor(0xB3FFFFFF);
-                    actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR, false);
-                    if (showStatusButton != null) {
-                        showStatusButton.setBackgroundColor(0x23ffffff);
-                    }
-                    overlaysView.setOverlaysVisible();
-                }
-                for (int a = 0; a < 2; a++) {
-                    nameTextView[a].setAlpha(a == 0 ? 1.0f : 0.0f);
-                    animators.add(ObjectAnimator.ofFloat(nameTextView[a], View.ALPHA, a == 0 ? 0.0f : 1.0f));
-                }
-                if (storyView != null) {
-                    if (getDialogId() > 0) {
-                        storyView.setAlpha(0f);
-                        animators.add(ObjectAnimator.ofFloat(storyView, View.ALPHA, 1.0f));
-                    } else {
-                        storyView.setAlpha(1f);
-                        storyView.setFragmentTransitionProgress(0);
-                        animators.add(ObjectAnimator.ofFloat(storyView, ProfileStoriesView.FRAGMENT_TRANSITION_PROPERTY,
-                                1.0f));
-                    }
-                }
-                if (giftsView != null) {
-                    giftsView.setAlpha(0f);
-                    animators.add(ObjectAnimator.ofFloat(giftsView, View.ALPHA, 1.0f));
-                }
-                if (timeItem.getTag() != null) {
-                    animators.add(ObjectAnimator.ofFloat(timeItem, View.ALPHA, 1.0f, 0.0f));
-                    animators.add(ObjectAnimator.ofFloat(timeItem, View.SCALE_X, 1.0f, 0.0f));
-                    animators.add(ObjectAnimator.ofFloat(timeItem, View.SCALE_Y, 1.0f, 0.0f));
-                }
-                if (starFgItem.getTag() != null) {
-                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.ALPHA, 1.0f, 0.0f));
-                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.SCALE_X, 1.0f, 0.0f));
-                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.SCALE_Y, 1.0f, 0.0f));
-                }
-                if (starBgItem.getTag() != null) {
-                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.ALPHA, 1.0f, 0.0f));
-                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.SCALE_X, 1.0f, 0.0f));
-                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.SCALE_Y, 1.0f, 0.0f));
-                }
-                if (animatingItem != null) {
-                    animatingItem.setAlpha(1.0f);
-                    animators.add(ObjectAnimator.ofFloat(animatingItem, View.ALPHA, 0.0f));
-                }
-                if (callItemVisible && (chatId != 0 || fromChat)) {
-                    callItem.setAlpha(0.0f);
-                    animators.add(ObjectAnimator.ofFloat(callItem, View.ALPHA, 1.0f));
-                }
-                if (videoCallItemVisible) {
-                    videoCallItem.setAlpha(0.0f);
-                    animators.add(ObjectAnimator.ofFloat(videoCallItem, View.ALPHA, 1.0f));
-                }
-                if (editItemVisible) {
-                    editItem.setAlpha(0.0f);
-                    animators.add(ObjectAnimator.ofFloat(editItem, View.ALPHA, 1.0f));
-                }
-                if (ttlIconView.getTag() != null) {
-                    ttlIconView.setAlpha(0f);
-                    animators.add(ObjectAnimator.ofFloat(ttlIconView, View.ALPHA, 1.0f));
-                }
-                if (floatingButtonContainer != null) {
-                    floatingButtonContainer.setAlpha(0f);
-                    animators.add(ObjectAnimator.ofFloat(floatingButtonContainer, View.ALPHA, 1.0f));
-                }
-                if (avatarImage != null) {
-                    avatarImage.setCrossfadeProgress(1.0f);
-                    animators.add(ObjectAnimator.ofFloat(avatarImage, AvatarImageView.CROSSFADE_PROGRESS, 0.0f));
-                }
-
-                boolean onlineTextCrosafade = false;
-
-                if (previousTransitionFragment != null) {
-                    ChatAvatarContainer avatarContainer = previousTransitionFragment.getAvatarContainer();
-                    if (avatarContainer != null && avatarContainer.getSubtitleTextView() instanceof SimpleTextView
-                            && ((SimpleTextView) avatarContainer.getSubtitleTextView()).getLeftDrawable() != null
-                            || avatarContainer.statusMadeShorter[0]) {
-                        transitionOnlineText = avatarContainer.getSubtitleTextView();
-                        mainProfileViewContainer.invalidate();
-                        onlineTextCrosafade = true;
-                        onlineTextView[0].setAlpha(0f);
-                        onlineTextView[1].setAlpha(0f);
-                        animators.add(ObjectAnimator.ofFloat(onlineTextView[1], View.ALPHA, 1.0f));
-                    }
-                }
-
-                if (!onlineTextCrosafade) {
-                    for (int a = 0; a < 2; a++) {
-                        onlineTextView[a].setAlpha(a == 0 ? 1.0f : 0.0f);
-                        animators.add(ObjectAnimator.ofFloat(onlineTextView[a], View.ALPHA, a == 0 ? 0.0f : 1.0f));
-                    }
-                }
-                animatorSet.playTogether(animators);
-            } else {
-                initialAnimationExtraHeight = extraHeight;
-                ArrayList<Animator> animators = new ArrayList<>();
-                animators.add(ObjectAnimator.ofFloat(this, "openingProfileAnimationProgress", 1.0f, 0.0f));
-                if (writeButton != null) {
-                    animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_X, 0.2f));
-                    animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_Y, 0.2f));
-                    animators.add(ObjectAnimator.ofFloat(writeButton, View.ALPHA, 0.0f));
-                }
-                for (int a = 0; a < 2; a++) {
-                    animators.add(ObjectAnimator.ofFloat(nameTextView[a], View.ALPHA, a == 0 ? 1.0f : 0.0f));
-                }
-                if (storyView != null) {
-                    if (mDialogId > 0) {
-                        animators.add(ObjectAnimator.ofFloat(storyView, View.ALPHA, 0.0f));
-                    } else {
-                        animators.add(ObjectAnimator.ofFloat(storyView, ProfileStoriesView.FRAGMENT_TRANSITION_PROPERTY,
-                                0.0f));
-                    }
-                }
-                if (giftsView != null) {
-                    animators.add(ObjectAnimator.ofFloat(giftsView, View.ALPHA, 0.0f));
-                }
-                if (timeItem.getTag() != null) {
-                    timeItem.setAlpha(0f);
-                    animators.add(ObjectAnimator.ofFloat(timeItem, View.ALPHA, 0.0f, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(timeItem, View.SCALE_X, 0.0f, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(timeItem, View.SCALE_Y, 0.0f, 1.0f));
-                }
-                if (starFgItem.getTag() != null) {
-                    starFgItem.setAlpha(0f);
-                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.ALPHA, 0.0f, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.SCALE_X, 0.0f, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(starFgItem, View.SCALE_Y, 0.0f, 1.0f));
-                }
-                if (starBgItem.getTag() != null) {
-                    starBgItem.setAlpha(0f);
-                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.ALPHA, 0.0f, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.SCALE_X, 0.0f, 1.0f));
-                    animators.add(ObjectAnimator.ofFloat(starBgItem, View.SCALE_Y, 0.0f, 1.0f));
-                }
-                if (animatingItem != null) {
-                    animatingItem.setAlpha(0.0f);
-                    animators.add(ObjectAnimator.ofFloat(animatingItem, View.ALPHA, 1.0f));
-                }
-                if (callItemVisible && (chatId != 0 || fromChat)) {
-                    callItem.setAlpha(1.0f);
-                    animators.add(ObjectAnimator.ofFloat(callItem, View.ALPHA, 0.0f));
-                }
-                if (videoCallItemVisible) {
-                    videoCallItem.setAlpha(1.0f);
-                    animators.add(ObjectAnimator.ofFloat(videoCallItem, View.ALPHA, 0.0f));
-                }
-                if (editItemVisible) {
-                    editItem.setAlpha(1.0f);
-                    animators.add(ObjectAnimator.ofFloat(editItem, View.ALPHA, 0.0f));
-                }
-                if (ttlIconView != null) {
-                    animators.add(ObjectAnimator.ofFloat(ttlIconView, View.ALPHA, ttlIconView.getAlpha(), 0.0f));
-                }
-                if (floatingButtonContainer != null) {
-                    animators.add(ObjectAnimator.ofFloat(floatingButtonContainer, View.ALPHA, 0.0f));
-                }
-                if (avatarImage != null) {
-                    animators.add(ObjectAnimator.ofFloat(avatarImage, AvatarImageView.CROSSFADE_PROGRESS, 1.0f));
-                }
-
-                boolean crossfadeOnlineText = false;
-                BaseFragment previousFragment = parentLayout.getFragmentStack().size() > 1
-                        ? parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2)
-                        : null;
-                if (previousFragment instanceof ChatActivity) {
-                    ChatAvatarContainer avatarContainer = ((ChatActivity) previousFragment).getAvatarContainer();
-                    View subtitleTextView = avatarContainer.getSubtitleTextView();
-                    if (subtitleTextView instanceof SimpleTextView
-                            && ((SimpleTextView) subtitleTextView).getLeftDrawable() != null
-                            || avatarContainer.statusMadeShorter[0]) {
-                        transitionOnlineText = avatarContainer.getSubtitleTextView();
-                        mainProfileViewContainer.invalidate();
-                        crossfadeOnlineText = true;
-                        animators.add(ObjectAnimator.ofFloat(onlineTextView[0], View.ALPHA, 0.0f));
-                        animators.add(ObjectAnimator.ofFloat(onlineTextView[1], View.ALPHA, 0.0f));
-                    }
-                }
-                if (!crossfadeOnlineText) {
-                    for (int a = 0; a < 2; a++) {
-                        animators.add(ObjectAnimator.ofFloat(onlineTextView[a], View.ALPHA, a == 0 ? 1.0f : 0.0f));
-                    }
-                }
-                animatorSet.playTogether(animators);
-                if (birthdayEffect != null) {
-                    birthdayEffect.hide();
-                }
-            }
-            profileTransitionInProgress = true;
-            ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1f);
-            valueAnimator.addUpdateListener(valueAnimator1 -> {
-                if (fragmentView != null) {
-                    fragmentView.invalidate();
-                }
-                updateStoriesViewBounds(true);
-            });
-            animatorSet.playTogether(valueAnimator);
-
-            animatorSet.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    if (fragmentView == null) {
-                        callback.run();
-                        return;
-                    }
-                    avatarImage.setProgressToExpand(0);
-                    profileDetailsListView.setLayerType(View.LAYER_TYPE_NONE, null);
-                    if (animatingItem != null) {
-                        ActionBarMenu menu = actionBar.createMenu();
-                        menu.clearItems();
-                        animatingItem = null;
-                    }
-                    callback.run();
-                    if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
-                        playProfileOpeningAnimationType = ProfileOpeningAnimationType.OPENING_IN_COLLAPSED_MODE;
-                        avatarImage.setForegroundAlpha(1.0f);
-                        avatarContainer.setVisibility(View.GONE);
-                        avatarsViewPager.resetCurrentItem();
-                        avatarsViewPager.setVisibility(View.VISIBLE);
-                    }
-                    transitionOnlineText = null;
-                    mainProfileViewContainer.invalidate();
-                    profileTransitionInProgress = false;
-                    previousTransitionFragment = null;
-                    previousTransitionMainFragment = null;
-                    fragmentView.invalidate();
-                }
-            });
-            animatorSet.setInterpolator(
-                    playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE ? CubicBezierInterpolator.DEFAULT : new DecelerateInterpolator());
-
-            AndroidUtilities.runOnUIThread(animatorSet::start, 50);
-            return animatorSet;
+        // Early exit if animation conditions are not met
+        if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.NONE || !allowProfileAnimation || isPulledDown || disableProfileAnimation) {
+            return null;
         }
-        return null;
+
+        // Initialize UI items for animation
+        if (timeItem != null) {
+            timeItem.setAlpha(1.0f);
+        }
+        if (starFgItem != null) {
+            starFgItem.setAlpha(1.0f);
+            starFgItem.setScaleX(1.0f);
+            starFgItem.setScaleY(1.0f);
+        }
+        if (starBgItem != null) {
+            starBgItem.setAlpha(1.0f);
+            starBgItem.setScaleX(1.0f);
+            starBgItem.setScaleY(1.0f);
+        }
+
+        // Identify previous transition fragments
+        previousTransitionMainFragment = null;
+        if (parentLayout != null && parentLayout.getFragmentStack().size() >= 2) {
+            BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2);
+            if (fragment instanceof ChatActivityInterface) {
+                previousTransitionFragment = (ChatActivityInterface) fragment;
+            }
+            if (fragment instanceof DialogsActivity) {
+                DialogsActivity dialogsActivity = (DialogsActivity) fragment;
+                if (dialogsActivity.rightSlidingDialogContainer != null
+                        && dialogsActivity.rightSlidingDialogContainer.currentFragment instanceof ChatActivityInterface) {
+                    previousTransitionMainFragment = dialogsActivity;
+                    previousTransitionFragment = (ChatActivityInterface) dialogsActivity.rightSlidingDialogContainer.currentFragment;
+                }
+            }
+        }
+
+        final boolean fromChat = previousTransitionFragment instanceof ChatActivity
+                && previousTransitionFragment.getCurrentChat() != null;
+        if (previousTransitionFragment != null) {
+            updateTimeItem();
+            updateStar();
+        }
+
+        // Setup main animator configuration
+        final AnimatorSet animatorSet = new AnimatorSet();
+        animatorSet.setDuration(playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE ? 250 : 180);
+        profileDetailsListView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        
+        // Configure action bar animation item
+        ActionBarMenu menu = actionBar.createMenu();
+        if (menu.getItem(10) == null) {
+            if (animatingItem == null) {
+                animatingItem = menu.addItem(10, R.drawable.ic_ab_other);
+            }
+        }
+
+        System.out.println("ProfileActivity:: onCustomTransitionAnimation : isOpen = " + isOpen
+                + ", playProfileAnimation = " + playProfileOpeningAnimationType.value + ", allowProfileAnimation = "
+                + allowProfileAnimation + ", disableProfileAnimation = " + disableProfileAnimation);
+
+        ArrayList<Animator> animators = new ArrayList<>();
+
+        if (isOpen) {
+            // Configure opening animation
+            
+            // Adjust online text view margins
+            for (int i = 0; i < 2; i++) {
+                FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) onlineTextView[i + 1].getLayoutParams();
+                layoutParams.rightMargin = (int) (-21 * AndroidUtilities.density + AndroidUtilities.dp(8));
+                onlineTextView[i + 1].setLayoutParams(layoutParams);
+            }
+
+            // Configure name text view layout based on animation type
+            if (playProfileOpeningAnimationType != ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
+                int width = (int) Math.ceil(AndroidUtilities.displaySize.x - AndroidUtilities.dp(118 + 8) + 21 * AndroidUtilities.density);
+                float width2 = nameTextView[1].getPaint().measureText(nameTextView[1].getText().toString()) * 1.12f + nameTextView[1].getSideDrawablesSize();
+                FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) nameTextView[1].getLayoutParams();
+                if (width < width2) {
+                    layoutParams.width = (int) Math.ceil(width / 1.12f);
+                } else {
+                    layoutParams.width = LayoutHelper.WRAP_CONTENT;
+                }
+                nameTextView[1].setLayoutParams(layoutParams);
+                initialAnimationExtraHeight = collapsedAreaHeight;
+            } else {
+                FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) nameTextView[1].getLayoutParams();
+                layoutParams.width = (int) ((AndroidUtilities.displaySize.x - AndroidUtilities.dp(32)) / 1.67f);
+                nameTextView[1].setLayoutParams(layoutParams);
+            }
+
+            // Initialize animation state
+            fragmentView.setBackgroundColor(0);
+            setOpeningProfileAnimationProgress(0);
+            animators.add(ObjectAnimator.ofFloat(this, "openingProfileAnimationProgress", 0.0f, 1.0f));
+
+            // Configure write button animation
+            if (writeButton != null && writeButton.getTag() == null) {
+                writeButton.setScaleX(0.2f);
+                writeButton.setScaleY(0.2f);
+                writeButton.setAlpha(0.0f);
+                animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_X, 1.0f));
+                animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_Y, 1.0f));
+                animators.add(ObjectAnimator.ofFloat(writeButton, View.ALPHA, 1.0f));
+            }
+
+            // Configure expanded mode specific animations
+            if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
+                avatarColor = getAverageColor(avatarImage.getImageReceiver());
+                nameTextView[1].setTextColor(Color.WHITE);
+                onlineTextView[1].setTextColor(0xB3FFFFFF);
+                actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR, false);
+                if (showStatusButton != null) {
+                    showStatusButton.setBackgroundColor(0x23ffffff);
+                }
+                overlaysView.setOverlaysVisible();
+            }
+
+            // Configure name text view animations
+            for (int a = 0; a < 2; a++) {
+                nameTextView[a].setAlpha(a == 0 ? 1.0f : 0.0f);
+                animators.add(ObjectAnimator.ofFloat(nameTextView[a], View.ALPHA, a == 0 ? 0.0f : 1.0f));
+            }
+
+            // Configure story view animations
+            if (storyView != null) {
+                if (getDialogId() > 0) {
+                    storyView.setAlpha(0f);
+                    animators.add(ObjectAnimator.ofFloat(storyView, View.ALPHA, 1.0f));
+                } else {
+                    storyView.setAlpha(1f);
+                    storyView.setFragmentTransitionProgress(0);
+                    animators.add(ObjectAnimator.ofFloat(storyView, ProfileStoriesView.FRAGMENT_TRANSITION_PROPERTY, 1.0f));
+                }
+            }
+
+            // Configure gifts view animation
+            if (giftsView != null) {
+                giftsView.setAlpha(0f);
+                animators.add(ObjectAnimator.ofFloat(giftsView, View.ALPHA, 1.0f));
+            }
+
+            // Configure time item animations
+            if (timeItem.getTag() != null) {
+                animators.add(ObjectAnimator.ofFloat(timeItem, View.ALPHA, 1.0f, 0.0f));
+                animators.add(ObjectAnimator.ofFloat(timeItem, View.SCALE_X, 1.0f, 0.0f));
+                animators.add(ObjectAnimator.ofFloat(timeItem, View.SCALE_Y, 1.0f, 0.0f));
+            }
+
+            // Configure star foreground item animations
+            if (starFgItem.getTag() != null) {
+                animators.add(ObjectAnimator.ofFloat(starFgItem, View.ALPHA, 1.0f, 0.0f));
+                animators.add(ObjectAnimator.ofFloat(starFgItem, View.SCALE_X, 1.0f, 0.0f));
+                animators.add(ObjectAnimator.ofFloat(starFgItem, View.SCALE_Y, 1.0f, 0.0f));
+            }
+
+            // Configure star background item animations
+            if (starBgItem.getTag() != null) {
+                animators.add(ObjectAnimator.ofFloat(starBgItem, View.ALPHA, 1.0f, 0.0f));
+                animators.add(ObjectAnimator.ofFloat(starBgItem, View.SCALE_X, 1.0f, 0.0f));
+                animators.add(ObjectAnimator.ofFloat(starBgItem, View.SCALE_Y, 1.0f, 0.0f));
+            }
+
+            // Configure animating item animation
+            if (animatingItem != null) {
+                animatingItem.setAlpha(1.0f);
+                animators.add(ObjectAnimator.ofFloat(animatingItem, View.ALPHA, 0.0f));
+            }
+
+            // Configure action bar items animations
+            if (callItemVisible && (chatId != 0 || fromChat)) {
+                callItem.setAlpha(0.0f);
+                animators.add(ObjectAnimator.ofFloat(callItem, View.ALPHA, 1.0f));
+            }
+            if (videoCallItemVisible) {
+                videoCallItem.setAlpha(0.0f);
+                animators.add(ObjectAnimator.ofFloat(videoCallItem, View.ALPHA, 1.0f));
+            }
+            if (editItemVisible) {
+                editItem.setAlpha(0.0f);
+                animators.add(ObjectAnimator.ofFloat(editItem, View.ALPHA, 1.0f));
+            }
+
+            // Configure additional UI elements animations
+            if (ttlIconView.getTag() != null) {
+                ttlIconView.setAlpha(0f);
+                animators.add(ObjectAnimator.ofFloat(ttlIconView, View.ALPHA, 1.0f));
+            }
+            if (floatingButtonContainer != null) {
+                floatingButtonContainer.setAlpha(0f);
+                animators.add(ObjectAnimator.ofFloat(floatingButtonContainer, View.ALPHA, 1.0f));
+            }
+            if (avatarImage != null) {
+                avatarImage.setCrossfadeProgress(1.0f);
+                animators.add(ObjectAnimator.ofFloat(avatarImage, AvatarImageView.CROSSFADE_PROGRESS, 0.0f));
+            }
+
+            // Configure online text crossfade animations
+            boolean onlineTextCrosafade = false;
+            if (previousTransitionFragment != null) {
+                ChatAvatarContainer avatarContainer = previousTransitionFragment.getAvatarContainer();
+                if (avatarContainer != null && avatarContainer.getSubtitleTextView() instanceof SimpleTextView
+                        && ((SimpleTextView) avatarContainer.getSubtitleTextView()).getLeftDrawable() != null
+                        || avatarContainer.statusMadeShorter[0]) {
+                    transitionOnlineText = avatarContainer.getSubtitleTextView();
+                    mainProfileViewContainer.invalidate();
+                    onlineTextCrosafade = true;
+                    onlineTextView[0].setAlpha(0f);
+                    onlineTextView[1].setAlpha(0f);
+                    animators.add(ObjectAnimator.ofFloat(onlineTextView[1], View.ALPHA, 1.0f));
+                }
+            }
+
+            if (!onlineTextCrosafade) {
+                for (int a = 0; a < 2; a++) {
+                    onlineTextView[a].setAlpha(a == 0 ? 1.0f : 0.0f);
+                    animators.add(ObjectAnimator.ofFloat(onlineTextView[a], View.ALPHA, a == 0 ? 0.0f : 1.0f));
+                }
+            }
+
+        } else {
+            // Configure closing animation
+            
+            initialAnimationExtraHeight = extraHeight;
+            animators.add(ObjectAnimator.ofFloat(this, "openingProfileAnimationProgress", 1.0f, 0.0f));
+
+            // Configure write button closing animation
+            if (writeButton != null) {
+                animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_X, 0.2f));
+                animators.add(ObjectAnimator.ofFloat(writeButton, View.SCALE_Y, 0.2f));
+                animators.add(ObjectAnimator.ofFloat(writeButton, View.ALPHA, 0.0f));
+            }
+
+            // Configure name text view closing animations
+            for (int a = 0; a < 2; a++) {
+                animators.add(ObjectAnimator.ofFloat(nameTextView[a], View.ALPHA, a == 0 ? 1.0f : 0.0f));
+            }
+
+            // Configure story view closing animations
+            if (storyView != null) {
+                if (mDialogId > 0) {
+                    animators.add(ObjectAnimator.ofFloat(storyView, View.ALPHA, 0.0f));
+                } else {
+                    animators.add(ObjectAnimator.ofFloat(storyView, ProfileStoriesView.FRAGMENT_TRANSITION_PROPERTY, 0.0f));
+                }
+            }
+
+            // Configure gifts view closing animation
+            if (giftsView != null) {
+                animators.add(ObjectAnimator.ofFloat(giftsView, View.ALPHA, 0.0f));
+            }
+
+            // Configure time item closing animations
+            if (timeItem.getTag() != null) {
+                timeItem.setAlpha(0f);
+                animators.add(ObjectAnimator.ofFloat(timeItem, View.ALPHA, 0.0f, 1.0f));
+                animators.add(ObjectAnimator.ofFloat(timeItem, View.SCALE_X, 0.0f, 1.0f));
+                animators.add(ObjectAnimator.ofFloat(timeItem, View.SCALE_Y, 0.0f, 1.0f));
+            }
+
+            // Configure star foreground item closing animations
+            if (starFgItem.getTag() != null) {
+                starFgItem.setAlpha(0f);
+                animators.add(ObjectAnimator.ofFloat(starFgItem, View.ALPHA, 0.0f, 1.0f));
+                animators.add(ObjectAnimator.ofFloat(starFgItem, View.SCALE_X, 0.0f, 1.0f));
+                animators.add(ObjectAnimator.ofFloat(starFgItem, View.SCALE_Y, 0.0f, 1.0f));
+            }
+
+            // Configure star background item closing animations
+            if (starBgItem.getTag() != null) {
+                starBgItem.setAlpha(0f);
+                animators.add(ObjectAnimator.ofFloat(starBgItem, View.ALPHA, 0.0f, 1.0f));
+                animators.add(ObjectAnimator.ofFloat(starBgItem, View.SCALE_X, 0.0f, 1.0f));
+                animators.add(ObjectAnimator.ofFloat(starBgItem, View.SCALE_Y, 0.0f, 1.0f));
+            }
+
+            // Configure animating item closing animation
+            if (animatingItem != null) {
+                animatingItem.setAlpha(0.0f);
+                animators.add(ObjectAnimator.ofFloat(animatingItem, View.ALPHA, 1.0f));
+            }
+
+            // Configure action bar items closing animations
+            if (callItemVisible && (chatId != 0 || fromChat)) {
+                callItem.setAlpha(1.0f);
+                animators.add(ObjectAnimator.ofFloat(callItem, View.ALPHA, 0.0f));
+            }
+            if (videoCallItemVisible) {
+                videoCallItem.setAlpha(1.0f);
+                animators.add(ObjectAnimator.ofFloat(videoCallItem, View.ALPHA, 0.0f));
+            }
+            if (editItemVisible) {
+                editItem.setAlpha(1.0f);
+                animators.add(ObjectAnimator.ofFloat(editItem, View.ALPHA, 0.0f));
+            }
+
+            // Configure additional UI elements closing animations
+            if (ttlIconView != null) {
+                animators.add(ObjectAnimator.ofFloat(ttlIconView, View.ALPHA, ttlIconView.getAlpha(), 0.0f));
+            }
+            if (floatingButtonContainer != null) {
+                animators.add(ObjectAnimator.ofFloat(floatingButtonContainer, View.ALPHA, 0.0f));
+            }
+            if (avatarImage != null) {
+                animators.add(ObjectAnimator.ofFloat(avatarImage, AvatarImageView.CROSSFADE_PROGRESS, 1.0f));
+            }
+
+            // Configure online text crossfade closing animations
+            boolean crossfadeOnlineText = false;
+            BaseFragment previousFragment = parentLayout.getFragmentStack().size() > 1
+                    ? parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2)
+                    : null;
+            if (previousFragment instanceof ChatActivity) {
+                ChatAvatarContainer avatarContainer = ((ChatActivity) previousFragment).getAvatarContainer();
+                View subtitleTextView = avatarContainer.getSubtitleTextView();
+                if (subtitleTextView instanceof SimpleTextView
+                        && ((SimpleTextView) subtitleTextView).getLeftDrawable() != null
+                        || avatarContainer.statusMadeShorter[0]) {
+                    transitionOnlineText = avatarContainer.getSubtitleTextView();
+                    mainProfileViewContainer.invalidate();
+                    crossfadeOnlineText = true;
+                    animators.add(ObjectAnimator.ofFloat(onlineTextView[0], View.ALPHA, 0.0f));
+                    animators.add(ObjectAnimator.ofFloat(onlineTextView[1], View.ALPHA, 0.0f));
+                }
+            }
+
+            if (!crossfadeOnlineText) {
+                for (int a = 0; a < 2; a++) {
+                    animators.add(ObjectAnimator.ofFloat(onlineTextView[a], View.ALPHA, a == 0 ? 1.0f : 0.0f));
+                }
+            }
+
+            // Hide birthday effect if active
+            if (birthdayEffect != null) {
+                birthdayEffect.hide();
+            }
+        }
+
+        // Setup final animation configuration
+        animatorSet.playTogether(animators);
+        profileTransitionInProgress = true;
+        
+        // Add value animator for continuous updates
+        ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1f);
+        valueAnimator.addUpdateListener(valueAnimator1 -> {
+            if (fragmentView != null) {
+                fragmentView.invalidate();
+            }
+            updateStoriesViewBounds(true);
+        });
+        animatorSet.playTogether(valueAnimator);
+
+        // Configure animation completion listener
+        animatorSet.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (fragmentView == null) {
+                    callback.run();
+                    return;
+                }
+                avatarImage.setProgressToExpand(0);
+                profileDetailsListView.setLayerType(View.LAYER_TYPE_NONE, null);
+                if (animatingItem != null) {
+                    ActionBarMenu menu = actionBar.createMenu();
+                    menu.clearItems();
+                    animatingItem = null;
+                }
+                callback.run();
+                if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
+                    playProfileOpeningAnimationType = ProfileOpeningAnimationType.OPENING_IN_COLLAPSED_MODE;
+                    avatarImage.setForegroundAlpha(1.0f);
+                    avatarContainer.setVisibility(View.GONE);
+                    avatarsViewPager.resetCurrentItem();
+                    avatarsViewPager.setVisibility(View.VISIBLE);
+                }
+                transitionOnlineText = null;
+                mainProfileViewContainer.invalidate();
+                profileTransitionInProgress = false;
+                previousTransitionFragment = null;
+                previousTransitionMainFragment = null;
+                fragmentView.invalidate();
+            }
+        });
+
+        // Set interpolator and start animation
+        animatorSet.setInterpolator(
+                playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE ? CubicBezierInterpolator.DEFAULT : new DecelerateInterpolator());
+
+        AndroidUtilities.runOnUIThread(animatorSet::start, 50);
+        return animatorSet;
     }
 
     private void checkListViewScroll() {
