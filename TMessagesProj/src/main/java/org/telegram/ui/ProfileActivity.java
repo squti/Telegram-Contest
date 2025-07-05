@@ -407,8 +407,6 @@ public class ProfileActivity extends BaseFragment
     float floatingButtonHideProgress;
     boolean showBoostsAlert;
     boolean profileTransitionInProgress;
-    int maxAvatarExpansionHeight = (int) (AndroidUtilities.displaySize.y * 0.6f);
-    int collapsedAreaHeight = (int) (AndroidUtilities.displaySize.y * 0.3f);
     int avatarUploadingRequest;
     int savedScrollPosition = -1;
     int savedScrollOffset;
@@ -874,6 +872,12 @@ public class ProfileActivity extends BaseFragment
     private float nameY;
     private float onlineX;
     private float onlineY;
+
+    int maxAvatarExpansionHeight = (int) (AndroidUtilities.displaySize.y * 0.6f);
+    int collapsedAreaHeight = (int) (AndroidUtilities.displaySize.y * 0.3f);
+    float avatarContainerInitialDistanceFromCenter;
+    private int avatarContainerLeft = -1;
+    private int avatarContainerTop = -1;
     private TLRPC.TL_emojiStatusCollectible collectibleStatus;
 
     public ProfileActivity(Bundle args) {
@@ -1019,6 +1023,14 @@ public class ProfileActivity extends BaseFragment
         return topicId;
     }
 
+    public int getAvatarContainerLeft() {
+        return avatarContainerLeft;
+    }
+
+    public int getAvatarContainerTop() {
+        return avatarContainerTop;
+    }
+
     @Override
     public boolean onFragmentCreate() {
         userId = arguments.getLong("user_id", 0);
@@ -1037,6 +1049,8 @@ public class ProfileActivity extends BaseFragment
         myProfile = arguments.getBoolean("my_profile", false);
         openGifts = arguments.getBoolean("open_gifts", false);
         openCommonChats = arguments.getBoolean("open_common", false);
+        avatarContainerLeft = arguments.getInt("avatarContainer_left", -1);
+        avatarContainerTop = arguments.getInt("avatarContainer_top", -1);
         if (!expandPhoto) {
             expandPhoto = arguments.getBoolean("expandPhoto", false);
             if (expandPhoto) {
@@ -1486,6 +1500,7 @@ public class ProfileActivity extends BaseFragment
         setupMainLayout();
 
         createFloatingActionButton(getContext());
+        System.out.println("Which is faster : createView");
 
         return fragmentView;
     }
@@ -6742,10 +6757,7 @@ public class ProfileActivity extends BaseFragment
         expandAnimator.start();
     }
 
-    private void applyAvatarTransformations() {
-        avatarContainer.setScaleX(avatarScale);
-        avatarContainer.setScaleY(avatarScale);
-    }
+
 
     private void updateCollapsedTextPositions() {
         if (expandAnimator == null || !expandAnimator.isRunning()) {
@@ -6761,19 +6773,14 @@ public class ProfileActivity extends BaseFragment
     }
 
     private void handleCollapsedState(float collapseProgress) {
-        avatarScale = (AVATAR_SIZE_DP + 18 * collapseProgress) / AVATAR_SIZE_DP;
-        invalidateStoryAndGiftsViews();
-        System.out.println("ProfileActivity:: handleCollapsedState avatarX = " + avatarX);
-        float nameScale = 1.0f + 0.12f * collapseProgress;
+        updateAvatarPosition(collapseProgress);
+        updateTextPositionsAndScales(collapseProgress);
+        updateCollectibleHint();
+    }
 
-        if (expandAnimator == null || !expandAnimator.isRunning()) {
-            applyAvatarTransformations();
-            avatarContainer.setTranslationX(avatarX);
-            avatarContainer.setTranslationY((float) Math.ceil(avatarY));
-            updateTimeAndStarItems();
-        }
-
-        updateTextPositionsAndScales(collapseProgress, nameScale);
+    private void handleOpeningCollapsedState(float collapseProgress) {
+//        updateAvatarPositionForOpening(collapseProgress);
+        updateTextPositionsAndScales(collapseProgress);
         updateCollectibleHint();
     }
 
@@ -6787,7 +6794,8 @@ public class ProfileActivity extends BaseFragment
         starFgItem.setTranslationY(avatarContainer.getY() + AndroidUtilities.dp(24) + extra);
     }
 
-    private void updateTextPositionsAndScales(float collapseProgress, float nameScale) {
+    private void updateTextPositionsAndScales(float collapseProgress) {
+        float nameScale = 1.0f + 0.12f * collapseProgress;
         nameX = -21 * AndroidUtilities.density * collapseProgress;
         nameY = (float) Math.floor(avatarY) + AndroidUtilities.dp(1.3f) + AndroidUtilities.dp(7) * collapseProgress +
                 titleAnimationsYDiff * (1f - openingProfileAnimationProgress);
@@ -15168,6 +15176,7 @@ public class ProfileActivity extends BaseFragment
     @Override
     public AnimatorSet onCustomTransitionAnimation(final boolean isOpen, final Runnable callback) {
         // Early exit if animation conditions are not met
+        System.out.println("Which is faster : onCustomTransitionAnimation");
         if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.NONE || !allowProfileAnimation || isPulledDown || disableProfileAnimation) {
             return null;
         }
@@ -15186,7 +15195,6 @@ public class ProfileActivity extends BaseFragment
             starBgItem.setScaleX(1.0f);
             starBgItem.setScaleY(1.0f);
         }
-
         // Identify previous transition fragments
         previousTransitionMainFragment = null;
         if (parentLayout != null && parentLayout.getFragmentStack().size() >= 2) {
@@ -15262,6 +15270,8 @@ public class ProfileActivity extends BaseFragment
             fragmentView.setBackgroundColor(0);
             setOpeningProfileAnimationProgress(0);
             animators.add(ObjectAnimator.ofFloat(this, "openingProfileAnimationProgress", 0.0f, 1.0f));
+            
+
 
             // Configure write button animation
             if (writeButton != null && writeButton.getTag() == null) {
@@ -15541,6 +15551,8 @@ public class ProfileActivity extends BaseFragment
                     avatarContainer.setVisibility(View.GONE);
                     avatarsViewPager.resetCurrentItem();
                     avatarsViewPager.setVisibility(View.VISIBLE);
+                } else if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_COLLAPSED_MODE && isOpen) {
+
                 }
                 transitionOnlineText = null;
                 mainProfileViewContainer.invalidate();
@@ -15555,7 +15567,16 @@ public class ProfileActivity extends BaseFragment
         animatorSet.setInterpolator(
                 playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE ? CubicBezierInterpolator.DEFAULT : new DecelerateInterpolator());
 
-        AndroidUtilities.runOnUIThread(animatorSet::start, 50);
+        AndroidUtilities.runOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                animatorSet.start();
+                if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_COLLAPSED_MODE) {
+                    startAvatarOpenCloseAnimation(isOpen);
+
+                }
+            }},50);
+
         return animatorSet;
     }
 
@@ -15627,19 +15648,31 @@ public class ProfileActivity extends BaseFragment
             if (giftsView != null) {
                 updateProfileGiftsView(giftsView, newTop);
             }
-            updateAvatarPosition(collapseProgress);
 
             float currentHeight = openAnimationInProgress ? initialAnimationExtraHeight : extraHeight;
 
-            if (currentHeight > collapsedAreaHeight || isPulledDown) {
-                handleExpandedState(currentHeight, newTop);
+            if (openAnimationInProgress){
+
+
+                if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
+
+                    handleOpeningExpandState(newTop);
+                }else {
+                    handleOpeningCollapsedState(collapseProgress);
+                }
             } else {
-                handleCollapsedState(collapseProgress);
+
+
+                if (currentHeight > collapsedAreaHeight || isPulledDown) {
+
+                    handleExpandedState(currentHeight, newTop);
+                } else {
+
+//                    handleCollapsedState(collapseProgress);
+
+                }
             }
 
-            if (openAnimationInProgress && playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
-                handleExpandProfileAnimationInOpening(newTop);
-            }
             updateOverlaysLayout(newTop);
 
             if (!openAnimationInProgress && (expandAnimator == null || !expandAnimator.isRunning())) {
@@ -16340,7 +16373,9 @@ public class ProfileActivity extends BaseFragment
         };
 
         mainProfileViewContainer.addView(avatarContainer,
-                LayoutHelper.createFrame(42, 42, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, -32, 0, 0));
+                LayoutHelper.createFrame(42, 42, Gravity.TOP |  Gravity.LEFT, 0, 0, 0, 0));
+        avatarContainer.setTranslationX(avatarContainerLeft);
+        avatarContainer.setTranslationY(avatarContainerTop);
         mainProfileViewContainer.addView(avatarsViewPager);
         mainProfileViewContainer.addView(overlaysView);
         mainProfileViewContainer.addView(avatarsViewPagerIndicatorView,
@@ -16358,10 +16393,6 @@ public class ProfileActivity extends BaseFragment
     }
     private void setupAvatarContainer(Context context) {
         avatarContainer = new FrameLayout(context);
-        avatarContainer.post(() -> {
-            avatarContainer.setPivotX(avatarContainer.getWidth() / 2f);
-            avatarContainer.setPivotY(avatarContainer.getHeight() / 2f);
-        });
         avatarContainer.addView(avatarImage,
                 LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         avatarContainer.addView(avatarProgressView,
@@ -16381,6 +16412,76 @@ public class ProfileActivity extends BaseFragment
         }
     }
 
+    private void startAvatarOpenCloseAnimation(boolean isShowOpeningAnimation) {
+        if (isShowOpeningAnimation) {
+            avatarContainer.post(() -> {
+
+
+                avatarContainerInitialDistanceFromCenter =
+                        AndroidUtilities.displaySize.x / 2f - avatarContainer.getLeft() - avatarContainer.getWidth() / 2f;
+
+
+                ObjectAnimator translationXAnimator = ObjectAnimator.ofFloat(
+                        avatarContainer, "translationX", avatarContainerLeft, avatarContainerInitialDistanceFromCenter);
+
+                ObjectAnimator scaleXAnimator = ObjectAnimator.ofFloat(
+                        avatarContainer, "scaleX", 1f, AVATAR_SIZE_DP / 42f);
+
+                ObjectAnimator scaleYAnimator = ObjectAnimator.ofFloat(
+                        avatarContainer, "scaleY", 1f, AVATAR_SIZE_DP / 42f);
+
+                AnimatorSet avatarSet = new AnimatorSet();
+                avatarSet.playTogether(translationXAnimator, scaleXAnimator, scaleYAnimator);
+
+                int duration = (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) ? 250 : 180;
+                avatarSet.setDuration(duration);
+                avatarSet.setInterpolator(new AccelerateInterpolator());
+                avatarSet.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+//                    final FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
+//                    params.width = AndroidUtilities.dp(88);
+//                    params.height = AndroidUtilities.dp(88);
+//                    params.leftMargin = 0;
+//                    params.topMargin = AndroidUtilities.dp(-32);
+//                    params.gravity = Gravity.CENTER_HORIZONTAL | Gravity.TOP;
+//                    avatarContainer.requestLayout();
+//                    avatarContainer.post(() -> {
+//                        avatarContainerInitialDistanceFromCenter = AndroidUtilities.displaySize.x / 2f - avatarContainer.getLeft() - avatarContainer.getWidth() / 2f;
+//                        avatarContainer.setPivotX(avatarContainer.getWidth() / 2f);
+//                        avatarContainer.setPivotY(avatarContainer.getHeight() / 2f);
+//                    });
+                    }
+                });
+                avatarSet.start();
+
+            });
+        } else {
+            avatarContainer.post(() -> {
+                avatarContainer.setTranslationX(avatarContainerLeft);
+                avatarContainer.setTranslationY(avatarContainerTop);
+
+                ObjectAnimator translationXAnimator = ObjectAnimator.ofFloat(
+                        avatarContainer, "translationX", avatarContainerInitialDistanceFromCenter, avatarContainerLeft);
+
+                ObjectAnimator scaleXAnimator = ObjectAnimator.ofFloat(
+                        avatarContainer, "scaleX", AVATAR_SIZE_DP / 42f, 1f);
+
+                ObjectAnimator scaleYAnimator = ObjectAnimator.ofFloat(
+                        avatarContainer, "scaleY", AVATAR_SIZE_DP / 42f, 1f);
+
+                AnimatorSet avatarSet = new AnimatorSet();
+                avatarSet.playTogether(translationXAnimator, scaleXAnimator, scaleYAnimator);
+
+                int duration = (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) ? 250 : 180;
+                avatarSet.setDuration(duration);
+                avatarSet.setInterpolator(new DecelerateInterpolator());
+
+                avatarSet.start();
+            });
+        }
+    }
+
 
     /// Avatar adjustments
     private int getSmallAvatarRoundRadius() {
@@ -16393,7 +16494,7 @@ public class ProfileActivity extends BaseFragment
         return AndroidUtilities.dp(collapsedAreaHeight * 0.5f); // Standard avatar Round Radius
     }
 
-    private void handleExpandProfileAnimationInOpening(int newTop) {
+    private void handleOpeningExpandState(int newTop) {
 
         /// playProfileAnimation
         /// Type 0: No animation
@@ -16418,9 +16519,9 @@ public class ProfileActivity extends BaseFragment
             nameTextView[1].setScaleX(1.67f);
             nameTextView[1].setScaleY(1.67f);
 
-            // Update avatar
-            avatarScale = AndroidUtilities.lerp(1.0f, (AVATAR_SIZE_DP + AVATAR_SIZE_DP + 18f) / AVATAR_SIZE_DP,
-                    openingProfileAnimationProgress);
+            // Update avatar - smooth scale from 42dp to AVATAR_SIZE_DP (88dp)
+            float smallAvatarSizeDp = 42f;
+            avatarScale = AndroidUtilities.lerp(smallAvatarSizeDp / AVATAR_SIZE_DP, 1.0f, openingProfileAnimationProgress);
 
             if (storyView != null) {
                 storyView.setExpandProgress(1f);
@@ -16571,7 +16672,7 @@ public class ProfileActivity extends BaseFragment
     }
 
     private void updateAvatarPosition(float collapseProgress) {
-        avatarX = -AndroidUtilities.dpf2(47f) * collapseProgress;
+        avatarX = 0;
         System.out.println("ProfileActivity:: updateAvatarPosition avatarX = " + avatarX);
 
         int actionBarHeight = ActionBar.getCurrentActionBarHeight();
@@ -16580,8 +16681,41 @@ public class ProfileActivity extends BaseFragment
         avatarY = statusBarOffset + actionBarHeight / 2.0f * (1.0f + collapseProgress) -
                 21 * AndroidUtilities.density + 27 * AndroidUtilities.density * collapseProgress +
                 actionBar.getTranslationY();
+        avatarScale = 1.0f + 0.18f * collapseProgress;
+        invalidateStoryAndGiftsViews();
+        if (expandAnimator == null || !expandAnimator.isRunning()) {
+            applyAvatarTransformations();
+            avatarContainer.setTranslationX(avatarX);
+            avatarContainer.setTranslationY((float) Math.ceil(avatarY));
+            updateTimeAndStarItems();
+        }
     }
+    private void updateAvatarPositionForOpening(float collapseProgress) {
 
+        avatarX = avatarContainerInitialDistanceFromCenter * collapseProgress;
+        System.out.println("ProfileActivity:: updateAvatarPosition avatarX = " + avatarX + "avatarContainerInitialDistanceFromCenter" + avatarContainerInitialDistanceFromCenter);
+
+        int actionBarHeight = ActionBar.getCurrentActionBarHeight();
+        int statusBarOffset = actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
+
+        avatarY = statusBarOffset + actionBarHeight / 2.0f * (1.0f + collapseProgress) -
+                21 * AndroidUtilities.density + 27 * AndroidUtilities.density * collapseProgress +
+                actionBar.getTranslationY();
+
+        avatarScale = 1.0f + (AVATAR_SIZE_DP / 42.0f - 1.0f) * collapseProgress;
+        invalidateStoryAndGiftsViews();
+
+        if (expandAnimator == null || !expandAnimator.isRunning()) {
+            applyAvatarTransformations();
+            avatarContainer.setTranslationX(avatarX);
+            avatarContainer.setTranslationY((float) Math.ceil(avatarY));
+            updateTimeAndStarItems();
+        }
+    }
+    private void applyAvatarTransformations() {
+        avatarContainer.setScaleX(avatarScale);
+        avatarContainer.setScaleY(avatarScale);
+    }
     private void updateAvatarContainerLayoutParams(int newTop, float expandValue) {
         final FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
         params.width = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(AVATAR_SIZE_DP),
@@ -16592,3 +16726,17 @@ public class ProfileActivity extends BaseFragment
         avatarContainer.requestLayout();
     }
 }
+
+//Opening in collapsed mode:
+//onCustomTransitionAnimation
+//setOpeningProfileAnimationProgress (Loop)
+//updateProfileLayout
+//updateAvatarPosition
+//handleCollapsedState
+
+//collaps state after opening
+//checkListViewScroll (Loop
+//updateProfileLayout
+//updateAvatarPosition
+//handleCollapsedState
+
