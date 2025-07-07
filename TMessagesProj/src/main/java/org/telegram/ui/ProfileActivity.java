@@ -315,6 +315,50 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+/**
+ * ProfileActivity manages the user profile view with avatar expansion/collapse functionality.
+ * 
+ * AVATAR BEHAVIOR SCENARIOS:
+ * ========================
+ * 
+ * 1. COLLAPSED_STATE (extraHeight <= collapsedAreaHeight)
+ *    - Triggered when: User scrolls up, content area shrinks
+ *    - Avatar behavior: Shrinks from 88dp and moves up following scroll position
+ *    - Scale range: 42dp/88dp (0.477f) to 1.0f
+ *    - Handler: processAvatarCollapsedScenario()
+ *    - UI state: Standard collapsed profile view, no overlays
+ * 
+ * 2. INTERMEDIATE_EXPANSION (extraHeight > collapsedAreaHeight && expandProgress < 0.33f)
+ *    - Triggered when: User scrolls down past collapsedAreaHeight threshold but not far enough for full expansion
+ *    - Avatar behavior: Transforms based on scroll position, scale increases beyond 1.0f
+ *    - Scale range: 1.0f to ~1.5f (varies with scroll)
+ *    - Handler: processAvatarExpandedScenarios() -> processIntermediateExpansion()
+ *    - UI state: Avatar transforms but no overlay UI shown yet
+ * 
+ * 3. FULL_EXPANSION_READY (extraHeight > collapsedAreaHeight && expandProgress >= 0.33f)
+ *    - Triggered when: User pulls down significantly past expansion threshold
+ *    - Avatar behavior: Continues scaling, enables full avatar viewer functionality
+ *    - Scale range: ~1.5f to maximum expansion scale
+ *    - Handler: processAvatarExpandedScenarios() -> processFullExpansionReady()
+ *    - UI state: Shows overlay UI, indicators, and avatar viewer controls
+ * 
+ * 4. OPENING_ANIMATION (openAnimationInProgress = true)
+ *    - Triggered when: Activity is opening with animation
+ *    - Avatar behavior: Uses initialAnimationExtraHeight instead of extraHeight
+ *    - Sub-scenarios:
+ *      a. OPENING_IN_COLLAPSED_MODE: processOpeningInCollapsedMode()
+ *      b. OPENING_IN_EXPANDED_MODE: processOpeningInExpandedMode()
+ *    - UI state: Animated transition to target state
+ * 
+ * KEY DESIGN PRINCIPLES:
+ * =====================
+ * - Avatar base size: 88dp (container) with 42dp visual appearance via scale
+ * - All positioning uses 44dp (half of 88dp) as the avatar center offset
+ * - updateAvatarTransform() handles avatar positioning ONLY for collapsed state scenario
+ * - Other scenarios use their own specialized transform logic for optimal behavior
+ * - Smooth transitions: No jumps or discontinuities between scenarios
+ * - Clear thresholds: collapsedAreaHeight and expandProgress define state boundaries
+ */
 public class ProfileActivity extends BaseFragment
         implements NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate,
         SharedMediaLayout.SharedMediaPreloaderDelegate, ImageUpdater.ImageUpdaterDelegate, SharedMediaLayout.Delegate {
@@ -577,6 +621,21 @@ public class ProfileActivity extends BaseFragment
     private boolean needStarImage;
     private boolean allowProfileAnimation = true;
     private boolean disableProfileAnimation = false;
+    
+    /**
+     * EXTRAHEIGHT: The primary variable controlling avatar expansion/collapse behavior.
+     * This value represents the additional height beyond the collapsed state (collapsedAreaHeight).
+     * 
+     * Key update locations and scenarios:
+     * 1. INITIALIZATION: Set to collapsedAreaHeight in constructor (starts collapsed)
+     * 2. SCROLL-DRIVEN: Updated in checkListViewScroll() based on user scroll position (primary update)
+     * 3. ANIMATION-DRIVEN: Interpolated during opening transitions based on initialAnimationExtraHeight * progress
+     * 4. FORCE COLLAPSE: Reset to collapsedAreaHeight when no photo available or in landscape/tablet mode
+     * 5. LAYOUT CALCULATION: Set to initialAnimationExtraHeight when no opening animation is active
+     * 
+     * This variable is read by updateAvatarTransform() to calculate avatar scaling and positioning
+     * in the collapsed state scenario, where it represents the exact scroll-following behavior.
+     */
     private float extraHeight;
     private float initialAnimationExtraHeight;
     private float openingProfileAnimationProgress;
@@ -864,6 +923,20 @@ public class ProfileActivity extends BaseFragment
     float rightMargin;
     int initialTitleWidth;
     private final int AVATAR_SIZE_DP = 88;
+    
+    // Avatar behavior scenario constants for clear identification and debugging
+    private static final String SCENARIO_COLLAPSED_STATE = "COLLAPSED_STATE";
+    private static final String SCENARIO_INTERMEDIATE_EXPANSION = "INTERMEDIATE_EXPANSION";
+    private static final String SCENARIO_FULL_EXPANSION_READY = "FULL_EXPANSION_READY";
+    private static final String SCENARIO_OPENING_ANIMATION = "OPENING_ANIMATION";
+    
+    // Expansion threshold: determines when to show overlay UI vs just transform avatar
+    private static final float FULL_EXPANSION_THRESHOLD = 0.28f;
+    
+    // Global variable to manually adjust avatar top position (in dp)
+    // Positive values move avatar down, negative values move avatar up
+    public static float AVATAR_TOP_MARGIN_ADJUSTMENT_DP = 24f;
+    
     private float avatarX;
 
     private float avatarY;
@@ -1414,6 +1487,8 @@ public class ProfileActivity extends BaseFragment
         searchTransitionProgress = 1f;
         searchMode = false;
         hasOwnBackground = true;
+        // UPDATE EXTRAHEIGHT: Initial collapsed state setup
+        // Start with collapsedAreaHeight to begin in the collapsed state
         extraHeight = collapsedAreaHeight;
         hasTitleExpanded = false;
         rightMargin = (54 + ((callItemVisible && userId != 0) ? 54 : 0));
@@ -1625,7 +1700,7 @@ public class ProfileActivity extends BaseFragment
         expandAnimator.addUpdateListener(anim -> {
             setMainProfileContainerExpandProgress(anim.getAnimatedFraction());
         });
-        expandAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        expandAnimator.setInterpolator(new AccelerateInterpolator());
         expandAnimator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationStart(Animator animation) {
@@ -4627,7 +4702,7 @@ public class ProfileActivity extends BaseFragment
         if (allowPullingDown && currentExpandAnimatorValue > 0) {
             layoutManager.scrollToPositionWithOffset(0, collapsedAreaHeight - profileDetailsListView.getPaddingTop());
             profileDetailsListView.post(() -> {
-                System.out.println("ProfileActivity:: collapseAvatarInstant : " + currentExpandAnimatorValue);
+                System.out.println("ProfileActivity:: collapseAvatarInstant");
                 updateProfileLayout(true);
                 if (expandAnimator.isRunning()) {
                     expandAnimator.cancel();
@@ -4694,6 +4769,7 @@ public class ProfileActivity extends BaseFragment
     }
 
     private boolean expandAvatar() {
+        System.out.println("ProfileActivity:: expandAvatar");
         if (!AndroidUtilities.isTablet() && !isInLandscapeMode && avatarImage.getImageReceiver().hasNotThumb()
                 && !AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
             openingAvatar = true;
@@ -4727,8 +4803,7 @@ public class ProfileActivity extends BaseFragment
         final int newTop = calculateActionBarTopOffset();
         final float value = currentExpandAnimatorValue = AndroidUtilities.lerp(expandAnimatorValues,
                 currentExpanAnimatorFracture = animatedFracture);
-        System.out.println("ProfileActivity:: setMainProfileContainerExpandProgress : " + "newTop = " + newTop
-                + ", value = " + value + ", currentExpanAnimatorFracture = " + currentExpanAnimatorFracture);
+        System.out.println("ProfileActivity:: setMainProfileContainerExpandProgress");
         updateAvatarContainerExpandTransform(value);
         updateSearchItemAppearance(value);
         updateIconDrawables(value);
@@ -4740,11 +4815,20 @@ public class ProfileActivity extends BaseFragment
 
     private void updateAvatarContainerExpandTransform(float expandValue) {
         checkPhotoDescriptionAlpha();
-        System.out.println("ProfileActivity:: updateAvatarContainerExpandTransform : avatarX = " + avatarX);
+        System.out.println("ProfileActivity:: updateAvatarContainerExpandTransform expandValue = " + expandValue + " avatarScale = " + avatarScale + " avatarY = " + avatarY);
+
+        // Set scaling with asymmetric expansion behavior
         avatarContainer.setScaleX(avatarScale);
         avatarContainer.setScaleY(avatarScale);
-        avatarContainer.setTranslationX(AndroidUtilities.lerp(avatarX, 0f, expandValue));
-        avatarContainer.setTranslationY(AndroidUtilities.lerp((float) Math.ceil(avatarY), 0f, expandValue));
+
+        // ASYMMETRIC EXPANSION: Adjust pivot point to expand more towards bottom
+        // Since avatar starts near top, we want it to grow more downward
+        // Pivot Y: 0.3f means expansion happens 30% upward, 70% downward
+        float asymmetricPivotY = 0.25f; // Adjust this value: lower = more downward expansion
+        avatarContainer.setPivotY(avatarContainer.getHeight() * asymmetricPivotY);
+        avatarContainer.setPivotX(avatarContainer.getWidth() * 0.5f); // Keep horizontal centering
+
+
 
         avatarImage.setRoundRadius((int) AndroidUtilities.lerp(getSmallAvatarRoundRadius(), 0f, expandValue));
         avatarImage.setForegroundAlpha(expandValue);
@@ -4762,8 +4846,14 @@ public class ProfileActivity extends BaseFragment
         }
     }
 
+    /**
+     * Updates name positioning specifically for INTERMEDIATE_EXPANSION scenario.
+     * This method is called when user has scrolled past collapsedAreaHeight but 
+     * hasn't reached the full expansion threshold (expandProgress < 0.33f).
+     */
     private void updateNamePositionForExpandedView() {
-        if (extraHeight > collapsedAreaHeight && expandProgress < 0.33f) {
+        System.out.println("ProfileActivity:: updateNamePositionForExpandedView");
+        if (extraHeight > collapsedAreaHeight && expandProgress < FULL_EXPANSION_THRESHOLD) {
             refreshNameAndOnlineXY();
         }
     }
@@ -4851,8 +4941,7 @@ public class ProfileActivity extends BaseFragment
         final float nameTextViewCy = k + nameY + (nameTextViewYEnd - nameY) / 2f;
         final float nameTextViewX = calculateBezierPosition(nameX, nameTextViewCx, nameTextViewXEnd, expandValue);
         final float nameTextViewY = calculateBezierPosition(nameY, nameTextViewCy, nameTextViewYEnd, expandValue);
-        System.out.println("ProfileActivity:: updateTextPositions : " + "nameTextViewX = " + nameTextViewX
-                + ", nameTextViewY = " + nameTextViewY + "nameTextViewXEnd = " + nameTextViewXEnd + "nameTextViewYEnd = " + nameTextViewYEnd + "nameTextViewCx" + nameTextViewCx + "nameTextViewCy = " + nameTextViewCy);
+        System.out.println("ProfileActivity:: updateTextPositions");
         // Calculate online text view positions using Bezier curve interpolation
         final float onlineTextViewXEnd = AndroidUtilities.dpf2(16f) - onlineTextView[1].getLeft();
         final float onlineTextViewYEnd = newTop + extraHeight - AndroidUtilities.dpf2(18f)
@@ -6553,24 +6642,7 @@ public class ProfileActivity extends BaseFragment
                 newTop + extraHeight + searchTransitionOffset);
     }
 
-    private void handleExpandedState(float currentHeight, int newTop) {
-        expandProgress = Math.max(0f, Math.min(1f,
-                (currentHeight - collapsedAreaHeight) / (maxAvatarExpansionHeight - newTop - collapsedAreaHeight)));
 
-        avatarScale = AndroidUtilities.lerp((AVATAR_SIZE_DP + 18f) / AVATAR_SIZE_DP,
-                (AVATAR_SIZE_DP + AVATAR_SIZE_DP + 18f) / AVATAR_SIZE_DP,
-                Math.min(1f, expandProgress * 3f));
-
-        invalidateStoryAndGiftsViews();
-
-        final float durationFactor = calculateAnimationDurationFactor();
-
-        if (allowPullingDown && (openingAvatar || expandProgress >= 0.33f)) {
-            handlePullToExpand(durationFactor, currentHeight, newTop);
-        } else {
-            handleCollapseFromExpanded(durationFactor);
-        }
-    }
 
     private void invalidateStoryAndGiftsViews() {
         if (storyView != null) {
@@ -6587,27 +6659,10 @@ public class ProfileActivity extends BaseFragment
                 AndroidUtilities.dpf2(1100f);
     }
 
-    private void handlePullToExpand(float durationFactor, float currentHeight, int newTop) {
-        if (!isPulledDown) {
-            configurePullToExpandUI();
-            isPulledDown = true;
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needCheckSystemBarColors,
-                    true);
 
-            // Show overlays and indicators
-            overlaysView.setOverlaysVisible(true, durationFactor);
-            avatarsViewPagerIndicatorView.refreshVisibility(durationFactor);
-            avatarsViewPager.setCreateThumbFromParent(true);
-            avatarsViewPager.getAdapter().notifyDataSetChanged();
-
-            startExpandAnimation(durationFactor);
-        }
-
-        updateAvatarsViewPagerLayout(currentHeight, newTop);
-        updateExpandedTextPositions(currentHeight, newTop);
-    }
 
     private void configurePullToExpandUI() {
+        System.out.println("ProfileActivity:: configurePullToExpandUI : extraHeight = " + extraHeight + " collapsedAreaHeight = " + collapsedAreaHeight);
         if (mainMenuItem != null) {
             if (!getMessagesController().isChatNoForwards(currentChat)) {
                 mainMenuItem.showSubItem(gallery_menu_save);
@@ -6628,6 +6683,7 @@ public class ProfileActivity extends BaseFragment
     }
 
     private void startExpandAnimation(float durationFactor) {
+        System.out.println("ProfileActivity:: startExpandAnimation : durationFactor = " + durationFactor);
         expandAnimator.cancel();
         float value = AndroidUtilities.lerp(expandAnimatorValues, currentExpanAnimatorFracture);
         expandAnimatorValues[0] = value;
@@ -6635,10 +6691,10 @@ public class ProfileActivity extends BaseFragment
 
         if (storyView != null && !storyView.isEmpty()) {
             expandAnimator.setInterpolator(new FastOutSlowInInterpolator());
-            expandAnimator.setDuration((long) ((1f - value) * 1.3f * 250f / durationFactor));
+            expandAnimator.setDuration((long) ((1f - value) * 1.3f * 300f / durationFactor));
         } else {
             expandAnimator.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
-            expandAnimator.setDuration((long) ((1f - value) * 250f / durationFactor));
+            expandAnimator.setDuration((long) ((1f - value) * 300f / durationFactor));
         }
 
         expandAnimator.addListener(new AnimatorListenerAdapter() {
@@ -6671,6 +6727,7 @@ public class ProfileActivity extends BaseFragment
         if (!expandAnimator.isRunning()) {
             float additionalTranslationY = 0;
             if (openAnimationInProgress && playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
+                // 50dp: Maximum upward movement for text during opening animation
                 additionalTranslationY = -(1.0f - openingProfileAnimationProgress) * AndroidUtilities.dp(50);
             }
 
@@ -6687,23 +6744,7 @@ public class ProfileActivity extends BaseFragment
         }
     }
 
-    private void handleCollapseFromExpanded(float durationFactor) {
-        if (isPulledDown) {
-            configureCollapseUI();
-            isPulledDown = false;
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needCheckSystemBarColors,
-                    true);
 
-            // Hide overlays and indicators
-            overlaysView.setOverlaysVisible(false, durationFactor);
-            avatarsViewPagerIndicatorView.refreshVisibility(durationFactor);
-
-            startCollapseAnimation(durationFactor);
-        }
-
-        applyAvatarTransformations();
-        updateCollapsedTextPositions();
-    }
 
     private void configureCollapseUI() {
         if (mainMenuItem != null) {
@@ -6772,17 +6813,7 @@ public class ProfileActivity extends BaseFragment
         }
     }
 
-    private void handleCollapsedState(float collapseProgress) {
-        updateAvatarPosition(collapseProgress);
-        updateTextPositionsAndScales(collapseProgress);
-        updateCollectibleHint();
-    }
 
-    private void handleOpeningCollapsedState(float collapseProgress) {
-//        updateAvatarPositionForOpening(collapseProgress);
-        updateTextPositionsAndScales(collapseProgress);
-        updateCollectibleHint();
-    }
 
     private void updateTimeAndStarItems() {
         float extra = AndroidUtilities.dp(AVATAR_SIZE_DP) * avatarScale - AndroidUtilities.dp(AVATAR_SIZE_DP);
@@ -6795,11 +6826,19 @@ public class ProfileActivity extends BaseFragment
     }
 
     private void updateTextPositionsAndScales(float collapseProgress) {
+        // 1.0f + 0.12f: Name text scale range from 1.0 (normal) to 1.12 (slightly larger when collapsed)
         float nameScale = 1.0f + 0.12f * collapseProgress;
-        nameX = -21 * AndroidUtilities.density * collapseProgress;
+        // 44dp: Half of the 88dp avatar container size - aligns text with avatar edge during collapse
+        // Negative value moves text left to align with avatar edge during collapse
+        nameX = -44 * AndroidUtilities.density * collapseProgress;
+        // 1.3dp: Fine-tuning offset for name text vertical alignment relative to avatar
+        // 7dp: Additional vertical offset that increases during collapse
         nameY = (float) Math.floor(avatarY) + AndroidUtilities.dp(1.3f) + AndroidUtilities.dp(7) * collapseProgress +
                 titleAnimationsYDiff * (1f - openingProfileAnimationProgress);
-        onlineX = -21 * AndroidUtilities.density * collapseProgress;
+        // 44dp: Same horizontal alignment as name text
+        onlineX = -44 * AndroidUtilities.density * collapseProgress;
+        // 24dp: Base vertical spacing between avatar and online text
+        // 11dp: Additional vertical spacing that increases during collapse
         onlineY = (float) Math.floor(avatarY) + AndroidUtilities.dp(24) +
                 (float) Math.floor(11 * AndroidUtilities.density) * collapseProgress;
 
@@ -6945,15 +6984,16 @@ public class ProfileActivity extends BaseFragment
     }
 
     private void refreshNameAndOnlineXY() {
-        nameX = AndroidUtilities.dp(-21f)
-                + avatarContainer.getMeasuredWidth() * (avatarScale - (AVATAR_SIZE_DP + 18f) / AVATAR_SIZE_DP);
-        nameY = (float) Math.floor(avatarY) + AndroidUtilities.dp(1.3f) + AndroidUtilities.dp(7f)
-                + avatarContainer.getMeasuredHeight() * (avatarScale - (AVATAR_SIZE_DP + 18f) / AVATAR_SIZE_DP) / 2f;
-        onlineX = AndroidUtilities.dp(-21f)
-                + avatarContainer.getMeasuredWidth() * (avatarScale - (AVATAR_SIZE_DP + 18f) / AVATAR_SIZE_DP);
-        onlineY = (float) Math.floor(avatarY) + AndroidUtilities.dp(24)
-                + (float) Math.floor(11 * AndroidUtilities.density)
-                + avatarContainer.getMeasuredHeight() * (avatarScale - (AVATAR_SIZE_DP + 18f) / AVATAR_SIZE_DP) / 2f;
+        // Calculate text positions based on avatar scale and position set by unified transform system
+        // 44dp: Half of the 88dp avatar container size - aligns text with avatar edge
+        float avatarOffsetX = -44 * AndroidUtilities.density * (1.0f - avatarScale);
+        float avatarOffsetY = avatarContainer.getMeasuredHeight() * (avatarScale - 1.0f) / 2f;
+        
+        nameX = avatarOffsetX;
+        nameY = (float) Math.floor(avatarY) + AndroidUtilities.dp(1.3f) + AndroidUtilities.dp(7f) + avatarOffsetY;
+        onlineX = avatarOffsetX;
+        onlineY = (float) Math.floor(avatarY) + AndroidUtilities.dp(24) +
+                (float) Math.floor(11 * AndroidUtilities.density) + avatarOffsetY;
     }
 
     public RecyclerListView getListView() {
@@ -6969,7 +7009,7 @@ public class ProfileActivity extends BaseFragment
             public boolean onPreDraw() {
                 if (fragmentView != null) {
                     checkListViewScroll();
-                    System.out.println("ProfileActivity:: fixLayout:");
+                    System.out.println("ProfileActivity:: fixLayout");
 
                     updateProfileLayout(true);
                     fragmentView.getViewTreeObserver().removeOnPreDrawListener(this);
@@ -7210,7 +7250,7 @@ public class ProfileActivity extends BaseFragment
                         if (sharedMediaPreloader == null || sharedMediaPreloader.isMediaWasLoaded()) {
                             resumeDelayedFragmentAnimation();
                             System.out.println(
-                                    "ProfileActivity:: didReceivedNotification: resumeDelayedFragmentAnimation");
+                                    "ProfileActivity:: didReceivedNotification");
                             updateProfileLayout(true);
                         }
                     }
@@ -7476,6 +7516,8 @@ public class ProfileActivity extends BaseFragment
                     expandAnimatorValues[1] = 0f;
                     setMainProfileContainerExpandProgress(1f);
                     avatarsViewPager.setVisibility(View.GONE);
+                    // UPDATE EXTRAHEIGHT: Force collapse when user has no photo
+                    // Reset to collapsed state when no avatar is available for expansion
                     extraHeight = collapsedAreaHeight;
                     allowPullingDown = false;
                     layoutManager.scrollToPositionWithOffset(0,
@@ -8633,7 +8675,7 @@ public class ProfileActivity extends BaseFragment
 
             if (thumbLocation != null && setAvatarRow != -1 || thumbLocation == null && setAvatarRow == -1) {
                 updateListAnimated(false);
-                System.out.println("ProfileActivity:: updateProfileData: setAvatarRow = " + setAvatarRow);
+                System.out.println("ProfileActivity:: updateProfileData");
                 updateProfileLayout(true);
             }
             if (imageLocation != null
@@ -9207,7 +9249,7 @@ public class ProfileActivity extends BaseFragment
                 }
             }
             if (changed) {
-                System.out.println("ProfileActivity:: updateProfileData: updateNameTextViews changed");
+                System.out.println("ProfileActivity:: updateProfileData");
                 updateProfileLayout(true);
             }
 
@@ -9920,7 +9962,7 @@ public class ProfileActivity extends BaseFragment
         searchItem.setVisibility(View.VISIBLE);
 
         profileDetailsListView.setVisibility(View.VISIBLE);
-        System.out.println("ProfileActivity:: searchExpandTransition: " + enter);
+        System.out.println("ProfileActivity:: searchExpandTransition");
         updateProfileLayout(true);
 
         avatarContainer.setVisibility(View.VISIBLE);
@@ -9961,8 +10003,7 @@ public class ProfileActivity extends BaseFragment
             profileDetailsListView.setScaleX(1f - 0.01f * (1f - searchTransitionProgress));
             profileDetailsListView.setScaleY(1f - 0.01f * (1f - searchTransitionProgress));
             profileDetailsListView.setAlpha(searchTransitionProgress);
-            System.out.println("ProfileActivity:: searchExpandTransition: "
-                    + searchTransitionProgress + " " + progressHalf + " " + progressHalfEnd);
+            System.out.println("ProfileActivity:: searchExpandTransition");
             updateProfileLayout(true);
 
             profileDetailsListView.setAlpha(progressHalf);
@@ -10018,7 +10059,7 @@ public class ProfileActivity extends BaseFragment
                 if (enter) {
                     searchItem.requestFocusOnSearchView();
                 }
-                System.out.println("ProfileActivity:: searchExpandTransition: onAnimationEnd: "
+                System.out.println("ProfileActivity:: searchExpandTransition"
                         + searchTransitionProgress + " " + enter);
                 updateProfileLayout(true);
                 searchViewTransition = null;
@@ -10219,7 +10260,7 @@ public class ProfileActivity extends BaseFragment
                     if (listAdapter != null) {
                         listAdapter.notifyDataSetChanged();
                     }
-                    System.out.println("ProfileActivity:: didUploadPhoto: updateRowsState: " + setAvatarRow);
+                    System.out.println("ProfileActivity:: didUploadPhoto");
                     updateProfileLayout(true);
                 }
                 avatarsViewPager.addUploadingImage(uploadingImageLocation = ImageLocation.getForLocal(avatarBig),
@@ -10789,6 +10830,8 @@ public class ProfileActivity extends BaseFragment
                     expandAnimatorValues[0] = 1f;
                     expandAnimatorValues[1] = 0f;
                     setMainProfileContainerExpandProgress(1f);
+                    // UPDATE EXTRAHEIGHT: Force collapse in landscape/tablet mode
+                    // Landscape and tablet layouts don't support avatar expansion
                     extraHeight = collapsedAreaHeight;
                 } else {
                     final int actionBarHeight = ActionBar.getCurrentActionBarHeight()
@@ -15232,9 +15275,7 @@ public class ProfileActivity extends BaseFragment
             }
         }
 
-        System.out.println("ProfileActivity:: onCustomTransitionAnimation : isOpen = " + isOpen
-                + ", playProfileAnimation = " + playProfileOpeningAnimationType.value + ", allowProfileAnimation = "
-                + allowProfileAnimation + ", disableProfileAnimation = " + disableProfileAnimation);
+        System.out.println("ProfileActivity:: onCustomTransitionAnimation");
 
         ArrayList<Animator> animators = new ArrayList<>();
 
@@ -15244,13 +15285,19 @@ public class ProfileActivity extends BaseFragment
             // Adjust online text view margins
             for (int i = 0; i < 2; i++) {
                 FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) onlineTextView[i + 1].getLayoutParams();
-                layoutParams.rightMargin = (int) (-21 * AndroidUtilities.density + AndroidUtilities.dp(8));
+                // 44dp: Half of the new 88dp avatar container size (changed from 21dp)
+                // 8dp: Additional margin for proper text spacing
+                // Negative margin moves text left to align with avatar during opening animation
+                layoutParams.rightMargin = (int) (-44 * AndroidUtilities.density + AndroidUtilities.dp(8));
                 onlineTextView[i + 1].setLayoutParams(layoutParams);
             }
 
             // Configure name text view layout based on animation type
             if (playProfileOpeningAnimationType != ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
-                int width = (int) Math.ceil(AndroidUtilities.displaySize.x - AndroidUtilities.dp(118 + 8) + 21 * AndroidUtilities.density);
+                // 118dp: Base width offset for action bar buttons and margins
+                // 8dp: Additional spacing margin
+                // 44dp: Half of the new 88dp avatar container size (changed from 21dp)
+                int width = (int) Math.ceil(AndroidUtilities.displaySize.x - AndroidUtilities.dp(118 + 8) + 44 * AndroidUtilities.density);
                 float width2 = nameTextView[1].getPaint().measureText(nameTextView[1].getText().toString()) * 1.12f + nameTextView[1].getSideDrawablesSize();
                 FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) nameTextView[1].getLayoutParams();
                 if (width < width2) {
@@ -15618,21 +15665,46 @@ public class ProfileActivity extends BaseFragment
         setMediaHeaderVisible(mediaHeaderVisible);
 
         if (extraHeight != newOffset && !transitionAnimationInProress) {
+            // UPDATE EXTRAHEIGHT: Primary scroll-driven update
+            // newOffset is calculated from scroll position in checkListViewScroll()
+            // This is the main place where extraHeight tracks user scroll behavior
             extraHeight = newOffset;
             topView.invalidate();
             if (playProfileOpeningAnimationType != ProfileOpeningAnimationType.NONE) {
                 allowProfileAnimation = extraHeight != 0;
             }
-            System.out.println("ProfileActivity:: checkListViewScroll: " + extraHeight + " "
-                    + profileDetailsListView.getMeasuredHeight() + " " + sharedMediaLayout.getTop());
+            System.out.println("ProfileActivity:: checkListViewScroll");
 
             updateProfileLayout(true);
         }
     }
 
+    /**
+     * Main profile layout update method that handles all avatar behavior scenarios.
+     * 
+     * Avatar Behavior Scenarios:
+     * 1. COLLAPSED_STATE: User scrolled up, extraHeight <= collapsedAreaHeight
+     *    - Avatar shrinks and moves up as user scrolls up
+     *    - Handled by handleCollapsedState()
+     * 
+     * 2. INTERMEDIATE_EXPANSION: User scrolled down past collapsedAreaHeight but not fully expanded
+     *    - extraHeight > collapsedAreaHeight but expandProgress < 0.33f
+     *    - Avatar transforms based on scroll position but no pull-to-expand UI
+     *    - Handled by processAvatarExpandedScenarios() -> processIntermediateExpansion()
+     * 
+     * 3. FULL_EXPANSION_READY: User pulled down significantly past threshold
+     *    - extraHeight > collapsedAreaHeight and expandProgress >= 0.33f
+     *    - Shows overlay UI and enables pull-to-expand functionality
+     *    - Handled by processAvatarExpandedScenarios() -> processFullExpansionReady()
+     * 
+     * 4. OPENING_ANIMATION: Activity is opening with animation
+     *    - Uses initialAnimationExtraHeight instead of extraHeight
+     *    - Can open in either collapsed or expanded mode
+     *    - Handled by processOpeningInCollapsedMode() or processOpeningInExpandedMode()
+     */
     private void updateProfileLayout(boolean animated) {
 
-        System.out.println("ProfileActivity:: updateProfileLayout: avatarX = " + avatarX );
+        System.out.println("ProfileActivity:: updateProfileLayout: extraHeight = " + extraHeight + " collapsedAreaHeight = " + collapsedAreaHeight +  " InitialAnimationExtraHeight = " + initialAnimationExtraHeight + " openAnimationInProgress = " + openAnimationInProgress);
         final int newTop = calculateActionBarTopOffset();
 
         updateListViewLayout(newTop);
@@ -15652,24 +15724,23 @@ public class ProfileActivity extends BaseFragment
             float currentHeight = openAnimationInProgress ? initialAnimationExtraHeight : extraHeight;
 
             if (openAnimationInProgress){
-
-
+                // SCENARIO 4: OPENING_ANIMATION - Activity opening with animation
                 if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
-
-                    handleOpeningExpandState(newTop);
+                    // Opening directly into expanded mode
+                    processOpeningInExpandedMode(newTop);
                 }else {
-                    handleOpeningCollapsedState(collapseProgress);
+                    // Opening in collapsed mode with animation
+                    processOpeningInCollapsedMode(collapseProgress);
                 }
             } else {
-
-
+                // Main runtime scenarios based on scroll position
                 if (currentHeight > collapsedAreaHeight || isPulledDown) {
-
-                    handleExpandedState(currentHeight, newTop);
+                    // SCENARIO 2 or 3: Either INTERMEDIATE_EXPANSION or FULL_EXPANSION_READY
+                    // The specific behavior is determined within processAvatarExpandedScenarios()
+                    processAvatarExpandedScenarios(currentHeight, newTop);
                 } else {
-
-//                    handleCollapsedState(collapseProgress);
-
+                    // SCENARIO 1: COLLAPSED_STATE - Normal collapsed state
+                    processAvatarCollapsedScenario(collapseProgress);
                 }
             }
 
@@ -15781,8 +15852,7 @@ public class ProfileActivity extends BaseFragment
 
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                System.out.println("ProfileActivity:: onMeasure: " + MeasureSpec.toString(widthMeasureSpec) + " "
-                        + MeasureSpec.toString(heightMeasureSpec));
+                System.out.println("ProfileActivity:: onMeasure");
                 final int actionBarHeight = ActionBar.getCurrentActionBarHeight()
                         + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0);
                 if (profileDetailsListView != null) {
@@ -15927,6 +15997,8 @@ public class ProfileActivity extends BaseFragment
                     }
                     initialAnimationExtraHeight = paddingTop - actionBarHeight;
                     if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.NONE) {
+                        // UPDATE EXTRAHEIGHT: Set to calculated height when no opening animation
+                        // Uses initialAnimationExtraHeight for immediate expanded/collapsed state
                         extraHeight = initialAnimationExtraHeight;
                     }
                     layoutManager.scrollToPositionWithOffset(0, -actionBarHeight);
@@ -16247,10 +16319,11 @@ public class ProfileActivity extends BaseFragment
         mainLayout.needBlur = true;
         mainLayout.addView(topView);
         mainLayout.blurBehindViews.add(topView);
-        mainLayout.addView(profileDetailsListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,
-                LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         mainLayout.addView(mainProfileViewContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,
                 LayoutHelper.MATCH_PARENT, Gravity.START, 0, 0, 0, 0));
+        mainLayout.addView(profileDetailsListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,
+                LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
+
         mainLayout.addView(timeItem, LayoutHelper.createFrame(34, 34, Gravity.TOP | Gravity.LEFT));
         mainLayout.addView(starBgItem, LayoutHelper.createFrame(20, 20, Gravity.TOP | Gravity.LEFT));
         mainLayout.addView(starFgItem, LayoutHelper.createFrame(20, 20, Gravity.TOP | Gravity.LEFT));
@@ -16372,10 +16445,14 @@ public class ProfileActivity extends BaseFragment
             }
         };
 
+        // Center the avatar horizontally by default so opening animation and scroll positioning work together
+        // 88x88: New avatar container size (changed from 42x42 to prevent size jumps during animations)
         mainProfileViewContainer.addView(avatarContainer,
-                LayoutHelper.createFrame(42, 42, Gravity.TOP |  Gravity.LEFT, 0, 0, 0, 0));
-        avatarContainer.setTranslationX(avatarContainerLeft);
-        avatarContainer.setTranslationY(avatarContainerTop);
+                LayoutHelper.createFrame(88, 88, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 0));
+        // No horizontal translation needed since avatar is centered by layout
+        avatarContainer.setTranslationX(0f);
+        // Only use avatarContainerTop if it's valid, otherwise use 0
+        avatarContainer.setTranslationY(avatarContainerTop > 0 ? avatarContainerTop : 0f);
         mainProfileViewContainer.addView(avatarsViewPager);
         mainProfileViewContainer.addView(overlaysView);
         mainProfileViewContainer.addView(avatarsViewPagerIndicatorView,
@@ -16416,19 +16493,39 @@ public class ProfileActivity extends BaseFragment
         if (isShowOpeningAnimation) {
             avatarContainer.post(() -> {
 
+                // Set initial scale to 42dp size (0.48 scale of 88dp)
+                // 42f/88f = 0.4773: Scale factor to make 88dp container appear as 42dp (original small avatar size)
+                avatarContainer.setScaleX(42f / 88f);
+                avatarContainer.setScaleY(42f / 88f);
 
-                avatarContainerInitialDistanceFromCenter =
-                        AndroidUtilities.displaySize.x / 2f - avatarContainer.getLeft() - avatarContainer.getWidth() / 2f;
+                // If avatarContainerLeft is provided, we need to animate from that position to center
+                // Otherwise, avatar is already centered by layout
+                ObjectAnimator translationXAnimator;
+                if (avatarContainerLeft != -1) {
+                    // Calculate the distance from the original position to center
+                    // 44dp: Half of the new 88dp avatar container size (changed from 21dp which was half of 42dp)
+                    int centerX = AndroidUtilities.displaySize.x / 2 - AndroidUtilities.dp(44);
+                    avatarContainerInitialDistanceFromCenter = avatarContainerLeft - centerX;
+                    
+                    // Start from the transition position
+                    avatarContainer.setTranslationX(avatarContainerInitialDistanceFromCenter);
+                    
+                    // Animate to center (translationX = 0)
+                    translationXAnimator = ObjectAnimator.ofFloat(
+                            avatarContainer, "translationX", avatarContainerInitialDistanceFromCenter, 0f);
+                } else {                // Avatar is already centered, no horizontal animation needed
+                avatarContainerInitialDistanceFromCenter = 0f;
+                translationXAnimator = ObjectAnimator.ofFloat(
+                        avatarContainer, "translationX", 0f, 0f);
+            }
 
+            // Opening animation: Scale from 42dp visual size to 88dp visual size
+            // 42f/88f to 1f: Animate from small avatar appearance (0.4773 scale) to full size (1.0 scale)
+            ObjectAnimator scaleXAnimator = ObjectAnimator.ofFloat(
+                    avatarContainer, "scaleX", 42f / 88f, 1f);
 
-                ObjectAnimator translationXAnimator = ObjectAnimator.ofFloat(
-                        avatarContainer, "translationX", avatarContainerLeft, avatarContainerInitialDistanceFromCenter);
-
-                ObjectAnimator scaleXAnimator = ObjectAnimator.ofFloat(
-                        avatarContainer, "scaleX", 1f, AVATAR_SIZE_DP / 42f);
-
-                ObjectAnimator scaleYAnimator = ObjectAnimator.ofFloat(
-                        avatarContainer, "scaleY", 1f, AVATAR_SIZE_DP / 42f);
+            ObjectAnimator scaleYAnimator = ObjectAnimator.ofFloat(
+                    avatarContainer, "scaleY", 42f / 88f, 1f);
 
                 AnimatorSet avatarSet = new AnimatorSet();
                 avatarSet.playTogether(translationXAnimator, scaleXAnimator, scaleYAnimator);
@@ -16439,6 +16536,7 @@ public class ProfileActivity extends BaseFragment
                 avatarSet.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
+
 //                    final FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
 //                    params.width = AndroidUtilities.dp(88);
 //                    params.height = AndroidUtilities.dp(88);
@@ -16458,17 +16556,35 @@ public class ProfileActivity extends BaseFragment
             });
         } else {
             avatarContainer.post(() -> {
-                avatarContainer.setTranslationX(avatarContainerLeft);
-                avatarContainer.setTranslationY(avatarContainerTop);
+                // Set initial scale to full size (1.0 scale of 88dp)
+                // 1f: Full scale - avatar appears at its natural 88dp container size
+                avatarContainer.setScaleX(1f);
+                avatarContainer.setScaleY(1f);
+                
+                // Keep consistent positioning - avatar stays centered horizontally
+                avatarContainer.setTranslationX(0f);
+                avatarContainer.setTranslationY(avatarContainerTop > 0 ? avatarContainerTop : 0f);
 
-                ObjectAnimator translationXAnimator = ObjectAnimator.ofFloat(
-                        avatarContainer, "translationX", avatarContainerInitialDistanceFromCenter, avatarContainerLeft);
+                // Animate back to original position if there was a transition
+                ObjectAnimator translationXAnimator;
+                if (avatarContainerLeft != -1) {
+                    // 44dp: Half of the new 88dp avatar container size (for centering calculations)
+                    int centerX = AndroidUtilities.displaySize.x / 2 - AndroidUtilities.dp(44);
+                    float targetX = avatarContainerLeft - centerX;
+                    translationXAnimator = ObjectAnimator.ofFloat(
+                            avatarContainer, "translationX", 0f, targetX);
+                } else {
+                    translationXAnimator = ObjectAnimator.ofFloat(
+                            avatarContainer, "translationX", 0f, 0f);
+                }
 
+                // Closing animation: Scale from 88dp visual size back to 42dp visual size
+                // 1f to 42f/88f: Animate from full size (1.0 scale) to small avatar appearance (0.4773 scale)
                 ObjectAnimator scaleXAnimator = ObjectAnimator.ofFloat(
-                        avatarContainer, "scaleX", AVATAR_SIZE_DP / 42f, 1f);
+                        avatarContainer, "scaleX", 1f, 42f / 88f);
 
                 ObjectAnimator scaleYAnimator = ObjectAnimator.ofFloat(
-                        avatarContainer, "scaleY", AVATAR_SIZE_DP / 42f, 1f);
+                        avatarContainer, "scaleY", 1f, 42f / 88f);
 
                 AnimatorSet avatarSet = new AnimatorSet();
                 avatarSet.playTogether(translationXAnimator, scaleXAnimator, scaleYAnimator);
@@ -16494,70 +16610,7 @@ public class ProfileActivity extends BaseFragment
         return AndroidUtilities.dp(collapsedAreaHeight * 0.5f); // Standard avatar Round Radius
     }
 
-    private void handleOpeningExpandState(int newTop) {
 
-        /// playProfileAnimation
-        /// Type 0: No animation
-        /// Type 1: Opening from chat list or other fragments
-        /// Type 2: Opening with avatar expansion animation
-            System.out.println("ProfileActivity:: handleExpandProfileAnimationInOpening : playProfileOpeningAnimationType = OPENING_IN_EXPANDED_MODE");
-            float avX = 0;
-            float avY = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) +
-                    ActionBar.getCurrentActionBarHeight() / 2.0f - 21 * AndroidUtilities.density +
-                    actionBar.getTranslationY();
-
-            // Update text views for animation state 0
-            nameTextView[0].setTranslationX(0);
-            nameTextView[0].setTranslationY((float) Math.floor(avY) + AndroidUtilities.dp(1.3f));
-            onlineTextView[0].setTranslationX(0);
-            onlineTextView[0].setTranslationY((float) Math.floor(avY) + AndroidUtilities.dp(24));
-            nameTextView[0].setScaleX(1.0f);
-            nameTextView[0].setScaleY(1.0f);
-
-            // Update text views for animation state 1
-            nameTextView[1].setPivotY(nameTextView[1].getMeasuredHeight());
-            nameTextView[1].setScaleX(1.67f);
-            nameTextView[1].setScaleY(1.67f);
-
-            // Update avatar - smooth scale from 42dp to AVATAR_SIZE_DP (88dp)
-            float smallAvatarSizeDp = 42f;
-            avatarScale = AndroidUtilities.lerp(smallAvatarSizeDp / AVATAR_SIZE_DP, 1.0f, openingProfileAnimationProgress);
-
-            if (storyView != null) {
-                storyView.setExpandProgress(1f);
-            }
-            if (giftsView != null) {
-                giftsView.setExpandProgress(1f);
-            }
-
-            avatarImage.setRoundRadius(
-                    (int) AndroidUtilities.lerp(getSmallAvatarRoundRadius(), 0f, openingProfileAnimationProgress));
-            avatarContainer.setTranslationX(avX);
-            avatarContainer.setTranslationY(AndroidUtilities.lerp((float) Math.ceil(avY), 0f, openingProfileAnimationProgress));
-
-            updateTimeAndStarItemsForAnimation();
-            applyAvatarTransformations();
-
-            // Update overlay and action bar colors
-            overlaysView.setAlphaValue(openingProfileAnimationProgress, false);
-            actionBar.setItemsColor(ColorUtils.blendARGB(
-                    peerColor != null ? Color.WHITE : getThemedColor(Theme.key_actionBarDefaultIcon),
-                    Color.WHITE, openingProfileAnimationProgress), false);
-
-            updateDrawableColors();
-            updateEmojiStatusDrawableColor(openingProfileAnimationProgress);
-
-            // Update avatar container layout params
-            final FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
-            params.width = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(AVATAR_SIZE_DP),
-                    profileDetailsListView.getMeasuredWidth() / avatarScale, openingProfileAnimationProgress);
-            params.height = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(AVATAR_SIZE_DP),
-                    (extraHeight + newTop) / avatarScale, openingProfileAnimationProgress);
-            avatarContainer.requestLayout();
-
-            updateCollectibleHint();
-
-    }
 
     @Keep
     public void setOpeningProfileAnimationProgress(float progress) {
@@ -16626,7 +16679,9 @@ public class ProfileActivity extends BaseFragment
             onlineTextView[i].setTextColor(ColorUtils.blendARGB(sourceColor, targetColor, progress));
         }
 
-        // Update extra height for layout calculations
+        // UPDATE EXTRAHEIGHT: Animation-driven update during opening transitions
+        // initialAnimationExtraHeight is interpolated with animation progress
+        // This creates smooth avatar scaling during activity opening
         extraHeight = initialAnimationExtraHeight * progress;
 
         // Apply avatar drawable color animations
@@ -16646,9 +16701,7 @@ public class ProfileActivity extends BaseFragment
 
         // Trigger view invalidations and layout updates
         topView.invalidate();
-        System.out.println("ProfileActivity:: setOpeningProfileAnimationProgress : progress = " + progress
-                + ", avatarAnimationProgress = " + openingProfileAnimationProgress + ", currentExpandAnimatorValue = "
-                + currentExpandAnimatorValue);
+        System.out.println("ProfileActivity:: setOpeningProfileAnimationProgress");
         updateProfileLayout(true);
         if (fragmentView != null) {
             fragmentView.invalidate();
@@ -16671,46 +16724,79 @@ public class ProfileActivity extends BaseFragment
         }
     }
 
-    private void updateAvatarPosition(float collapseProgress) {
-        avatarX = 0;
-        System.out.println("ProfileActivity:: updateAvatarPosition avatarX = " + avatarX);
-
+    /**
+     * Avatar transform system specifically designed for COLLAPSED_STATE scenario only.
+     * Handles both scaling and positioning for the collapsed state to ensure smooth
+     * transitions as the user scrolls up. Other scenarios use their own specialized
+     * transform logic for optimal behavior.
+     * 
+     * How currentHeight (extraHeight) gets updated and flows to this method:
+     * 1. SCROLL-DRIVEN: checkListViewScroll() → extraHeight = newOffset (primary update)
+     * 2. ANIMATION: interpolated from initialAnimationExtraHeight * progress
+     * 3. FORCE UPDATES: reset to collapsedAreaHeight in specific scenarios
+     * → processAvatarCollapsedScenario() → updateAvatarTransform(extraHeight)
+     * 
+     * @param currentHeight The current content height (extraHeight for collapsed state)
+     */
+    private void updateAvatarTransform(float currentHeight) {
+        System.out.println("ProfileActivity:: updateAvatarTransform : currentHeight = " + currentHeight + 
+                " extraHeight = " + extraHeight + " collapsedAreaHeight = " + collapsedAreaHeight);
+        
+        // POSITIONING LOGIC
+        // No horizontal movement - avatar stays centered
+        avatarX = 0f;
+        
+        // Calculate base vertical position
         int actionBarHeight = ActionBar.getCurrentActionBarHeight();
         int statusBarOffset = actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
+        // 44dp: Half of the 88dp avatar container size - centers avatar in action bar
+        // actionBarHeight / 2.0f: Centers avatar vertically within the action bar area
+        float baseY = statusBarOffset + actionBarHeight / 2.0f - 44 * AndroidUtilities.density + AndroidUtilities.dp(AVATAR_TOP_MARGIN_ADJUSTMENT_DP);
+        
+        // Calculate scroll-based upward movement
+        // As currentHeight decreases from collapsedAreaHeight to 0, avatar moves up
+        float scrollUpAmount = Math.max(0, collapsedAreaHeight - currentHeight);
+        float scrollProgress = Math.max(0f, Math.min(1f, scrollUpAmount / collapsedAreaHeight));
+        
+        // 50dp: Maximum upward movement distance when fully collapsed
+        float maxUpwardMovement = AndroidUtilities.dp(50);
+        float upwardMovement = scrollProgress * maxUpwardMovement;
+        
+        // SCALING LOGIC
+        // Avatar scales from 1.0 (full size) down to 0.6 (60% size) as user scrolls up
+        // 0.6f: Minimum scale factor when fully collapsed
+        float minScale = 0.6f;
+        avatarScale = 1.0f - (scrollProgress * (1.0f - minScale));
+        
+        // CRITICAL: Position calculation must account for visual center during scaling
+        // Even when scaling down, we want consistent visual behavior with expansion states
+        
+        // Calculate the target visual center position (moving up from base position)
+        float targetCenterY = baseY - upwardMovement + actionBar.getTranslationY();
+        
+        // Account for how scaling affects the visual center
+        // When scaling by N, the visual center moves by (N-1) * halfSize from the layout origin
+        // For scales < 1.0, this creates a positive offset that moves the layout position down
+        // to compensate for the visual center moving up relative to the layout origin
+        float avatarHalfSize = 44 * AndroidUtilities.density; // Half of 88dp avatar size
+        float scaleCenterOffset = (avatarScale - 1.0f) * avatarHalfSize;
+        
+        // Calculate the layout position that will place the visual center at the target
+        avatarY = targetCenterY - scaleCenterOffset;
+        
 
-        avatarY = statusBarOffset + actionBarHeight / 2.0f * (1.0f + collapseProgress) -
-                21 * AndroidUtilities.density + 27 * AndroidUtilities.density * collapseProgress +
-                actionBar.getTranslationY();
-        avatarScale = 1.0f + 0.18f * collapseProgress;
-        invalidateStoryAndGiftsViews();
+        
+        // Only apply transforms if no expand animation is running to avoid conflicts
         if (expandAnimator == null || !expandAnimator.isRunning()) {
             applyAvatarTransformations();
-            avatarContainer.setTranslationX(avatarX);
+            // Apply position (no horizontal movement, only vertical)
+            avatarContainer.setTranslationX(0f);
             avatarContainer.setTranslationY((float) Math.ceil(avatarY));
             updateTimeAndStarItems();
         }
-    }
-    private void updateAvatarPositionForOpening(float collapseProgress) {
-
-        avatarX = avatarContainerInitialDistanceFromCenter * collapseProgress;
-        System.out.println("ProfileActivity:: updateAvatarPosition avatarX = " + avatarX + "avatarContainerInitialDistanceFromCenter" + avatarContainerInitialDistanceFromCenter);
-
-        int actionBarHeight = ActionBar.getCurrentActionBarHeight();
-        int statusBarOffset = actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
-
-        avatarY = statusBarOffset + actionBarHeight / 2.0f * (1.0f + collapseProgress) -
-                21 * AndroidUtilities.density + 27 * AndroidUtilities.density * collapseProgress +
-                actionBar.getTranslationY();
-
-        avatarScale = 1.0f + (AVATAR_SIZE_DP / 42.0f - 1.0f) * collapseProgress;
-        invalidateStoryAndGiftsViews();
-
-        if (expandAnimator == null || !expandAnimator.isRunning()) {
-            applyAvatarTransformations();
-            avatarContainer.setTranslationX(avatarX);
-            avatarContainer.setTranslationY((float) Math.ceil(avatarY));
-            updateTimeAndStarItems();
-        }
+        
+        System.out.println("ProfileActivity:: updateAvatarTransform result: avatarY = " + avatarY + 
+                " avatarScale = " + avatarScale + " scrollProgress = " + scrollProgress);
     }
     private void applyAvatarTransformations() {
         avatarContainer.setScaleX(avatarScale);
@@ -16723,7 +16809,311 @@ public class ProfileActivity extends BaseFragment
         params.height = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(AVATAR_SIZE_DP),
                 (extraHeight + newTop) / avatarScale,
                 expandValue);
+        System.out.println("ProfileActivity:: updateAvatarContainerLayoutParams : params.width = " + params.width + " params.height = " + params.height);
         avatarContainer.requestLayout();
+    }
+
+    /// ////////////////////////////////////////////////////////////////////
+
+    /**
+     * Processes avatar behavior when user has scrolled down past collapsedAreaHeight.
+     * This method distinguishes between two sub-scenarios and applies their own specialized
+     * transform logic (not using updateAvatarTransform which is only for collapsed state):
+     *
+     * INTERMEDIATE_EXPANSION (expandProgress < 0.33f):
+     * - User scrolled down past collapsedAreaHeight but hasn't pulled far enough for full expansion
+     * - Avatar transforms based on scroll but no overlay UI is shown
+     * - Handled by processIntermediateExpansion()
+     *
+     * FULL_EXPANSION_READY (expandProgress >= 0.33f):
+     * - User has pulled down significantly past the expansion threshold
+     * - Shows overlay UI and enables full pull-to-expand behavior
+     * - Handled by processFullExpansionReady()
+     */
+    private void processAvatarExpandedScenarios(float currentHeight, int newTop) {
+        System.out.println("ProfileActivity:: processAvatarExpandedScenarios : currentHeight = "
+                + currentHeight + " newTop = " + newTop + " extraHeight = " + extraHeight + " collapsedAreaHeight = " + collapsedAreaHeight);
+        expandProgress = Math.max(0f, Math.min(1f,
+                (currentHeight - collapsedAreaHeight) / (maxAvatarExpansionHeight - newTop - collapsedAreaHeight)));
+
+        // Expanded scenarios use specialized transform logic instead of updateAvatarTransform()
+        // updateAvatarTransform() is only used for collapsed state scenario
+//        updateAvatarTransform(currentHeight);
+        // APPLY TRANSFORMATIONS
+        invalidateStoryAndGiftsViews();
+        final float durationFactor = calculateAnimationDurationFactor();
+
+        if (allowPullingDown && (openingAvatar || expandProgress >= FULL_EXPANSION_THRESHOLD)) {
+            // FULL_EXPANSION_READY: Show overlay UI and enable full expansion
+            processFullExpansionReady(durationFactor, currentHeight, newTop);
+        } else {
+            // INTERMEDIATE_EXPANSION: Transform avatar but don't show overlay UI yet
+            processIntermediateExpansion(durationFactor);
+        }
+    }
+
+
+    /**
+     * Processes COLLAPSED_STATE scenario: User has scrolled up, extraHeight <= collapsedAreaHeight.
+     * Avatar shrinks and moves up as the user scrolls up, following the list scroll position.
+     * This is the ONLY scenario that uses updateAvatarTransform() for avatar positioning.
+     */
+    private void processAvatarCollapsedScenario(float collapseProgress) {
+        // Use updateAvatarTransform for collapsed state positioning (only scenario that uses it)
+        updateAvatarTransform(extraHeight);
+        updateTextPositionsAndScales(collapseProgress);
+        updateCollectibleHint();
+    }
+
+    /**
+     * Processes FULL_EXPANSION_READY scenario: User has pulled down significantly past the
+     * expansion threshold (expandProgress >= 0.33f). Shows overlay UI, indicators, and
+     * enables full pull-to-expand functionality with avatar viewer.
+     */
+    private void processFullExpansionReady(float durationFactor, float currentHeight, int newTop) {
+        System.out.println("ProfileActivity:: handlePullToExpand : durationFactor = "
+                + durationFactor + " currentHeight = " + currentHeight + " newTop = " + newTop + " extraHeight = " + extraHeight + " collapsedAreaHeight = " + collapsedAreaHeight);
+        if (!isPulledDown) {
+            configurePullToExpandUI();
+            isPulledDown = true;
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needCheckSystemBarColors,
+                    true);
+
+            // Show overlays and indicators
+            overlaysView.setOverlaysVisible(true, durationFactor);
+            avatarsViewPagerIndicatorView.refreshVisibility(durationFactor);
+            avatarsViewPager.setCreateThumbFromParent(true);
+            avatarsViewPager.getAdapter().notifyDataSetChanged();
+
+            startExpandAnimation(durationFactor);
+        }
+
+        // AVATAR TRANSFORMATION: Continue expansion beyond intermediate threshold
+        // Calculate the CURRENT intermediate state (what the avatar should be at threshold)
+        float thresholdExpansionFactor = (collapsedAreaHeight + (FULL_EXPANSION_THRESHOLD * (maxAvatarExpansionHeight - collapsedAreaHeight)) - collapsedAreaHeight) / (maxAvatarExpansionHeight - collapsedAreaHeight);
+        thresholdExpansionFactor = Math.max(0f, Math.min(1f, thresholdExpansionFactor));
+        
+        // Calculate intermediate state at threshold (where full expansion should start from)
+        float intermediateScale = 1.5f;
+        float thresholdScale = 1.0f + (thresholdExpansionFactor * (intermediateScale - 1.0f));
+        
+        int actionBarHeight = ActionBar.getCurrentActionBarHeight();
+        int statusBarOffset = actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
+        float baseY = statusBarOffset + actionBarHeight / 2.0f - 44 * AndroidUtilities.density + AndroidUtilities.dp(AVATAR_TOP_MARGIN_ADJUSTMENT_DP);
+        float thresholdY = baseY + (thresholdExpansionFactor * AndroidUtilities.dp(40));
+        
+        // Scale: Continue from actual intermediate threshold scale up to full expansion scale
+        float maxFullScale = 2.0f; // Maximum scale during full expansion
+        
+        // Calculate how far we are in the full expansion range (beyond 0.33 threshold)
+        float fullExpansionFactor = (expandProgress - FULL_EXPANSION_THRESHOLD) / (1f - FULL_EXPANSION_THRESHOLD);
+        fullExpansionFactor = Math.max(0f, Math.min(1f, fullExpansionFactor));
+        
+        // Scale continues from threshold scale to max scale
+        avatarScale = thresholdScale + (fullExpansionFactor * (maxFullScale - thresholdScale));
+        
+        // CRITICAL FIX: Position calculation must account for visual center during scaling
+        // When an element scales, its visual center moves relative to its layout position
+        // We need to calculate the position so the avatar appears to scale FROM its current
+        // visual center TOWARD the target position, not just move the layout origin
+        
+        // Calculate the target visual center position for full expansion
+        float additionalFullY = fullExpansionFactor * AndroidUtilities.dp(60); // Additional movement in full expansion
+        float targetCenterY = thresholdY + additionalFullY;
+        
+        // Account for how scaling affects the visual center
+        // When scaling by N, the visual center moves by (N-1) * halfSize from the layout origin
+        float avatarHalfSize = 44 * AndroidUtilities.density; // Half of 88dp avatar size
+        float scaleCenterOffset = (avatarScale - 1.0f) * avatarHalfSize;
+        
+        // Calculate the layout position that will place the visual center at the target
+        avatarY = targetCenterY - scaleCenterOffset;
+        
+        // No horizontal movement
+        avatarX = 0f;
+        
+        // Apply the calculated transforms
+        avatarContainer.setScaleX(avatarScale);
+        avatarContainer.setScaleY(avatarScale);
+        avatarContainer.setTranslationX(avatarX);
+        avatarContainer.setTranslationY(avatarY);
+        
+        System.out.println("ProfileActivity:: processFullExpansionReady: applied transform - scale=" + avatarScale + 
+                " x=" + avatarX + " y=" + avatarY + " fullExpansionFactor=" + fullExpansionFactor + 
+                " thresholdScale=" + thresholdScale + " thresholdY=" + thresholdY);
+
+        updateAvatarsViewPagerLayout(currentHeight, newTop);
+        updateExpandedTextPositions(currentHeight, newTop);
+    }
+    /**
+     * Processes OPENING_ANIMATION scenario in collapsed mode: Activity opening with animation
+     * while starting in collapsed state. Uses initialAnimationExtraHeight instead of extraHeight.
+     */
+    private void processOpeningInCollapsedMode(float collapseProgress) {
+        // Use unified avatar positioning system with opening animation height
+        float animationHeight = openAnimationInProgress ? initialAnimationExtraHeight : extraHeight;
+//        updateAvatarTransform(animationHeight);
+        updateTextPositionsAndScales(collapseProgress);
+        updateCollectibleHint();
+    }
+
+    /**
+     * Processes INTERMEDIATE_EXPANSION scenario: User scrolled down past collapsedAreaHeight
+     * but expandProgress < 0.33f. Avatar transforms based on scroll position but overlay UI
+     * is not shown yet. If user was previously in full expansion mode (isPulledDown), this
+     * collapses the overlay UI back to intermediate state.
+     */
+    private void processIntermediateExpansion(float durationFactor) {
+        System.out.println("ProfileActivity:: processIntermediateExpansion : durationFactor = " + durationFactor +
+                " isPulledDown = " + isPulledDown + " openAnimationInProgress = " + openAnimationInProgress);
+        
+        // Handle UI collapse if coming from full expansion
+        if (isPulledDown) {
+            configureCollapseUI();
+            isPulledDown = false;
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needCheckSystemBarColors,
+                    true);
+
+            // Hide overlays and indicators
+            overlaysView.setOverlaysVisible(false, durationFactor);
+            avatarsViewPagerIndicatorView.refreshVisibility(durationFactor);
+
+            startCollapseAnimation(durationFactor);
+        }
+
+        // AVATAR TRANSFORMATION: Apply intermediate expansion transform
+        // Calculate expansion factor based on how far we are beyond collapsed area
+        float expansionFactor = (extraHeight - collapsedAreaHeight) / (maxAvatarExpansionHeight - collapsedAreaHeight);
+        expansionFactor = Math.max(0f, Math.min(1f, expansionFactor)); // Clamp to 0-1
+        
+        // Scale: Start from 1.0f (full 88dp size) and grow larger as user scrolls down
+        // Max scale during intermediate: 1.5f (can be adjusted for desired effect)
+        float maxIntermediateScale = 1.5f;
+        avatarScale = 1.0f + (expansionFactor * (maxIntermediateScale - 1.0f));
+        
+        // Position: Move avatar down as it grows larger
+        int actionBarHeight = ActionBar.getCurrentActionBarHeight();
+        int statusBarOffset = actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
+        
+        // Base position (collapsed state position)
+        float baseY = statusBarOffset + actionBarHeight / 2.0f - 44 * AndroidUtilities.density + AndroidUtilities.dp(AVATAR_TOP_MARGIN_ADJUSTMENT_DP);
+        
+        // CRITICAL: Position calculation must account for visual center during scaling
+        // When scaling, we want the avatar to appear to grow from its center, not from its layout origin
+        
+        // Calculate the target visual center position
+        float additionalCenterY = expansionFactor * AndroidUtilities.dp(100); // Move center down up to 60dp (increased from 40dp)
+        float targetCenterY = baseY + additionalCenterY;
+        
+        // Account for how scaling affects the visual center
+        // When scaling by N, the visual center moves by (N-1) * halfSize from the layout origin
+        float avatarHalfSize = 44 * AndroidUtilities.density; // Half of 88dp avatar size
+        float scaleCenterOffset = (avatarScale - 1.0f) * avatarHalfSize;
+        
+        // Calculate the layout position that will place the visual center at the target
+        avatarY = targetCenterY - scaleCenterOffset;
+        
+        // No horizontal movement
+        avatarX = 0f;
+        
+        // Apply the calculated transforms
+        avatarContainer.setScaleX(avatarScale);
+        avatarContainer.setScaleY(avatarScale);
+        avatarContainer.setTranslationX(avatarX);
+        avatarContainer.setTranslationY(avatarY);
+        
+        System.out.println("ProfileActivity:: processIntermediateExpansion: applied transform - scale=" + avatarScale + 
+                " x=" + avatarX + " y=" + avatarY + " expansionFactor=" + expansionFactor);
+
+        updateCollapsedTextPositions();
+    }
+
+    private void processOpeningInExpandedMode(int newTop) {
+        /// playProfileAnimation
+        /// Type 0: No animation
+        /// Type 1: Opening from chat list or other fragments
+        /// Type 2: Opening with avatar expansion animation
+        System.out.println("ProfileActivity:: processOpeningInExpandedMode");
+
+        // Use unified avatar transform system for consistent positioning
+        float animationHeight = initialAnimationExtraHeight * openingProfileAnimationProgress;
+//        updateAvatarTransform(animationHeight);
+
+        // Calculate final avatar position for text alignment
+        int actionBarHeight = ActionBar.getCurrentActionBarHeight();
+        int statusBarOffset = actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
+        // 44dp: Half of the 88dp avatar container size - centers avatar in action bar
+        // actionBarHeight / 2.0f: Centers avatar vertically within the action bar area
+        float baseY = statusBarOffset + actionBarHeight / 2.0f - 44 * AndroidUtilities.density + AndroidUtilities.dp(AVATAR_TOP_MARGIN_ADJUSTMENT_DP);
+
+        float scrollUpAmount = Math.max(0, collapsedAreaHeight - animationHeight);
+        float scrollProgress = Math.max(0f, Math.min(1f, scrollUpAmount / collapsedAreaHeight));
+        // 50dp: Maximum upward movement distance when avatar collapses completely
+        float maxUpwardMovement = AndroidUtilities.dp(50);
+        float upwardMovement = scrollProgress * maxUpwardMovement;
+        float finalY = baseY - upwardMovement + actionBar.getTranslationY();
+
+        // Update text views for animation state 0
+        nameTextView[0].setTranslationX(0);
+        // 1.3dp: Fine-tuning offset for name text vertical alignment relative to avatar
+        nameTextView[0].setTranslationY((float) Math.floor(finalY) + AndroidUtilities.dp(1.3f));
+        onlineTextView[0].setTranslationX(0);
+        // 24dp: Vertical spacing between name text and online status text
+        onlineTextView[0].setTranslationY((float) Math.floor(finalY) + AndroidUtilities.dp(24));
+        // 1.0f: Normal scale (no scaling) for the transition state
+        nameTextView[0].setScaleX(1.0f);
+        nameTextView[0].setScaleY(1.0f);
+
+        // Update text views for animation state 1
+        nameTextView[1].setPivotY(nameTextView[1].getMeasuredHeight());
+        // 1.67f: Large scale factor for expanded profile mode (makes text bigger when avatar is expanded)
+        nameTextView[1].setScaleX(1.67f);
+        nameTextView[1].setScaleY(1.67f);
+
+        // Override avatar scale for opening animation
+        // 42f: Original small avatar size in dp
+        float smallAvatarSizeDp = 42f;
+        // Scale from 0.4773 (42/88) to 1.0 (88/88) based on animation progress
+        avatarScale = AndroidUtilities.lerp(smallAvatarSizeDp / AVATAR_SIZE_DP, 1.0f, openingProfileAnimationProgress);
+
+        if (storyView != null) {
+            storyView.setExpandProgress(1f);
+        }
+        if (giftsView != null) {
+            giftsView.setExpandProgress(1f);
+        }
+
+        avatarImage.setRoundRadius(
+                (int) AndroidUtilities.lerp(getSmallAvatarRoundRadius(), 0f, openingProfileAnimationProgress));
+
+        // Apply avatar transformations for opening animation
+        applyAvatarTransformations();
+        // Use consistent positioning - no horizontal movement, only vertical
+        avatarContainer.setTranslationX(0f);
+        avatarContainer.setTranslationY(AndroidUtilities.lerp((float) Math.ceil(finalY), 0f, openingProfileAnimationProgress));
+
+        updateTimeAndStarItemsForAnimation();
+        applyAvatarTransformations();
+
+        // Update overlay and action bar colors
+        overlaysView.setAlphaValue(openingProfileAnimationProgress, false);
+        actionBar.setItemsColor(ColorUtils.blendARGB(
+                peerColor != null ? Color.WHITE : getThemedColor(Theme.key_actionBarDefaultIcon),
+                Color.WHITE, openingProfileAnimationProgress), false);
+
+        updateDrawableColors();
+        updateEmojiStatusDrawableColor(openingProfileAnimationProgress);
+
+        // Update avatar container layout params
+        final FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
+        params.width = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(AVATAR_SIZE_DP),
+                profileDetailsListView.getMeasuredWidth() / avatarScale, openingProfileAnimationProgress);
+        params.height = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(AVATAR_SIZE_DP),
+                (extraHeight + newTop) / avatarScale, openingProfileAnimationProgress);
+        avatarContainer.requestLayout();
+
+        updateCollectibleHint();
+
     }
 }
 
