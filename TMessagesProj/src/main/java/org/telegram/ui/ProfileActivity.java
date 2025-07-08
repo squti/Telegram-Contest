@@ -16713,12 +16713,9 @@ public class ProfileActivity extends BaseFragment
         // No horizontal movement - avatar stays centered
         avatarX = 0f;
         
-        // Calculate base vertical position
-        int actionBarHeight = ActionBar.getCurrentActionBarHeight();
-        int statusBarOffset = actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
-        // 44dp: Half of the 88dp avatar container size - centers avatar in action bar
-        // actionBarHeight / 2.0f: Centers avatar vertically within the action bar area
-        float baseY = statusBarOffset + actionBarHeight / 2.0f - 44 * AndroidUtilities.density + AndroidUtilities.dp(AVATAR_TOP_MARGIN_ADJUSTMENT_DP);
+        // Start from the expanded state position - when extraHeight = collapsedAreaHeight (no scroll),
+        // the avatar should be at exactly AVATAR_TOP_MARGIN_ADJUSTMENT_DP to match expanded state
+        float expandedStateY = AndroidUtilities.dp(AVATAR_TOP_MARGIN_ADJUSTMENT_DP);
         
         // Calculate scroll-based upward movement
         // As currentHeight decreases from collapsedAreaHeight to 0, avatar moves up
@@ -16738,8 +16735,8 @@ public class ProfileActivity extends BaseFragment
         // CRITICAL: Position calculation must account for visual center during scaling
         // Even when scaling down, we want consistent visual behavior with expansion states
         
-        // Calculate the target visual center position (moving up from base position)
-        float targetCenterY = baseY - upwardMovement + actionBar.getTranslationY();
+        // Calculate the target visual center position (moving up from expanded state position)
+        float targetCenterY = expandedStateY - upwardMovement + actionBar.getTranslationY();
         
         // Account for how scaling affects the visual center
         // When scaling by N, the visual center moves by (N-1) * halfSize from the layout origin
@@ -16958,18 +16955,15 @@ public class ProfileActivity extends BaseFragment
         float maxIntermediateScale = 1.5f;
         avatarScale = 1.0f + (expansionFactor * (maxIntermediateScale - 1.0f));
         
-        // Position: Move avatar down as it grows larger
-        int actionBarHeight = ActionBar.getCurrentActionBarHeight();
-        int statusBarOffset = actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
-        
-        // Base position (collapsed state position)
-        float baseY = statusBarOffset + actionBarHeight / 2.0f - 44 * AndroidUtilities.density + AndroidUtilities.dp(AVATAR_TOP_MARGIN_ADJUSTMENT_DP);
+        // Position: Use the same margin-aware logic as updateAvatarTransform
+        // Start from the expanded state position (includes AVATAR_TOP_MARGIN_ADJUSTMENT_DP)
+        float baseY = AndroidUtilities.dp(AVATAR_TOP_MARGIN_ADJUSTMENT_DP);
         
         // CRITICAL: Position calculation must account for visual center during scaling
         // When scaling, we want the avatar to appear to grow from its center, not from its layout origin
         
         // Calculate the target visual center position
-        float additionalCenterY = expansionFactor * AndroidUtilities.dp(100); // Move center down up to 60dp (increased from 40dp)
+        float additionalCenterY = expansionFactor * AndroidUtilities.dp(100); // Move center down up to 100dp as we expand
         float targetCenterY = baseY + additionalCenterY;
         
         // Account for how scaling affects the visual center
