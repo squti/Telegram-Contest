@@ -1096,14 +1096,6 @@ public class ProfileActivity extends BaseFragment
         return topicId;
     }
 
-    public int getAvatarContainerLeft() {
-        return avatarContainerLeft;
-    }
-
-    public int getAvatarContainerTop() {
-        return avatarContainerTop;
-    }
-
     @Override
     public boolean onFragmentCreate() {
         userId = arguments.getLong("user_id", 0);
@@ -15607,6 +15599,7 @@ public class ProfileActivity extends BaseFragment
                 previousTransitionFragment = null;
                 previousTransitionMainFragment = null;
                 fragmentView.invalidate();
+
             }
         });
 
@@ -16449,10 +16442,16 @@ public class ProfileActivity extends BaseFragment
         // 88x88: New avatar container size (changed from 42x42 to prevent size jumps during animations)
         mainProfileViewContainer.addView(avatarContainer,
                 LayoutHelper.createFrame(88, 88, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 0));
-        // No horizontal translation needed since avatar is centered by layout
-        avatarContainer.setTranslationX(0f);
-        // Only use avatarContainerTop if it's valid, otherwise use 0
-        avatarContainer.setTranslationY(avatarContainerTop > 0 ? avatarContainerTop : 0f);
+
+        float avatarScale = 42f / AVATAR_SIZE_DP;
+        float scalingOffsetY = (AVATAR_SIZE_DP * (1f - avatarScale)) / 2f;
+        
+        avatarContainer.setScaleX(avatarScale);
+        avatarContainer.setScaleY(avatarScale);
+        avatarContainer.setTranslationY(avatarContainerTop - AndroidUtilities.dp(scalingOffsetY));
+        avatarContainer.setTranslationX(-AndroidUtilities.displaySize.x / 2f + avatarContainerLeft + AndroidUtilities.dp(42f / 2f));
+
+
         mainProfileViewContainer.addView(avatarsViewPager);
         mainProfileViewContainer.addView(overlaysView);
         mainProfileViewContainer.addView(avatarsViewPagerIndicatorView,
@@ -16492,43 +16491,29 @@ public class ProfileActivity extends BaseFragment
     private void startAvatarOpenCloseAnimation(boolean isShowOpeningAnimation) {
         if (isShowOpeningAnimation) {
             avatarContainer.post(() -> {
+                avatarContainerInitialDistanceFromCenter =
+                        AndroidUtilities.displaySize.x / 2f - avatarContainer.getLeft() - avatarContainer.getWidth() / 2f;
 
-                // Set initial scale to 42dp size (0.48 scale of 88dp)
-                // 42f/88f = 0.4773: Scale factor to make 88dp container appear as 42dp (original small avatar size)
-                avatarContainer.setScaleX(42f / 88f);
-                avatarContainer.setScaleY(42f / 88f);
+                // Get current setup state (starting position)
+                float currentTranslationX = avatarContainer.getTranslationX();
+                float currentTranslationY = avatarContainer.getTranslationY();
+                float currentScaleX = avatarContainer.getScaleX();
+                float currentScaleY = avatarContainer.getScaleY();
 
-                // If avatarContainerLeft is provided, we need to animate from that position to center
-                // Otherwise, avatar is already centered by layout
-                ObjectAnimator translationXAnimator;
-                if (avatarContainerLeft != -1) {
-                    // Calculate the distance from the original position to center
-                    // 44dp: Half of the new 88dp avatar container size (changed from 21dp which was half of 42dp)
-                    int centerX = AndroidUtilities.displaySize.x / 2 - AndroidUtilities.dp(44);
-                    avatarContainerInitialDistanceFromCenter = avatarContainerLeft - centerX;
-                    
-                    // Start from the transition position
-                    avatarContainer.setTranslationX(avatarContainerInitialDistanceFromCenter);
-                    
-                    // Animate to center (translationX = 0)
-                    translationXAnimator = ObjectAnimator.ofFloat(
-                            avatarContainer, "translationX", avatarContainerInitialDistanceFromCenter, 0f);
-                } else {                // Avatar is already centered, no horizontal animation needed
-                avatarContainerInitialDistanceFromCenter = 0f;
-                translationXAnimator = ObjectAnimator.ofFloat(
-                        avatarContainer, "translationX", 0f, 0f);
-            }
+                ObjectAnimator translationXAnimator = ObjectAnimator.ofFloat(
+                        avatarContainer, "translationX", currentTranslationX, 0f);
 
-            // Opening animation: Scale from 42dp visual size to 88dp visual size
-            // 42f/88f to 1f: Animate from small avatar appearance (0.4773 scale) to full size (1.0 scale)
-            ObjectAnimator scaleXAnimator = ObjectAnimator.ofFloat(
-                    avatarContainer, "scaleX", 42f / 88f, 1f);
+                ObjectAnimator translationYAnimator = ObjectAnimator.ofFloat(
+                        avatarContainer, "translationY", currentTranslationY, AndroidUtilities.dp(AVATAR_TOP_MARGIN_ADJUSTMENT_DP));
 
-            ObjectAnimator scaleYAnimator = ObjectAnimator.ofFloat(
-                    avatarContainer, "scaleY", 42f / 88f, 1f);
+                ObjectAnimator scaleXAnimator = ObjectAnimator.ofFloat(
+                        avatarContainer, "scaleX", currentScaleX, 1f);
+
+                ObjectAnimator scaleYAnimator = ObjectAnimator.ofFloat(
+                        avatarContainer, "scaleY", currentScaleY, 1f);
 
                 AnimatorSet avatarSet = new AnimatorSet();
-                avatarSet.playTogether(translationXAnimator, scaleXAnimator, scaleYAnimator);
+                avatarSet.playTogether(translationXAnimator, translationYAnimator, scaleXAnimator, scaleYAnimator);
 
                 int duration = (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) ? 250 : 180;
                 avatarSet.setDuration(duration);
@@ -16536,19 +16521,7 @@ public class ProfileActivity extends BaseFragment
                 avatarSet.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
-
-//                    final FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
-//                    params.width = AndroidUtilities.dp(88);
-//                    params.height = AndroidUtilities.dp(88);
-//                    params.leftMargin = 0;
-//                    params.topMargin = AndroidUtilities.dp(-32);
-//                    params.gravity = Gravity.CENTER_HORIZONTAL | Gravity.TOP;
-//                    avatarContainer.requestLayout();
-//                    avatarContainer.post(() -> {
-//                        avatarContainerInitialDistanceFromCenter = AndroidUtilities.displaySize.x / 2f - avatarContainer.getLeft() - avatarContainer.getWidth() / 2f;
-//                        avatarContainer.setPivotX(avatarContainer.getWidth() / 2f);
-//                        avatarContainer.setPivotY(avatarContainer.getHeight() / 2f);
-//                    });
+                        // Animation completed - avatar is now in expanded state
                     }
                 });
                 avatarSet.start();
@@ -16556,38 +16529,33 @@ public class ProfileActivity extends BaseFragment
             });
         } else {
             avatarContainer.post(() -> {
-                // Set initial scale to full size (1.0 scale of 88dp)
-                // 1f: Full scale - avatar appears at its natural 88dp container size
-                avatarContainer.setScaleX(1f);
-                avatarContainer.setScaleY(1f);
+                // Calculate target setup state values
+                float avatarScale = 42f / AVATAR_SIZE_DP;
+                float scalingOffsetY = (AVATAR_SIZE_DP * (1f - avatarScale)) / 2f;
                 
-                // Keep consistent positioning - avatar stays centered horizontally
-                avatarContainer.setTranslationX(0f);
-                avatarContainer.setTranslationY(avatarContainerTop > 0 ? avatarContainerTop : 0f);
+                float targetTranslationX = -AndroidUtilities.displaySize.x / 2f + avatarContainerLeft + AndroidUtilities.dp(42f / 2f);
+                float targetTranslationY = avatarContainerTop - AndroidUtilities.dp(scalingOffsetY);
+                
+                // Get current expanded state (starting position)
+                float currentTranslationX = avatarContainer.getTranslationX();
+                float currentTranslationY = avatarContainer.getTranslationY();
+                float currentScaleX = avatarContainer.getScaleX();
+                float currentScaleY = avatarContainer.getScaleY();
 
-                // Animate back to original position if there was a transition
-                ObjectAnimator translationXAnimator;
-                if (avatarContainerLeft != -1) {
-                    // 44dp: Half of the new 88dp avatar container size (for centering calculations)
-                    int centerX = AndroidUtilities.displaySize.x / 2 - AndroidUtilities.dp(44);
-                    float targetX = avatarContainerLeft - centerX;
-                    translationXAnimator = ObjectAnimator.ofFloat(
-                            avatarContainer, "translationX", 0f, targetX);
-                } else {
-                    translationXAnimator = ObjectAnimator.ofFloat(
-                            avatarContainer, "translationX", 0f, 0f);
-                }
+                ObjectAnimator translationXAnimator = ObjectAnimator.ofFloat(
+                        avatarContainer, "translationX", currentTranslationX, targetTranslationX);
 
-                // Closing animation: Scale from 88dp visual size back to 42dp visual size
-                // 1f to 42f/88f: Animate from full size (1.0 scale) to small avatar appearance (0.4773 scale)
+                ObjectAnimator translationYAnimator = ObjectAnimator.ofFloat(
+                        avatarContainer, "translationY", currentTranslationY, targetTranslationY);
+
                 ObjectAnimator scaleXAnimator = ObjectAnimator.ofFloat(
-                        avatarContainer, "scaleX", 1f, 42f / 88f);
+                        avatarContainer, "scaleX", currentScaleX, avatarScale);
 
                 ObjectAnimator scaleYAnimator = ObjectAnimator.ofFloat(
-                        avatarContainer, "scaleY", 1f, 42f / 88f);
+                        avatarContainer, "scaleY", currentScaleY, avatarScale);
 
                 AnimatorSet avatarSet = new AnimatorSet();
-                avatarSet.playTogether(translationXAnimator, scaleXAnimator, scaleYAnimator);
+                avatarSet.playTogether(translationXAnimator, translationYAnimator, scaleXAnimator, scaleYAnimator);
 
                 int duration = (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) ? 250 : 180;
                 avatarSet.setDuration(duration);
@@ -16597,7 +16565,6 @@ public class ProfileActivity extends BaseFragment
             });
         }
     }
-
 
     /// Avatar adjustments
     private int getSmallAvatarRoundRadius() {
