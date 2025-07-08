@@ -936,7 +936,7 @@ public class ProfileActivity extends BaseFragment
     // Global variable to manually adjust avatar top position (in dp)
     // Positive values move avatar down, negative values move avatar up
     public static float AVATAR_TOP_MARGIN_ADJUSTMENT_DP = 30f;
-    
+    float ASYMMETRIC_YPIVOT_FOR_AVATAR_EXPANSION = 0.30f; // Adjust this value: lower = more downward expansion
     private float avatarX;
 
     private float avatarY;
@@ -4812,29 +4812,6 @@ public class ProfileActivity extends BaseFragment
         updateCollectibleHint();
     }
 
-    private void updateAvatarContainerExpandTransform(float expandValue) {
-        checkPhotoDescriptionAlpha();
-        System.out.println("ProfileActivity:: updateAvatarContainerExpandTransform expandValue = " + expandValue + " avatarScale = " + avatarScale + " avatarY = " + avatarY);
-
-        // Set scaling with asymmetric expansion behavior
-        avatarContainer.setScaleX(avatarScale);
-        avatarContainer.setScaleY(avatarScale);
-
-        // ASYMMETRIC EXPANSION: Adjust pivot point to expand more towards bottom
-        // Since avatar starts near top, we want it to grow more downward
-        // Pivot Y: 0.3f means expansion happens 30% upward, 70% downward
-        float asymmetricPivotY = 0.25f; // Adjust this value: lower = more downward expansion
-        avatarContainer.setPivotY(avatarContainer.getHeight() * asymmetricPivotY);
-        avatarContainer.setPivotX(avatarContainer.getWidth() * 0.5f); // Keep horizontal centering
-
-
-
-        avatarImage.setRoundRadius((int) AndroidUtilities.lerp(getSmallAvatarRoundRadius(), 0f, expandValue));
-        avatarImage.setForegroundAlpha(expandValue);
-
-        updateStoryAndGiftsViews(expandValue);
-        updateNamePositionForExpandedView();
-    }
 
     private void updateStoryAndGiftsViews(float expandValue) {
         if (storyView != null) {
@@ -17083,6 +17060,30 @@ public class ProfileActivity extends BaseFragment
         updateCollectibleHint();
 
     }
+
+    private void updateAvatarContainerExpandTransform(float expandValue) {
+        checkPhotoDescriptionAlpha();
+        System.out.println("ProfileActivity:: updateAvatarContainerExpandTransform expandValue = " + expandValue + " avatarScale = " + avatarScale + " avatarY = " + avatarY);
+
+        // Set scaling with asymmetric expansion behavior
+        avatarContainer.setScaleX(avatarScale);
+        avatarContainer.setScaleY(avatarScale);
+
+        // ASYMMETRIC EXPANSION: Adjust pivot point to expand more towards bottom
+        // Since avatar starts near top, we want it to grow more downward
+        // Pivot Y: 0.3f means expansion happens 30% upward, 70% downward
+        avatarContainer.setPivotY(avatarContainer.getHeight() * ASYMMETRIC_YPIVOT_FOR_AVATAR_EXPANSION);
+        avatarContainer.setPivotX(avatarContainer.getWidth() * 0.5f); // Keep horizontal centering
+
+
+
+        avatarImage.setRoundRadius((int) AndroidUtilities.lerp(getSmallAvatarRoundRadius(), 0f, expandValue));
+        avatarImage.setForegroundAlpha(expandValue);
+
+        updateStoryAndGiftsViews(expandValue);
+        updateNamePositionForExpandedView();
+    }
+
 }
 
 //Opening in collapsed mode:
