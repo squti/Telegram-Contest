@@ -935,7 +935,7 @@ public class ProfileActivity extends BaseFragment
     
     // Global variable to manually adjust avatar top position (in dp)
     // Positive values move avatar down, negative values move avatar up
-    public static float AVATAR_TOP_MARGIN_ADJUSTMENT_DP = 24f;
+    public static float AVATAR_TOP_MARGIN_ADJUSTMENT_DP = 30f;
     
     private float avatarX;
 
@@ -1707,6 +1707,13 @@ public class ProfileActivity extends BaseFragment
                 avatarImage.clearForeground();
                 doNotSetForeground = false;
                 updateStoriesViewBounds(false);
+                
+                // Reset avatar container pivot points to center after collapse animation completes
+                // This ensures normal scaling behavior for subsequent transformations
+                if (!isPulledDown) {
+                    avatarContainer.setPivotX(avatarContainer.getWidth() * 0.5f);
+                    avatarContainer.setPivotY(avatarContainer.getHeight() * 0.5f);
+                }
             }
         });
     }
