@@ -539,6 +539,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             args.putLong("chat_id", -chat.id);
             args.putInt("avatarContainer_left", getLeft() + avatarImageView.getLeft());
             args.putInt("avatarContainer_top", avatarImageView.getTop());
+            args.putInt("titleTextView_top", titleTextView.getTop());
+            args.putInt("titleTextView_left", getLeft() + titleTextView.getLeft());
+            args.putInt("subtitle_top", subtitleTextView.getTop());
+            args.putInt("subtitle_left", getLeft() + subtitleTextView.getLeft());
             parentFragment.presentFragment(new ProfileActivity(args), removeLast);
             return;
         }
@@ -578,6 +582,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 args.putInt("actionBarColor", getThemedColor(Theme.key_actionBarDefault));
                 args.putInt("avatarContainer_left", getLeft() + avatarImageView.getLeft());
                 args.putInt("avatarContainer_top", avatarImageView.getTop());
+                args.putInt("titleTextView_top", titleTextView.getTop());
+                args.putInt("titleTextView_left", getLeft() + titleTextView.getLeft());
+                args.putInt("subtitle_top", subtitleTextView.getTop());
+                args.putInt("subtitle_left", getLeft() + subtitleTextView.getLeft());
                 ProfileActivity fragment = new ProfileActivity(args, sharedMediaPreloader);
                 if (!monoforum) {
                     fragment.setUserInfo(parentFragment.getCurrentUserInfo(), parentFragment.profileChannelMessageFetcher, parentFragment.birthdayAssetsFetcher);
@@ -597,6 +605,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             }
             args.putInt("avatarContainer_left", getLeft() + avatarImageView.getLeft());
             args.putInt("avatarContainer_top", avatarImageView.getTop());
+            args.putInt("titleTextView_top", titleTextView.getTop());
+            args.putInt("titleTextView_left", getLeft() + titleTextView.getLeft());
+            args.putInt("subtitle_top", subtitleTextView.getTop());
+            args.putInt("subtitle_left", getLeft() + subtitleTextView.getLeft());
             ProfileActivity fragment = new ProfileActivity(args, sharedMediaPreloader);
             if (!monoforum) {
                 fragment.setChatInfo(parentFragment.getCurrentChatInfo());

@@ -953,6 +953,10 @@ public class ProfileActivity extends BaseFragment
     private int avatarContainerTop = -1;
     private TLRPC.TL_emojiStatusCollectible collectibleStatus;
     private boolean isOpenAnimationInProgress;
+    private int nameTextViewIntialTop;
+    private int nameTextViewIntialLeft;
+    private int onlineTextViewIntialTop;
+    private int onlineTextViewIntialLeft;
 
     public ProfileActivity(Bundle args) {
         this(args, null);
@@ -1117,6 +1121,10 @@ public class ProfileActivity extends BaseFragment
         openCommonChats = arguments.getBoolean("open_common", false);
         avatarContainerLeft = arguments.getInt("avatarContainer_left", -1);
         avatarContainerTop = arguments.getInt("avatarContainer_top", -1);
+        nameTextViewIntialTop = arguments.getInt("titleTextView_top", -1);
+        nameTextViewIntialLeft = arguments.getInt("titleTextView_left", -1);
+        onlineTextViewIntialTop = arguments.getInt("subtitle_top", -1);
+        onlineTextViewIntialLeft = arguments.getInt("subtitle_left", -1);
         if (!expandPhoto) {
             expandPhoto = arguments.getBoolean("expandPhoto", false);
             if (expandPhoto) {
@@ -15600,7 +15608,7 @@ public class ProfileActivity extends BaseFragment
             public void run() {
                 animatorSet.start();
                 if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_COLLAPSED_MODE) {
-                    startAvatarOpenCloseAnimation(isOpen);
+//                    startAvatarOpenCloseAnimation(isOpen);
 
                 }
             }},50);
@@ -15685,53 +15693,53 @@ public class ProfileActivity extends BaseFragment
      */
     private void updateProfileLayout(boolean animated) {
 
-        System.out.println("ProfileActivity:: updateProfileLayout: extraHeight = " + extraHeight + " collapsedAreaHeight = " + collapsedAreaHeight +  " InitialAnimationExtraHeight = " + initialAnimationExtraHeight + " openAnimationInProgress = " + openAnimationInProgress);
-        final int newTop = calculateActionBarTopOffset();
-
-        updateListViewLayout(newTop);
-
-        if (avatarContainer != null) {
-            final float collapseProgress = Math.min(1f, extraHeight / collapsedAreaHeight);
-
-            configureListViewScrollBehavior(newTop);
-            handleWriteButtonLayout(animated, collapseProgress, newTop);
-            if (storyView != null) {
-                updateProfileStoryView(storyView, newTop);
-            }
-            if (giftsView != null) {
-                updateProfileGiftsView(giftsView, newTop);
-            }
-
-            float currentHeight = openAnimationInProgress ? initialAnimationExtraHeight : extraHeight;
-
-            // Conditionally establish the base collapsed layout first (matches old version)
-            // Skip if avatar opening animation is active to avoid interference with startAvatarOpenCloseAnimation
-            if (!isOpenAnimationInProgress) {
-                System.out.println("ProfileActivity:: startAvatarOpenCloseAnimationBefore");
-                processAvatarCollapsedScenario(collapseProgress);
-            }
-
-            // Main runtime scenarios based on scroll position (matches old version flow)
-            if (currentHeight > collapsedAreaHeight || isPulledDown) {
-                // SCENARIO 2 or 3: Either INTERMEDIATE_EXPANSION or FULL_EXPANSION_READY
-                // The specific behavior is determined within processAvatarExpandedScenarios()
-                processAvatarExpandedScenarios(currentHeight, newTop);
-            }
-            // Note: When currentHeight <= collapsedAreaHeight, processAvatarCollapsedScenario() 
-            // above already handles the collapsed state properly - no additional processing needed
-
-            // Handle opening animation after base layout is established (matches old version)
-            if (openAnimationInProgress && playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
-                processOpeningInExpandedMode(newTop);
-            }
-
-            updateOverlaysLayout(newTop);
-
-            if (!openAnimationInProgress && (expandAnimator == null || !expandAnimator.isRunning())) {
-                updateProfileLayoutText(collapseProgress);
-            }
-        }
-        updateEmojiStatusEffectPosition();
+//        System.out.println("ProfileActivity:: updateProfileLayout: extraHeight = " + extraHeight + " collapsedAreaHeight = " + collapsedAreaHeight +  " InitialAnimationExtraHeight = " + initialAnimationExtraHeight + " openAnimationInProgress = " + openAnimationInProgress);
+//        final int newTop = calculateActionBarTopOffset();
+//
+//        updateListViewLayout(newTop);
+//
+//        if (avatarContainer != null) {
+//            final float collapseProgress = Math.min(1f, extraHeight / collapsedAreaHeight);
+//
+//            configureListViewScrollBehavior(newTop);
+//            handleWriteButtonLayout(animated, collapseProgress, newTop);
+//            if (storyView != null) {
+//                updateProfileStoryView(storyView, newTop);
+//            }
+//            if (giftsView != null) {
+//                updateProfileGiftsView(giftsView, newTop);
+//            }
+//
+//            float currentHeight = openAnimationInProgress ? initialAnimationExtraHeight : extraHeight;
+//
+//            // Conditionally establish the base collapsed layout first (matches old version)
+//            // Skip if avatar opening animation is active to avoid interference with startAvatarOpenCloseAnimation
+//            if (!isOpenAnimationInProgress) {
+//                System.out.println("ProfileActivity:: startAvatarOpenCloseAnimationBefore");
+//                processAvatarCollapsedScenario(collapseProgress);
+//            }
+//
+//            // Main runtime scenarios based on scroll position (matches old version flow)
+//            if (currentHeight > collapsedAreaHeight || isPulledDown) {
+//                // SCENARIO 2 or 3: Either INTERMEDIATE_EXPANSION or FULL_EXPANSION_READY
+//                // The specific behavior is determined within processAvatarExpandedScenarios()
+//                processAvatarExpandedScenarios(currentHeight, newTop);
+//            }
+//            // Note: When currentHeight <= collapsedAreaHeight, processAvatarCollapsedScenario()
+//            // above already handles the collapsed state properly - no additional processing needed
+//
+//            // Handle opening animation after base layout is established (matches old version)
+//            if (openAnimationInProgress && playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
+//                processOpeningInExpandedMode(newTop);
+//            }
+//
+//            updateOverlaysLayout(newTop);
+//
+//            if (!openAnimationInProgress && (expandAnimator == null || !expandAnimator.isRunning())) {
+//                updateProfileLayoutText(collapseProgress);
+//            }
+//        }
+//        updateEmojiStatusEffectPosition();
     }
 
     private void updateProfileLayoutText(float diff) {
