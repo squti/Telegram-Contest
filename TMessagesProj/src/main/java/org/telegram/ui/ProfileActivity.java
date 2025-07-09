@@ -15879,12 +15879,12 @@ public class ProfileActivity extends BaseFragment
                 processAvatarCollapsedScenario(collapseProgress);
             }
 
-//            // Main runtime scenarios based on scroll position (matches old version flow)
-//            if (currentHeight > collapsedAreaHeight || isPulledDown) {
-//                // SCENARIO 2 or 3: Either INTERMEDIATE_EXPANSION or FULL_EXPANSION_READY
-//                // The specific behavior is determined within processAvatarExpandedScenarios()
-//                processAvatarExpandedScenarios(currentHeight, newTop);
-//            }
+            // Main runtime scenarios based on scroll position (matches old version flow)
+            if (currentHeight > collapsedAreaHeight || isPulledDown) {
+                // SCENARIO 2 or 3: Either INTERMEDIATE_EXPANSION or FULL_EXPANSION_READY
+                // The specific behavior is determined within processAvatarExpandedScenarios()
+                processAvatarExpandedScenarios(currentHeight, newTop);
+            }
 //            // Note: When currentHeight <= collapsedAreaHeight, processAvatarCollapsedScenario()
 //            // above already handles the collapsed state properly - no additional processing needed
 //
@@ -17189,7 +17189,7 @@ public class ProfileActivity extends BaseFragment
 
         if (allowPullingDown && (openingAvatar || expandProgress >= FULL_EXPANSION_THRESHOLD)) {
             // FULL_EXPANSION_READY: Show overlay UI and enable full expansion
-            processFullExpansionReady(durationFactor, currentHeight, newTop);
+//            processFullExpansionReady(durationFactor, currentHeight, newTop);
         } else {
             // INTERMEDIATE_EXPANSION: Transform avatar but don't show overlay UI yet
             processIntermediateExpansion(durationFactor);
@@ -17366,7 +17366,71 @@ public class ProfileActivity extends BaseFragment
         System.out.println("ProfileActivity:: processIntermediateExpansion: applied transform - scale=" + avatarScale +
                 " x=" + avatarX + " y=" + avatarY + " expansionFactor=" + expansionFactor);
 
-        updateCollapsedTextPositions();
+        // TEXT VIEWS INTERMEDIATE EXPANSION: Move text views down gradually like avatar
+        // Calculate text positions for intermediate expansion - no scaling, just vertical movement
+        
+        // NAME TEXT VIEW: Start from expanded center position, move down based on expansion factor
+        float nameBaseY = AndroidUtilities.dp(NAME_TOP_MARGIN_ADJUSTMENT_DP);
+        float nameAdditionalY = 2.0f * expansionFactor * AndroidUtilities.dp(50); // Move down up to 50dp as we expand
+        float nameIntermediateY = nameBaseY + nameAdditionalY;
+        
+        // Keep name text centered horizontally
+        float nameIntermediateX = 0f;
+        if (nameTextView[0] != null) {
+            float textWidth = nameTextView[0].getTextWidth();
+            float screenCenter = AndroidUtilities.displaySize.x / 2f;
+            nameIntermediateX = screenCenter - textWidth / 2f;
+            
+            // Account for side drawables if present
+            if (nameTextView[1] != null && nameTextView[1].getVisibility() == View.VISIBLE) {
+                float sideDrawablesSize = nameTextView[1].getSideDrawablesSize();
+                nameIntermediateX = nameIntermediateX - sideDrawablesSize / 2f;
+            }
+        }
+        
+        // ONLINE TEXT VIEW: Start from expanded center position, move down based on expansion factor
+        float onlineBaseY = AndroidUtilities.dp(ONLINE_TOP_MARGIN_ADJUSTMENT_DP);
+        float onlineAdditionalY = 2.0f * expansionFactor * AndroidUtilities.dp(50); // Move down up to 50dp as we expand
+        float onlineIntermediateY = onlineBaseY + onlineAdditionalY;
+        
+        // Keep online text centered horizontally
+        float onlineIntermediateX = 0f;
+        if (onlineTextView[1] != null && onlineTextView[1].getVisibility() == View.VISIBLE) {
+            if (!ChatObject.isChannelOrGiga(currentChat)) {
+                if (onlineTextView[0] != null) {
+                    float textWidth = onlineTextView[0].getTextWidth();
+                    float screenCenter = AndroidUtilities.displaySize.x / 2f;
+                    onlineIntermediateX = screenCenter - textWidth / 2f;
+                }
+            } else {
+                float textWidth = onlineTextView[1].getTextWidth();
+                float screenCenter = AndroidUtilities.displaySize.x / 2f;
+                onlineIntermediateX = screenCenter - textWidth / 2f;
+            }
+        }
+        
+        // Apply text view transformations (no scaling, just positioning)
+        for (int a = 0; a < nameTextView.length; a++) {
+            if (nameTextView[a] == null) continue;
+            nameTextView[a].setTranslationX(nameIntermediateX);
+            nameTextView[a].setTranslationY(nameIntermediateY);
+
+        }
+        
+        for (int a = 0; a < onlineTextView.length; a++) {
+            if (onlineTextView[a] == null) continue;
+            onlineTextView[a].setTranslationX(onlineIntermediateX);
+            onlineTextView[a].setTranslationY(onlineIntermediateY);
+            
+            // Update media counter to follow online text position
+            if (a == 1) {
+                mediaCounterTextView.setTranslationX(onlineIntermediateX);
+                mediaCounterTextView.setTranslationY(onlineIntermediateY);
+            }
+        }
+        
+        System.out.println("ProfileActivity:: processIntermediateExpansion: text positions - nameY=" + nameIntermediateY +
+                " nameX=" + nameIntermediateX + " onlineY=" + onlineIntermediateY + " onlineX=" + onlineIntermediateX);
     }
 
     private void processOpeningInExpandedMode(int newTop) {
