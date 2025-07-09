@@ -6817,7 +6817,158 @@ public class ProfileActivity extends BaseFragment
         starFgItem.setTranslationY(avatarContainer.getY() + AndroidUtilities.dp(24) + extra);
     }
 
+    /**
+     * Text transform system for name and online text views, independent from avatar positioning.
+     * Moves text views up/down based on scroll position while maintaining their centered horizontal positions
+     * and keeping scale unchanged. This system works independently from updateAvatarTransform().
+     *
+     * @param collapseProgress The collapse progress (0.0f = fully expanded, 1.0f = fully collapsed)
+     */
     private void updateTextPositionsAndScales(float collapseProgress) {
+        System.out.println("ProfileActivity:: updateTextPositionsAndScales : collapseProgress = " + collapseProgress + 
+                " extraHeight = " + extraHeight + " collapsedAreaHeight = " + collapsedAreaHeight);
+
+        // CALCULATE SCROLL PROGRESS FROM EXTRAHEIGHT (like updateAvatarTransform)
+        // Calculate scroll-based movement using extraHeight
+        // As extraHeight decreases from collapsedAreaHeight to 0, text views move diagonally
+        float scrollUpAmount = Math.max(0, collapsedAreaHeight - extraHeight);
+        float scrollProgress = Math.max(0f, Math.min(1f, scrollUpAmount / collapsedAreaHeight));
+
+        // INITIAL MARGIN TARGET POSITIONS
+        // Calculate where text should end up when fully collapsed (using initial margin values)
+        float nameTargetY = nameTextViewIntialTop;
+        float nameTargetX = nameTextViewIntialLeft * 0.7f; // Multiplier to move further left
+        float onlineTargetY = onlineTextViewIntialTop;
+        float onlineTargetX = onlineTextViewIntialLeft * 0.7f; // Multiplier to move further left
+        
+        // LEFTWARD MOVEMENT MULTIPLIER
+        // Multiplier to make the diagonal movement end further to the left
+        // Values > 1.0f will move text further left, values < 1.0f will move text less left
+        float leftwardMultiplier = 0.7f; // Adjust this value to control how far left the text moves
+        
+        // Apply multiplier to target X positions
+        nameTargetX = nameTargetX * leftwardMultiplier;
+        onlineTargetX = onlineTargetX * leftwardMultiplier;
+
+        // NAME TEXT VIEW DIAGONAL POSITIONING
+        // Start from the current expanded center position (not hardcoded)
+        float nameExpandedY = AndroidUtilities.dp(NAME_TOP_MARGIN_ADJUSTMENT_DP);
+        float nameExpandedX = 0f; // Center position calculation like in animation
+        
+        // Calculate center position exactly like in the open/close animation
+        if (nameTextView[0] != null) {
+            // Use nameTextView[0] for text width calculation like in animation
+            float textWidth = nameTextView[0].getTextWidth();
+            float screenCenter = AndroidUtilities.displaySize.x / 2f;
+            nameExpandedX = screenCenter - textWidth / 2f;
+        }
+        
+        if (nameTextView[1] != null && nameTextView[1].getVisibility() == View.VISIBLE) {
+            // Account for side drawables like in the animation
+            float sideDrawablesSize = nameTextView[1].getSideDrawablesSize();
+            nameExpandedX = nameExpandedX - sideDrawablesSize / 2f;
+        }
+        
+        // Calculate precise diagonal movement to reach exact initial margin positions
+        float nameTotalVerticalMovement = nameExpandedY - nameTargetY;
+        float nameTotalHorizontalMovement = nameExpandedX - nameTargetX;
+        
+        // Apply precise diagonal movement based on scroll progress
+        float nameVerticalMovement = scrollProgress * nameTotalVerticalMovement;
+        float nameHorizontalMovement = scrollProgress * nameTotalHorizontalMovement;
+        
+        // Final name positions (precise diagonal movement toward initial margin positions)
+        float nameY = nameExpandedY - nameVerticalMovement + actionBar.getTranslationY();
+        float nameX = nameExpandedX - nameHorizontalMovement;
+        
+        // ONLINE TEXT VIEW DIAGONAL POSITIONING  
+        // Start from the current expanded center position (not hardcoded)
+        float onlineExpandedY = AndroidUtilities.dp(ONLINE_TOP_MARGIN_ADJUSTMENT_DP);
+        float onlineExpandedX = 0f; // Center position calculation like in animation
+        
+        // Calculate center position like in the open/close animation
+        if (onlineTextView[1] != null && onlineTextView[1].getVisibility() == View.VISIBLE) {
+            if (!ChatObject.isChannelOrGiga(currentChat)) {
+                if (onlineTextView[0] != null) {
+                    float textWidth = onlineTextView[0].getTextWidth();
+                    float screenCenter = AndroidUtilities.displaySize.x / 2f;
+                    onlineExpandedX = screenCenter - textWidth / 2f;
+                }
+            } else {
+                float textWidth = onlineTextView[1].getTextWidth();
+                float screenCenter = AndroidUtilities.displaySize.x / 2f;
+                onlineExpandedX = screenCenter - textWidth / 2f;
+            }
+        }
+        
+        // Apply padding compensation like in the close animation
+        float paddingLeftCompensation = -AndroidUtilities.dp(4);
+        float paddingTopCompensation = -AndroidUtilities.dp(2);
+        float onlineTargetXWithPadding = onlineTargetX + paddingLeftCompensation;
+        float onlineTargetYWithPadding = onlineTextViewIntialTop + paddingTopCompensation;
+        
+        // Calculate precise diagonal movement to reach exact initial margin positions with padding
+        float onlineTotalVerticalMovement = onlineExpandedY - onlineTargetYWithPadding;
+        float onlineTotalHorizontalMovement = onlineExpandedX - onlineTargetXWithPadding;
+        
+        // Apply precise diagonal movement based on scroll progress
+        float onlineVerticalMovement = scrollProgress * onlineTotalVerticalMovement;
+        float onlineHorizontalMovement = scrollProgress * onlineTotalHorizontalMovement;
+        
+        // Final online positions (precise diagonal movement toward initial margin positions with padding)
+        float onlineY = onlineExpandedY - onlineVerticalMovement + actionBar.getTranslationY();
+        float onlineX = onlineExpandedX - onlineHorizontalMovement;
+
+        // APPLY PRECISE TRANSFORMATIONS
+        // Only apply transforms if no expand animation is running to avoid conflicts
+        if (expandAnimator == null || !expandAnimator.isRunning()) {
+            for (int a = 0; a < nameTextView.length; a++) {
+                if (nameTextView[a] == null) continue;
+                
+                // Apply precise diagonal movement to exact initial margin positions
+                nameTextView[a].setTranslationX(nameX);
+                nameTextView[a].setTranslationY(nameY);
+                
+                // Scale down name text view from 1.4f to 1.0 using linear interpolation
+                float expandedScale = 1.4f;
+                float targetScale = 1.0f;
+                float newScale = AndroidUtilities.lerp(expandedScale, targetScale, scrollProgress);
+                nameTextView[a].setScaleX(newScale);
+                nameTextView[a].setScaleY(newScale);
+            }
+            
+            for (int a = 0; a < onlineTextView.length; a++) {
+                if (onlineTextView[a] == null) continue;
+                
+                // Apply precise diagonal movement to exact initial margin positions
+                onlineTextView[a].setTranslationX(onlineX);
+                onlineTextView[a].setTranslationY(onlineY);
+                
+                // Online text maintains scale of 1.0 like in open/close animation
+                onlineTextView[a].setScaleX(1.0f);
+                onlineTextView[a].setScaleY(1.0f);
+                
+                // Update media counter to follow online text position
+                if (a == 1) {
+                    mediaCounterTextView.setTranslationX(onlineX);
+                    mediaCounterTextView.setTranslationY(onlineY);
+                }
+            }
+        }
+
+        // Handle show status button visibility
+        if (showStatusButton != null) {
+            showStatusButton.setAlpha((int) (0xFF * scrollProgress));
+        }
+
+        System.out.println("ProfileActivity:: updateTextPositionsAndScales PRECISE MOVEMENT: nameX = " + nameX + 
+                " nameY = " + nameY + " onlineX = " + onlineX + " onlineY = " + onlineY + 
+                " scrollProgress = " + scrollProgress + " TARGETS: nameTargetY = " + nameTargetY + 
+                " nameTargetX = " + nameTargetX + " onlineTargetY = " + onlineTargetY + " onlineTargetX = " + onlineTargetX +
+                " EXPANDED: nameExpandedX = " + nameExpandedX + " nameExpandedY = " + nameExpandedY +
+                " onlineExpandedX = " + onlineExpandedX + " onlineExpandedY = " + onlineExpandedY);
+    }
+    private void updateTextPositionsAndScalesOld(float collapseProgress) {
         // 1.0f + 0.12f: Name text scale range from 1.0 (normal) to 1.12 (slightly larger when collapsed)
         float nameScale = 1.0f + 0.12f * collapseProgress;
         // 44dp: Half of the 88dp avatar container size - aligns text with avatar edge during collapse
@@ -6858,6 +7009,7 @@ public class ProfileActivity extends BaseFragment
             nameTextView[a].setScaleY(nameScale);
         }
     }
+
 
     private void updateTimeAndStarItemsForAnimation() {
         float extra = (avatarContainer.getMeasuredWidth() - AndroidUtilities.dp(AVATAR_SIZE_DP)) * avatarScale;
@@ -15701,32 +15853,32 @@ public class ProfileActivity extends BaseFragment
      */
     private void updateProfileLayout(boolean animated) {
 
-//        System.out.println("ProfileActivity:: updateProfileLayout: extraHeight = " + extraHeight + " collapsedAreaHeight = " + collapsedAreaHeight +  " InitialAnimationExtraHeight = " + initialAnimationExtraHeight + " openAnimationInProgress = " + openAnimationInProgress);
-//        final int newTop = calculateActionBarTopOffset();
-//
-//        updateListViewLayout(newTop);
-//
-//        if (avatarContainer != null) {
-//            final float collapseProgress = Math.min(1f, extraHeight / collapsedAreaHeight);
-//
-//            configureListViewScrollBehavior(newTop);
-//            handleWriteButtonLayout(animated, collapseProgress, newTop);
-//            if (storyView != null) {
-//                updateProfileStoryView(storyView, newTop);
-//            }
-//            if (giftsView != null) {
-//                updateProfileGiftsView(giftsView, newTop);
-//            }
-//
-//            float currentHeight = openAnimationInProgress ? initialAnimationExtraHeight : extraHeight;
-//
-//            // Conditionally establish the base collapsed layout first (matches old version)
-//            // Skip if avatar opening animation is active to avoid interference with startAvatarOpenCloseAnimation
-//            if (!isOpenAnimationInProgress) {
-//                System.out.println("ProfileActivity:: startAvatarOpenCloseAnimationBefore");
-//                processAvatarCollapsedScenario(collapseProgress);
-//            }
-//
+        System.out.println("ProfileActivity:: updateProfileLayout: extraHeight = " + extraHeight + " collapsedAreaHeight = " + collapsedAreaHeight +  " InitialAnimationExtraHeight = " + initialAnimationExtraHeight + " openAnimationInProgress = " + openAnimationInProgress);
+        final int newTop = calculateActionBarTopOffset();
+
+        updateListViewLayout(newTop);
+
+        if (avatarContainer != null) {
+            final float collapseProgress = Math.min(1f, extraHeight / collapsedAreaHeight);
+
+            configureListViewScrollBehavior(newTop);
+            handleWriteButtonLayout(animated, collapseProgress, newTop);
+            if (storyView != null) {
+                updateProfileStoryView(storyView, newTop);
+            }
+            if (giftsView != null) {
+                updateProfileGiftsView(giftsView, newTop);
+            }
+
+            float currentHeight = openAnimationInProgress ? initialAnimationExtraHeight : extraHeight;
+
+            // Conditionally establish the base collapsed layout first (matches old version)
+            // Skip if avatar opening animation is active to avoid interference with startAvatarOpenCloseAnimation
+            if (!isOpenAnimationInProgress) {
+                System.out.println("ProfileActivity:: startAvatarOpenCloseAnimationBefore");
+                processAvatarCollapsedScenario(collapseProgress);
+            }
+
 //            // Main runtime scenarios based on scroll position (matches old version flow)
 //            if (currentHeight > collapsedAreaHeight || isPulledDown) {
 //                // SCENARIO 2 or 3: Either INTERMEDIATE_EXPANSION or FULL_EXPANSION_READY
@@ -15746,8 +15898,8 @@ public class ProfileActivity extends BaseFragment
 //            if (!openAnimationInProgress && (expandAnimator == null || !expandAnimator.isRunning())) {
 //                updateProfileLayoutText(collapseProgress);
 //            }
-//        }
-//        updateEmojiStatusEffectPosition();
+        }
+        updateEmojiStatusEffectPosition();
     }
 
     private void updateProfileLayoutText(float diff) {
