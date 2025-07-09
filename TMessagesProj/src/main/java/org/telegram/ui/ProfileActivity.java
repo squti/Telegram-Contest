@@ -1975,15 +1975,13 @@ public class ProfileActivity extends BaseFragment
                     @Override
                     public void setTranslationY(float translationY) {
                         super.setTranslationY(translationY);
-                        onlineTextView[2].setTranslationY(translationY);
-                        onlineTextView[3].setTranslationY(translationY);
+
                     }
 
                     @Override
                     public void setTranslationX(float translationX) {
                         super.setTranslationX(translationX);
-                        onlineTextView[2].setTranslationX(translationX);
-                        onlineTextView[3].setTranslationX(translationX);
+
                     }
 
                     @Override
@@ -2017,10 +2015,15 @@ public class ProfileActivity extends BaseFragment
             }
             onlineTextView[a].setFocusable(a == 0);
             mainProfileViewContainer.addView(onlineTextView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT,
-                    LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 118 - (a == 1 || a == 2 || a == 3 ? 4 : 0),
-                    (a == 1 || a == 2 || a == 3 ? -2 : 0),
+                    LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0,
+                    0,
                     (a == 0 ? rightMargin - (hasTitleExpanded ? 10 : 0) : 8) - (a == 1 || a == 2 || a == 3 ? 4 : 0),
                     0));
+            // Compensate for the padding difference between onlineTextView and nameTextView
+            float paddingLeftCompensation = (a == 1 || a == 2 || a == 3) ? -AndroidUtilities.dp(4) : 0;
+            float paddingTopCompensation = (a == 1 || a == 2 || a == 3) ? -AndroidUtilities.dp(2) : 0;
+            onlineTextView[a].setTranslationX(nameTextViewIntialLeft + paddingLeftCompensation);
+            onlineTextView[a].setTranslationY(onlineTextViewIntialTop + paddingTopCompensation);
         }
     }
 
@@ -2081,8 +2084,10 @@ public class ProfileActivity extends BaseFragment
             nameTextView[a].setRightDrawableOutside(a == 0);
             mainProfileViewContainer.addView(nameTextView[a],
                     LayoutHelper.createFrame(a == 0 ? initialTitleWidth : LayoutHelper.WRAP_CONTENT,
-                            LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 118, -6,
+                            LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 0,
                             (a == 0 ? rightMargin - (hasTitleExpanded ? 10 : 0) : 0), 0));
+            nameTextView[a].setTranslationX(nameTextViewIntialLeft);
+            nameTextView[a].setTranslationY(nameTextViewIntialTop);
         }
     }
 
