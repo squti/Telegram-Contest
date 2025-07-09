@@ -936,6 +936,8 @@ public class ProfileActivity extends BaseFragment
     // Global variable to manually adjust avatar top position (in dp)
     // Positive values move avatar down, negative values move avatar up
     public static float AVATAR_TOP_MARGIN_ADJUSTMENT_DP = 30f;
+    public static float NAME_TOP_MARGIN_ADJUSTMENT_DP = 125f;
+    public static float ONLINE_TOP_MARGIN_ADJUSTMENT_DP = 162f;
     float ASYMMETRIC_YPIVOT_FOR_AVATAR_EXPANSION = 0.30f; // Adjust this value: lower = more downward expansion
     private float avatarX;
 
@@ -15613,8 +15615,9 @@ public class ProfileActivity extends BaseFragment
             public void run() {
                 animatorSet.start();
                 if (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_COLLAPSED_MODE) {
-//                    startAvatarOpenCloseAnimation(isOpen);
-
+                    startAvatarOpenCloseAnimation(isOpen);
+                    startNameOpenCloseAnimation(isOpen);
+                    startOnlineOpenCloseAnimation(isOpen);
                 }
             }},50);
 
@@ -16567,6 +16570,230 @@ public class ProfileActivity extends BaseFragment
         }
     }
 
+    private void startNameOpenCloseAnimation(boolean isShowOpeningAnimation) {
+        if (isShowOpeningAnimation) {
+            mainProfileViewContainer.post(() -> {
+                // Find the visible nameTextView to calculate proper centering
+                SimpleTextView visibleNameView = null;
+                SimpleTextView visibleNameView2 = null;
+                if (nameTextView[0] != null) {
+                    visibleNameView = nameTextView[0];
+                }
+                if (nameTextView[1] != null && nameTextView[1].getVisibility() == View.VISIBLE) {
+                    visibleNameView2 = nameTextView[1];
+                }
+
+                
+                float nameArrayCenterX = 0f;
+                if (visibleNameView != null) {
+                    // Calculate the actual text width
+                    float textWidth = visibleNameView.getTextWidth();
+
+                    // Calculate target position to center the text visually
+                    // Screen center minus half the text width, adjusted for initial positioning
+                    float screenCenter = AndroidUtilities.displaySize.x / 2f;
+                    nameArrayCenterX = screenCenter - textWidth / 2f;
+                }
+
+                if (visibleNameView2 != null) {
+                    // Calculate the actual text width
+                    float textWidth2 = visibleNameView2.getSideDrawablesSize();
+
+
+                    nameArrayCenterX =  nameArrayCenterX  - textWidth2 / 2f;
+                }
+                float nameArrayCenterY = AndroidUtilities.dp(NAME_TOP_MARGIN_ADJUSTMENT_DP);
+
+                ArrayList<ObjectAnimator> nameAnimators = new ArrayList<>();
+                
+                for (int a = 0; a < nameTextView.length; a++) {
+                    if (nameTextView[a] == null) continue;
+                    // Get current position
+                    float currentTranslationX = nameTextView[a].getTranslationX();
+                    float currentTranslationY = nameTextView[a].getTranslationY();
+                    float currentScaleX = nameTextView[a].getScaleX();
+                    float currentScaleY = nameTextView[a].getScaleY();
+                    nameTextView[a].setPivotX(nameTextView[a].getTextWidth() / 2f);
+                    nameTextView[a].setPivotY(nameTextView[a].getTextHeight() / 2f);
+                    // Create animators to center position
+                    nameAnimators.add(ObjectAnimator.ofFloat(nameTextView[a], "translationX", currentTranslationX, nameArrayCenterX));
+                    nameAnimators.add(ObjectAnimator.ofFloat(nameTextView[a], "translationY", currentTranslationY, nameArrayCenterY));
+                    nameAnimators.add(ObjectAnimator.ofFloat(nameTextView[a], "scaleX", currentScaleX, 1.4f));
+                    nameAnimators.add(ObjectAnimator.ofFloat(nameTextView[a], "scaleY", currentScaleY, 1.4f));
+                }
+
+                AnimatorSet nameSet = new AnimatorSet();
+                nameSet.playTogether(nameAnimators.toArray(new ObjectAnimator[0]));
+                
+                int duration = (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) ? 250 : 180;
+                nameSet.setDuration(duration);
+                nameSet.setInterpolator(new AccelerateInterpolator());
+                nameSet.start();
+            });
+        } else {
+            mainProfileViewContainer.post(() -> {
+                ArrayList<ObjectAnimator> nameAnimators = new ArrayList<>();
+                
+                for (int a = 0; a < nameTextView.length; a++) {
+                    if (nameTextView[a] == null) continue;
+                    
+                    // Get current expanded position
+                    float currentTranslationX = nameTextView[a].getTranslationX();
+                    float currentTranslationY = nameTextView[a].getTranslationY();
+                    float currentScaleX = nameTextView[a].getScaleX();
+                    float currentScaleY = nameTextView[a].getScaleY();
+                    
+                    // Target collapsed position (original setup values)
+                    float targetTranslationX = nameTextViewIntialLeft;
+                    float targetTranslationY = nameTextViewIntialTop;
+                    
+                    // Create animators back to collapsed position
+                    nameAnimators.add(ObjectAnimator.ofFloat(nameTextView[a], "translationX", currentTranslationX, targetTranslationX));
+                    nameAnimators.add(ObjectAnimator.ofFloat(nameTextView[a], "translationY", currentTranslationY, targetTranslationY));
+                    nameAnimators.add(ObjectAnimator.ofFloat(nameTextView[a], "scaleX", currentScaleX, 1f));
+                    nameAnimators.add(ObjectAnimator.ofFloat(nameTextView[a], "scaleY", currentScaleY, 1f));
+                }
+
+                AnimatorSet nameSet = new AnimatorSet();
+                nameSet.playTogether(nameAnimators.toArray(new ObjectAnimator[0]));
+                
+                int duration = (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) ? 250 : 180;
+                nameSet.setDuration(duration);
+                nameSet.setInterpolator(new DecelerateInterpolator());
+                nameSet.start();
+            });
+        }
+    }
+
+    private void startOnlineOpenCloseAnimation(boolean isShowOpeningAnimation) {
+        if (isShowOpeningAnimation) {
+            mainProfileViewContainer.post(() -> {
+                // Find all visible online text views for animation
+                SimpleTextView visibleOnlineView = null;
+                SimpleTextView visibleOnlineView2 = null;
+                SimpleTextView visibleOnlineView3 = null;
+                SimpleTextView visibleOnlineView4 = null;
+                if (onlineTextView[0] != null) {
+                    visibleOnlineView = onlineTextView[0];
+                }
+                if (onlineTextView[1] != null && onlineTextView[1].getVisibility() == View.VISIBLE) {
+                    visibleOnlineView2 = onlineTextView[1];
+                }
+                if (onlineTextView[2] != null && onlineTextView[2].getVisibility() == View.VISIBLE) {
+                    visibleOnlineView3 = onlineTextView[2];
+                }
+                if (onlineTextView[3] != null && onlineTextView[3].getVisibility() == View.VISIBLE) {
+                    visibleOnlineView4 = onlineTextView[3];
+                }
+
+                float onlineArrayCenterX = 0f;
+
+                if (!ChatObject.isChannelOrGiga(currentChat)) {
+                    if (visibleOnlineView != null) {
+                        // Calculate the actual text width
+                        float textWidth = visibleOnlineView.getTextWidth();
+
+                        float screenCenter = AndroidUtilities.displaySize.x / 2f;
+                        onlineArrayCenterX = screenCenter - textWidth / 2f;
+                    }
+                } else {
+                    if (visibleOnlineView2 != null) {
+                        float textWidth = visibleOnlineView2.getTextWidth();
+                        float screenCenter = AndroidUtilities.displaySize.x / 2f;
+
+                        onlineArrayCenterX = screenCenter - textWidth / 2f;
+                    }
+                }
+                //Other elements have wierd or repetitive data so I commented them out
+
+//                if (visibleOnlineView2 != null) {
+//                    // Calculate the actual text width
+//                    float textWidth = visibleOnlineView2.getTextWidth();
+//
+//                    onlineArrayCenterX = onlineArrayCenterX - textWidth / 2f;
+//                }
+//                if (visibleOnlineView3 != null) {
+//                    // Calculate the actual text width
+//                    float textWidth = visibleOnlineView3.getTextWidth();
+//
+//                    onlineArrayCenterX = onlineArrayCenterX - textWidth / 2f;
+//                }
+//                if (visibleOnlineView4 != null) {
+//                    // Calculate the actual text width
+//                    float textWidth = visibleOnlineView4.getTextWidth();
+//
+//                    onlineArrayCenterX = onlineArrayCenterX - textWidth / 2f;
+//                }
+                
+
+
+                ArrayList<ObjectAnimator> onlineAnimators = new ArrayList<>();
+
+                for (int a = 0; a < onlineTextView.length; a++) {
+                    if (onlineTextView[a] == null) continue;
+                    // Get current position
+                    float currentTranslationX = onlineTextView[a].getTranslationX();
+                    float currentTranslationY = onlineTextView[a].getTranslationY();
+                    float currentScaleX = onlineTextView[a].getScaleX();
+                    float currentScaleY = onlineTextView[a].getScaleY();
+//                    onlineTextView[a].setPivotX(onlineTextView[a].getTextWidth() / 2f);
+//                    onlineTextView[a].setPivotY(onlineTextView[a].getTextHeight() / 2f);
+                    // Create animators to center position
+                    onlineAnimators.add(ObjectAnimator.ofFloat(onlineTextView[a], "translationX", currentTranslationX, onlineArrayCenterX));
+                    onlineAnimators.add(ObjectAnimator.ofFloat(onlineTextView[a], "translationY", currentTranslationY, AndroidUtilities.dp(ONLINE_TOP_MARGIN_ADJUSTMENT_DP)));
+                    onlineAnimators.add(ObjectAnimator.ofFloat(onlineTextView[a], "scaleX", currentScaleX, 1f));
+                    onlineAnimators.add(ObjectAnimator.ofFloat(onlineTextView[a], "scaleY", currentScaleY, 1f));
+                }
+
+                AnimatorSet onlineSet = new AnimatorSet();
+                onlineSet.playTogether(onlineAnimators.toArray(new ObjectAnimator[0]));
+
+                int duration = (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) ? 250 : 180;
+                onlineSet.setDuration(duration);
+                onlineSet.setInterpolator(new AccelerateInterpolator());
+                onlineSet.start();
+            });
+        } else {
+            mainProfileViewContainer.post(() -> {
+                ArrayList<ObjectAnimator> onlineAnimators = new ArrayList<>();
+
+                for (int a = 0; a < onlineTextView.length; a++) {
+                    if (onlineTextView[a] == null) continue;
+
+                    // Get current expanded position
+                    float currentTranslationX = onlineTextView[a].getTranslationX();
+                    float currentTranslationY = onlineTextView[a].getTranslationY();
+                    float currentScaleX = onlineTextView[a].getScaleX();
+                    float currentScaleY = onlineTextView[a].getScaleY();
+
+                    // Calculate the target collapsed position (original setup values)
+                    // Compensate for the padding difference between onlineTextView and nameTextView
+                    float paddingLeftCompensation = (a == 1 || a == 2 || a == 3) ? -AndroidUtilities.dp(4) : 0;
+                    float paddingTopCompensation = (a == 1 || a == 2 || a == 3) ? -AndroidUtilities.dp(2) : 0;
+                    float targetTranslationX = nameTextViewIntialLeft + paddingLeftCompensation;
+                    float targetTranslationY = onlineTextViewIntialTop + paddingTopCompensation;
+
+                    // Set pivot for scaling animation
+                    onlineTextView[a].setPivotX(onlineTextView[a].getTextWidth() / 2f);
+                    onlineTextView[a].setPivotY(onlineTextView[a].getTextHeight() / 2f);
+
+                    // Create animators back to collapsed position
+                    onlineAnimators.add(ObjectAnimator.ofFloat(onlineTextView[a], "translationX", currentTranslationX, targetTranslationX));
+                    onlineAnimators.add(ObjectAnimator.ofFloat(onlineTextView[a], "translationY", currentTranslationY, targetTranslationY));
+                    onlineAnimators.add(ObjectAnimator.ofFloat(onlineTextView[a], "scaleX", currentScaleX, 1f));
+                    onlineAnimators.add(ObjectAnimator.ofFloat(onlineTextView[a], "scaleY", currentScaleY, 1f));
+                }
+
+                AnimatorSet onlineSet = new AnimatorSet();
+                onlineSet.playTogether(onlineAnimators.toArray(new ObjectAnimator[0]));
+
+                int duration = (playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) ? 250 : 180;
+                onlineSet.setDuration(duration);
+                onlineSet.setInterpolator(new DecelerateInterpolator());
+                onlineSet.start();
+            });
+        }
+    }
     /// Avatar adjustments
     private int getSmallAvatarRoundRadius() {
         if (chatId != 0) {
