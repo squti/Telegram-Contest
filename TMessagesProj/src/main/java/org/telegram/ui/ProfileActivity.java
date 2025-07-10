@@ -226,6 +226,7 @@ import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CrossfadeDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.CustomButtonContainer;
 import org.telegram.ui.Components.DotDividerSpan;
 import org.telegram.ui.Components.EmojiPacksAlert;
 import org.telegram.ui.Components.EmptyStubSpan;
@@ -482,6 +483,7 @@ public class ProfileActivity extends BaseFragment
     private HintView fwdRestrictedHint;
     private FrameLayout avatarContainer;
     private FrameLayout mainProfileViewContainer;
+    private CustomButtonContainer customButtonContainer;
     private DrawerProfileCell.AnimatedStatusView animatedStatusView;
     private AvatarImageView avatarImage;
     private View avatarOverlay;
@@ -15873,6 +15875,7 @@ public class ProfileActivity extends BaseFragment
             }
 
             float currentHeight = openAnimationInProgress ? initialAnimationExtraHeight : extraHeight;
+            updateCustomButtonContainerPosition();
 
             // Conditionally establish the base collapsed layout first (matches old version)
             // Skip if avatar opening animation is active to avoid interference with startAvatarOpenCloseAnimation
@@ -15903,7 +15906,14 @@ public class ProfileActivity extends BaseFragment
         }
         updateEmojiStatusEffectPosition();
     }
-
+    private void updateCustomButtonContainerPosition() {
+        if (customButtonContainer != null) {
+            // Move the container based on extraHeight changes
+            // Using a sensitivity factor of 0.5f for smooth movement
+            float translationY = (extraHeight);
+            customButtonContainer.setTranslationY(translationY);
+        }
+    }
     private void updateProfileLayoutText(float diff) {
         FrameLayout.LayoutParams layoutParams;
         float scale = nameTextView[1].getScaleX();
@@ -16624,6 +16634,61 @@ public class ProfileActivity extends BaseFragment
         mainProfileViewContainer.addView(giftsView,
                 LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
+        // Add CustomButtonContainer at the top of the profile container
+        customButtonContainer = new CustomButtonContainer(context);
+        setupCustomButtons();
+
+        customButtonContainer.setContainerHeight(52); // Set height in DP
+
+        mainProfileViewContainer.addView(customButtonContainer,
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 52,
+                Gravity.TOP | Gravity.CENTER_HORIZONTAL, 16, (AndroidUtilities.statusBarHeight + topView.getHeight()) / AndroidUtilities.density - 8, 16, 0));
+
+
+        // Add sample buttons to CustomButtonContainer
+
+    }
+
+    private void setupCustomButtons() {
+        if (customButtonContainer == null) return;
+
+        // Add sample buttons with different icons and functionality
+
+        // Button 1: Message/Chat button
+        customButtonContainer.addButton(R.drawable.msg_send, v -> {
+            // Handle message button click
+            if (userId != 0) {
+                Bundle args = new Bundle();
+                args.putLong("user_id", userId);
+                presentFragment(new ChatActivity(args), true);
+            }
+        });
+
+        // Button 2: Call button (if available)
+        if (callItemVisible) {
+            customButtonContainer.addButton(R.drawable.menu_feature_paid, v -> {
+                // Handle call button click
+                if (userId != 0) {
+                    VoIPHelper.startCall(getMessagesController().getUser(userId), false, false, getParentActivity(), userInfo, getAccountInstance());
+                }
+            });
+        }
+
+        // Button 3: More options button
+        customButtonContainer.addButton(R.drawable.ic_ab_other, v -> {
+            // Handle more options button click
+            if (mainMenuItem != null) {
+                mainMenuItem.toggleSubMenu();
+            }
+        });
+
+        // Button 4: Search button (conditional)
+        if (searchItem != null && searchItem.getVisibility() == View.VISIBLE) {
+            customButtonContainer.addButton(R.drawable.ic_ab_search, v -> {
+                // Handle search button click
+                actionBar.openSearchField(true);
+            });
+        }
     }
     private void setupAvatarContainer(Context context) {
         avatarContainer = new FrameLayout(context);
