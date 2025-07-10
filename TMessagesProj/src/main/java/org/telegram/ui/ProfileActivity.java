@@ -4961,20 +4961,12 @@ public class ProfileActivity extends BaseFragment
             onlineTextView[1].setTranslationY(onlineTextViewY);
         }
         
-        if (mediaCounterTextView != null) {
-            mediaCounterTextView.setTranslationX(onlineTextViewX);
-            mediaCounterTextView.setTranslationY(onlineTextViewY);
-        }
+//        if (mediaCounterTextView != null) {
+//            mediaCounterTextView.setTranslationX(onlineTextViewX);
+//            mediaCounterTextView.setTranslationY(onlineTextViewY);
+//        }
     }
 
-    private void applyTextPositions(float nameX, float nameY, float onlineX, float onlineY) {
-        nameTextView[1].setTranslationX(nameX);
-        nameTextView[1].setTranslationY(nameY);
-        onlineTextView[1].setTranslationX(onlineX);
-        onlineTextView[1].setTranslationY(onlineY);
-        mediaCounterTextView.setTranslationX(onlineX);
-        mediaCounterTextView.setTranslationY(onlineY);
-    }
 
     private void updateTextColors(float expandValue) {
         updateOnlineTextColor(expandValue);
@@ -6784,11 +6776,7 @@ public class ProfileActivity extends BaseFragment
 
             }
             
-            // Update media counter to match online text position
-            if (mediaCounterTextView != null) {
-                mediaCounterTextView.setTranslationX(onlineTextView[1].getTranslationX());
-                mediaCounterTextView.setTranslationY(onlineTextView[1].getTranslationY());
-            }
+
             
             updateCollectibleHint();
         }
@@ -6846,21 +6834,6 @@ public class ProfileActivity extends BaseFragment
         avatarContainer.setVisibility(View.VISIBLE);
         avatarsViewPager.setVisibility(View.GONE);
         expandAnimator.start();
-    }
-
-
-
-    private void updateCollapsedTextPositions() {
-        if (expandAnimator == null || !expandAnimator.isRunning()) {
-            refreshNameAndOnlineXY();
-            nameTextView[1].setTranslationX(nameX);
-            nameTextView[1].setTranslationY(nameY);
-            onlineTextView[1].setTranslationX(onlineX + customPhotoOffset);
-            onlineTextView[1].setTranslationY(onlineY);
-            mediaCounterTextView.setTranslationX(onlineX);
-            mediaCounterTextView.setTranslationY(onlineY);
-            updateCollectibleHint();
-        }
     }
 
 
@@ -7005,12 +6978,7 @@ public class ProfileActivity extends BaseFragment
                 // Online text maintains scale of 1.0 like in open/close animation
                 onlineTextView[a].setScaleX(1.0f);
                 onlineTextView[a].setScaleY(1.0f);
-                
-                // Update media counter to follow online text position
-                if (a == 1) {
-                    mediaCounterTextView.setTranslationX(onlineX);
-                    mediaCounterTextView.setTranslationY(onlineY);
-                }
+
             }
         }
 
@@ -16650,7 +16618,7 @@ public class ProfileActivity extends BaseFragment
         setupOnlineTextView(context);
         mainProfileViewContainer.addView(animatedStatusView);
         mainProfileViewContainer.addView(mediaCounterTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT,
-                LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 118.33f, -2, 8, 0));
+                LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 55, 55, 8, 0));
         mainProfileViewContainer.addView(storyView,
                 LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         mainProfileViewContainer.addView(giftsView,
@@ -17444,12 +17412,7 @@ public class ProfileActivity extends BaseFragment
             if (onlineTextView[a] == null) continue;
             onlineTextView[a].setTranslationX(onlineIntermediateX);
             onlineTextView[a].setTranslationY(onlineIntermediateY);
-            
-            // Update media counter to follow online text position
-            if (a == 1) {
-                mediaCounterTextView.setTranslationX(onlineIntermediateX);
-                mediaCounterTextView.setTranslationY(onlineIntermediateY);
-            }
+
         }
         updateNamePositionForExpandedView();
 
