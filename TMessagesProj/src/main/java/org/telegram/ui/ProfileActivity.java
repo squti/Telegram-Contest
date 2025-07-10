@@ -959,6 +959,10 @@ public class ProfileActivity extends BaseFragment
     private int nameTextViewIntialLeft;
     private int onlineTextViewIntialTop;
     private int onlineTextViewIntialLeft;
+    private float nameTextViewLastLeft;
+    private float nameTextViewLastTop;
+    private float onlineTextViewLastLeft;
+    private float onlineTextViewLastTop;
 
     public ProfileActivity(Bundle args) {
         this(args, null);
@@ -1127,6 +1131,12 @@ public class ProfileActivity extends BaseFragment
         nameTextViewIntialLeft = arguments.getInt("titleTextView_left", -1);
         onlineTextViewIntialTop = arguments.getInt("subtitle_top", -1);
         onlineTextViewIntialLeft = arguments.getInt("subtitle_left", -1);
+        
+        // Initialize last position variables with initial values
+        nameTextViewLastLeft = nameTextViewIntialLeft;
+        nameTextViewLastTop = nameTextViewIntialTop;
+        onlineTextViewLastLeft = onlineTextViewIntialLeft;
+        onlineTextViewLastTop = onlineTextViewIntialTop;
         if (!expandPhoto) {
             expandPhoto = arguments.getBoolean("expandPhoto", false);
             if (expandPhoto) {
@@ -4916,7 +4926,7 @@ public class ProfileActivity extends BaseFragment
     private void updateTextPositionsAndColors(int newTop, float expandValue) {
         updateTextPositions(newTop, expandValue);
         updateTextColors(expandValue);
-        updateTextScaling(expandValue);
+//        updateTextScaling(expandValue);
         updateActionBarColors(expandValue);
         updateStatusButtonColor();
 
@@ -4924,38 +4934,42 @@ public class ProfileActivity extends BaseFragment
     }
 
     private void updateTextPositions(int newTop, float expandValue) {
-        final float k = AndroidUtilities.dpf2(8f);
+        // Define target visual X coordinate (18dp from the left edge of the container)
 
-        // Calculate name text view positions using Bezier curve interpolation
-        final float nameTextViewXEnd = AndroidUtilities.dpf2(18f) - nameTextView[1].getLeft();
-        final float nameTextViewYEnd = newTop + extraHeight - AndroidUtilities.dpf2(38f) - nameTextView[1].getBottom();
-        final float nameTextViewCx = k + nameX + (nameTextViewXEnd - nameX) / 2f;
-        final float nameTextViewCy = k + nameY + (nameTextViewYEnd - nameY) / 2f;
-        final float nameTextViewX = calculateBezierPosition(nameX, nameTextViewCx, nameTextViewXEnd, expandValue);
-        final float nameTextViewY = calculateBezierPosition(nameY, nameTextViewCy, nameTextViewYEnd, expandValue);
-        System.out.println("ProfileActivity:: updateTextPositions");
-        // Calculate online text view positions using Bezier curve interpolation
-        final float onlineTextViewXEnd = AndroidUtilities.dpf2(16f) - onlineTextView[1].getLeft();
-        final float onlineTextViewYEnd = newTop + extraHeight - AndroidUtilities.dpf2(18f)
-                - onlineTextView[1].getBottom();
-        final float onlineTextViewCx = k + onlineX + (onlineTextViewXEnd - onlineX) / 2f;
-        final float onlineTextViewCy = k + onlineY + (onlineTextViewYEnd - onlineY) / 2f;
-        final float onlineTextViewX = calculateBezierPosition(onlineX, onlineTextViewCx, onlineTextViewXEnd,
-                expandValue);
-        final float onlineTextViewY = calculateBezierPosition(onlineY, onlineTextViewCy, onlineTextViewYEnd,
-                expandValue);
+        // Calculate target translations for each text view to reach the same visual X coordinate
+        // Current visual X = getLeft() + getTranslationX(), so target translation = targetVisualX - getLeft()
+        final float nameTextViewXEnd = AndroidUtilities.dpf2(40f) - nameTextView[1].getLeft();
+        final float nameTextViewYEnd = newTop + extraHeight - AndroidUtilities.dpf2(100f) - nameTextView[1].getBottom();
+        final float onlineTextViewXEnd = AndroidUtilities.dpf2(18f) - onlineTextView[1].getLeft();
+        final float onlineTextViewYEnd = newTop + extraHeight - AndroidUtilities.dpf2(75f) - onlineTextView[1].getBottom();
 
-        applyTextPositions(nameTextViewX, nameTextViewY, onlineTextViewX, onlineTextViewY);
-    }
+        // Use last known positions as starting point and linear interpolation for smooth transition
+        final float nameTextViewX = nameTextViewLastLeft + (nameTextViewXEnd - nameTextViewLastLeft) * expandValue;
+        final float nameTextViewY = nameTextViewLastTop + (nameTextViewYEnd - nameTextViewLastTop) * expandValue;
+        final float onlineTextViewX = onlineTextViewLastLeft + (onlineTextViewXEnd - onlineTextViewLastLeft) * expandValue;
+        final float onlineTextViewY = onlineTextViewLastTop + (onlineTextViewYEnd - onlineTextViewLastTop) * expandValue;
 
-    private float calculateBezierPosition(float start, float control, float end, float t) {
-        return (1 - t) * (1 - t) * start + 2 * (1 - t) * t * control + t * t * end;
+        // Apply transformations directly to text views with null checks for robustness
+        if (nameTextView[1] != null) {
+            nameTextView[1].setTranslationX(nameTextViewX);
+            nameTextView[1].setTranslationY(nameTextViewY);
+        }
+        
+        if (onlineTextView[1] != null) {
+            onlineTextView[1].setTranslationX(onlineTextViewX);
+            onlineTextView[1].setTranslationY(onlineTextViewY);
+        }
+        
+        if (mediaCounterTextView != null) {
+            mediaCounterTextView.setTranslationX(onlineTextViewX);
+            mediaCounterTextView.setTranslationY(onlineTextViewY);
+        }
     }
 
     private void applyTextPositions(float nameX, float nameY, float onlineX, float onlineY) {
         nameTextView[1].setTranslationX(nameX);
         nameTextView[1].setTranslationY(nameY);
-        onlineTextView[1].setTranslationX(onlineX + customPhotoOffset);
+        onlineTextView[1].setTranslationX(onlineX);
         onlineTextView[1].setTranslationY(onlineY);
         mediaCounterTextView.setTranslationX(onlineX);
         mediaCounterTextView.setTranslationY(onlineY);
@@ -4992,9 +5006,9 @@ public class ProfileActivity extends BaseFragment
 
     private void updateTextScaling(float expandValue) {
         if (extraHeight > collapsedAreaHeight) {
-            nameTextView[1].setPivotY(AndroidUtilities.lerp(0, nameTextView[1].getMeasuredHeight(), expandValue));
-            nameTextView[1].setScaleX(AndroidUtilities.lerp(1.12f, 1.67f, expandValue));
-            nameTextView[1].setScaleY(AndroidUtilities.lerp(1.12f, 1.67f, expandValue));
+//            nameTextView[1].setPivotY(AndroidUtilities.lerp(0, nameTextView[1].getMeasuredHeight(), expandValue));
+            nameTextView[1].setScaleX(AndroidUtilities.lerp(1.4f, 1.6f, expandValue));
+            nameTextView[1].setScaleY(AndroidUtilities.lerp(1.4f, 1.6f, expandValue));
         }
     }
 
@@ -6717,21 +6731,56 @@ public class ProfileActivity extends BaseFragment
 
     private void updateExpandedTextPositions(float currentHeight, int newTop) {
         if (!expandAnimator.isRunning()) {
+            System.out.println("ProfileActivity:: updateExpandedTextPositions : currentHeight = " + currentHeight + 
+                    " newTop = " + newTop + " using last known positions");
+            
+            // Calculate target positions to match updateTextPositions final state
+            // Use same coordinates as updateTextPositions when expandValue = 1.0
+            float nameTargetX = AndroidUtilities.dpf2(40f);
+            float nameTargetY = newTop + currentHeight - AndroidUtilities.dpf2(100f);
+            float onlineTargetX = AndroidUtilities.dpf2(18f);
+            float onlineTargetY = newTop + currentHeight - AndroidUtilities.dpf2(75f);
+            
+            // Handle opening animation offset
             float additionalTranslationY = 0;
             if (openAnimationInProgress && playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
                 // 50dp: Maximum upward movement for text during opening animation
                 additionalTranslationY = -(1.0f - openingProfileAnimationProgress) * AndroidUtilities.dp(50);
+                nameTargetY += additionalTranslationY;
+                onlineTargetY += additionalTranslationY;
             }
+            
+            // Use tracked last known positions as starting points for smooth animation
+            if (nameTextView[1] != null) {
+                // Calculate translation needed: target position - current view layout position
+                float nameTranslationX = nameTargetX - nameTextView[1].getLeft();
+                float nameTranslationY = nameTargetY - nameTextView[1].getBottom();
 
-            onlineX = AndroidUtilities.dpf2(16f) - onlineTextView[1].getLeft();
-            nameTextView[1].setTranslationX(AndroidUtilities.dpf2(18f) - nameTextView[1].getLeft());
-            nameTextView[1].setTranslationY(newTop + currentHeight - AndroidUtilities.dpf2(38f) -
-                    nameTextView[1].getBottom() + additionalTranslationY);
-            onlineTextView[1].setTranslationX(onlineX + customPhotoOffset);
-            onlineTextView[1].setTranslationY(newTop + currentHeight - AndroidUtilities.dpf2(18f) -
-                    onlineTextView[1].getBottom() + additionalTranslationY);
-            mediaCounterTextView.setTranslationX(onlineTextView[1].getTranslationX());
-            mediaCounterTextView.setTranslationY(onlineTextView[1].getTranslationY());
+                nameTextView[1].setTranslationX(nameTranslationX);
+                nameTextView[1].setTranslationY(nameTranslationY);
+
+            }
+            
+            if (onlineTextView[1] != null) {
+                // Calculate translation needed: target position - current view layout position
+                float onlineTranslationX = onlineTargetX - onlineTextView[1].getLeft();
+                float onlineTranslationY = onlineTargetY - onlineTextView[1].getBottom();
+                
+                onlineTextView[1].setTranslationX(onlineTranslationX);
+                onlineTextView[1].setTranslationY(onlineTranslationY);
+                
+                // Update legacy onlineX variable for compatibility
+                onlineX = onlineTranslationX;
+                
+
+            }
+            
+            // Update media counter to match online text position
+            if (mediaCounterTextView != null) {
+                mediaCounterTextView.setTranslationX(onlineTextView[1].getTranslationX());
+                mediaCounterTextView.setTranslationY(onlineTextView[1].getTranslationY());
+            }
+            
             updateCollectibleHint();
         }
     }
@@ -7128,16 +7177,33 @@ public class ProfileActivity extends BaseFragment
     }
 
     private void refreshNameAndOnlineXY() {
-        // Calculate text positions based on avatar scale and position set by unified transform system
-        // 44dp: Half of the 88dp avatar container size - aligns text with avatar edge
-        float avatarOffsetX = -44 * AndroidUtilities.density * (1.0f - avatarScale);
-        float avatarOffsetY = avatarContainer.getMeasuredHeight() * (avatarScale - 1.0f) / 2f;
-
-        nameX = avatarOffsetX;
-        nameY = (float) Math.floor(avatarY) + AndroidUtilities.dp(1.3f) + AndroidUtilities.dp(7f) + avatarOffsetY;
-        onlineX = avatarOffsetX;
-        onlineY = (float) Math.floor(avatarY) + AndroidUtilities.dp(24) +
-                (float) Math.floor(11 * AndroidUtilities.density) + avatarOffsetY;
+//        // Calculate text positions based on avatar scale and position set by unified transform system
+//        // 44dp: Half of the 88dp avatar container size - aligns text with avatar edge
+//        float avatarOffsetX = -44 * AndroidUtilities.density * (1.0f - avatarScale);
+//        float avatarOffsetY = avatarContainer.getMeasuredHeight() * (avatarScale - 1.0f) / 2f;
+//
+//        nameX = avatarOffsetX;
+//        nameY = (float) Math.floor(avatarY) + AndroidUtilities.dp(1.3f) + AndroidUtilities.dp(7f) + avatarOffsetY;
+//        onlineX = avatarOffsetX;
+//        onlineY = (float) Math.floor(avatarY) + AndroidUtilities.dp(24) +
+//                (float) Math.floor(11 * AndroidUtilities.density) + avatarOffsetY;
+        
+        // Update last position variables with current translation values of the text views
+        if (nameTextView[1] != null) {
+            // Store current translation values (not absolute positions)
+            nameTextViewLastLeft = nameTextView[1].getTranslationX();
+            nameTextViewLastTop = nameTextView[1].getTranslationY();
+        }
+        
+        if (onlineTextView[1] != null) {
+            // Store current translation values (not absolute positions)
+            onlineTextViewLastLeft = onlineTextView[1].getTranslationX();
+            onlineTextViewLastTop = onlineTextView[1].getTranslationY();
+        }
+        System.out.println("ProfileActivity:: refreshNameAndOnlineXY : nameTextViewLastLeft = " + nameTextViewLastLeft +
+                " nameTextViewLastTop = " + nameTextViewLastTop +
+                " onlineTextViewLastLeft = " + onlineTextViewLastLeft +
+                " onlineTextViewLastTop = " + onlineTextViewLastTop);
     }
 
     public RecyclerListView getListView() {
@@ -15885,15 +15951,15 @@ public class ProfileActivity extends BaseFragment
                 // The specific behavior is determined within processAvatarExpandedScenarios()
                 processAvatarExpandedScenarios(currentHeight, newTop);
             }
-//            // Note: When currentHeight <= collapsedAreaHeight, processAvatarCollapsedScenario()
-//            // above already handles the collapsed state properly - no additional processing needed
-//
-//            // Handle opening animation after base layout is established (matches old version)
-//            if (openAnimationInProgress && playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
-//                processOpeningInExpandedMode(newTop);
-//            }
-//
-//            updateOverlaysLayout(newTop);
+            // Note: When currentHeight <= collapsedAreaHeight, processAvatarCollapsedScenario()
+            // above already handles the collapsed state properly - no additional processing needed
+
+            // Handle opening animation after base layout is established (matches old version)
+            if (openAnimationInProgress && playProfileOpeningAnimationType == ProfileOpeningAnimationType.OPENING_IN_EXPANDED_MODE) {
+                processOpeningInExpandedMode(newTop);
+            }
+
+            updateOverlaysLayout(newTop);
 //
 //            if (!openAnimationInProgress && (expandAnimator == null || !expandAnimator.isRunning())) {
 //                updateProfileLayoutText(collapseProgress);
@@ -17189,7 +17255,7 @@ public class ProfileActivity extends BaseFragment
 
         if (allowPullingDown && (openingAvatar || expandProgress >= FULL_EXPANSION_THRESHOLD)) {
             // FULL_EXPANSION_READY: Show overlay UI and enable full expansion
-//            processFullExpansionReady(durationFactor, currentHeight, newTop);
+            processFullExpansionReady(durationFactor, currentHeight, newTop);
         } else {
             // INTERMEDIATE_EXPANSION: Transform avatar but don't show overlay UI yet
             processIntermediateExpansion(durationFactor);
@@ -17215,9 +17281,10 @@ public class ProfileActivity extends BaseFragment
      * enables full pull-to-expand functionality with avatar viewer.
      */
     private void processFullExpansionReady(float durationFactor, float currentHeight, int newTop) {
-        System.out.println("ProfileActivity:: handlePullToExpand : durationFactor = "
+        System.out.println("ProfileActivity:: processFullExpansionReady"
                 + durationFactor + " currentHeight = " + currentHeight + " newTop = " + newTop + " extraHeight = " + extraHeight + " collapsedAreaHeight = " + collapsedAreaHeight);
         if (!isPulledDown) {
+            System.out.println("ProfileActivity:: isPulledDown");
             configurePullToExpandUI();
             isPulledDown = true;
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needCheckSystemBarColors,
@@ -17282,9 +17349,6 @@ public class ProfileActivity extends BaseFragment
         avatarContainer.setTranslationX(avatarX);
         avatarContainer.setTranslationY(avatarY);
 
-        System.out.println("ProfileActivity:: processFullExpansionReady: applied transform - scale=" + avatarScale +
-                " x=" + avatarX + " y=" + avatarY + " fullExpansionFactor=" + fullExpansionFactor +
-                " thresholdScale=" + thresholdScale + " thresholdY=" + thresholdY);
 
         updateAvatarsViewPagerLayout(currentHeight, newTop);
         updateExpandedTextPositions(currentHeight, newTop);
@@ -17428,7 +17492,8 @@ public class ProfileActivity extends BaseFragment
                 mediaCounterTextView.setTranslationY(onlineIntermediateY);
             }
         }
-        
+        updateNamePositionForExpandedView();
+
         System.out.println("ProfileActivity:: processIntermediateExpansion: text positions - nameY=" + nameIntermediateY +
                 " nameX=" + nameIntermediateX + " onlineY=" + onlineIntermediateY + " onlineX=" + onlineIntermediateX);
     }
@@ -17472,8 +17537,8 @@ public class ProfileActivity extends BaseFragment
         // Update text views for animation state 1
         nameTextView[1].setPivotY(nameTextView[1].getMeasuredHeight());
         // 1.67f: Large scale factor for expanded profile mode (makes text bigger when avatar is expanded)
-        nameTextView[1].setScaleX(1.67f);
-        nameTextView[1].setScaleY(1.67f);
+        nameTextView[1].setScaleX(1.4f);
+        nameTextView[1].setScaleY(1.4f);
 
         // AVATAR POSITIONING: Start from collapsed position and animate to expanded center
         // Calculate collapsed state position (same as setupMainProfileContainer)
@@ -17553,7 +17618,6 @@ public class ProfileActivity extends BaseFragment
         avatarImage.setForegroundAlpha(expandValue);
 
         updateStoryAndGiftsViews(expandValue);
-        updateNamePositionForExpandedView();
     }
 
 }
