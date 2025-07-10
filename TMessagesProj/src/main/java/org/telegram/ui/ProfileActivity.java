@@ -2084,8 +2084,7 @@ public class ProfileActivity extends BaseFragment
             nameTextView[a].setGravity(Gravity.LEFT);
             nameTextView[a].setTypeface(AndroidUtilities.bold());
             nameTextView[a].setLeftDrawableTopPadding(-AndroidUtilities.dp(1.3f));
-            nameTextView[a].setPivotX(0);
-            nameTextView[a].setPivotY(0);
+
             nameTextView[a].setAlpha(a == 0 ? 0.0f : 1.0f);
             if (a == 1) {
                 nameTextView[a].setScrollNonFitText(true);
@@ -2100,6 +2099,8 @@ public class ProfileActivity extends BaseFragment
                             (a == 0 ? rightMargin - (hasTitleExpanded ? 10 : 0) : 0), 0));
             nameTextView[a].setTranslationX(nameTextViewIntialLeft);
             nameTextView[a].setTranslationY(nameTextViewIntialTop);
+            nameTextView[a].setPivotX(nameTextView[a].getTextWidth() / 2f);
+            nameTextView[a].setPivotY(nameTextView[a].getTextHeight() / 2f);
         }
     }
 
@@ -4935,7 +4936,7 @@ public class ProfileActivity extends BaseFragment
 
     private void updateTextPositions(int newTop, float expandValue) {
         // Define target visual X coordinate (18dp from the left edge of the container)
-
+        System.out.println("ProfileActivity:: updateTextPositions");
         // Calculate target translations for each text view to reach the same visual X coordinate
         // Current visual X = getLeft() + getTranslationX(), so target translation = targetVisualX - getLeft()
         final float nameTextViewXEnd = AndroidUtilities.dpf2(40f) - nameTextView[1].getLeft();
@@ -6736,6 +6737,14 @@ public class ProfileActivity extends BaseFragment
             
             // Calculate target positions to match updateTextPositions final state
             // Use same coordinates as updateTextPositions when expandValue = 1.0
+
+            for (int a = 0; a < nameTextView.length; a++) {
+                if (nameTextView[a] == null) continue;
+
+                nameTextView[a].setPivotX(nameTextView[a].getTextWidth() / 2f);
+                nameTextView[a].setPivotY(nameTextView[a].getTextHeight() / 2f);
+
+            }
             float nameTargetX = AndroidUtilities.dpf2(40f);
             float nameTargetY = newTop + currentHeight - AndroidUtilities.dpf2(100f);
             float onlineTargetX = AndroidUtilities.dpf2(18f);
@@ -7016,47 +7025,6 @@ public class ProfileActivity extends BaseFragment
                 " nameTargetX = " + nameTargetX + " onlineTargetY = " + onlineTargetY + " onlineTargetX = " + onlineTargetX +
                 " EXPANDED: nameExpandedX = " + nameExpandedX + " nameExpandedY = " + nameExpandedY +
                 " onlineExpandedX = " + onlineExpandedX + " onlineExpandedY = " + onlineExpandedY);
-    }
-    private void updateTextPositionsAndScalesOld(float collapseProgress) {
-        // 1.0f + 0.12f: Name text scale range from 1.0 (normal) to 1.12 (slightly larger when collapsed)
-        float nameScale = 1.0f + 0.12f * collapseProgress;
-        // 44dp: Half of the 88dp avatar container size - aligns text with avatar edge during collapse
-        // Negative value moves text left to align with avatar edge during collapse
-        nameX = -44 * AndroidUtilities.density * collapseProgress;
-        // 1.3dp: Fine-tuning offset for name text vertical alignment relative to avatar
-        // 7dp: Additional vertical offset that increases during collapse
-        nameY = (float) Math.floor(avatarY) + AndroidUtilities.dp(1.3f) + AndroidUtilities.dp(7) * collapseProgress +
-                titleAnimationsYDiff * (1f - openingProfileAnimationProgress);
-        // 44dp: Same horizontal alignment as name text
-        onlineX = -44 * AndroidUtilities.density * collapseProgress;
-        // 24dp: Base vertical spacing between avatar and online text
-        // 11dp: Additional vertical spacing that increases during collapse
-        onlineY = (float) Math.floor(avatarY) + AndroidUtilities.dp(24) +
-                (float) Math.floor(11 * AndroidUtilities.density) * collapseProgress;
-
-        if (showStatusButton != null) {
-            showStatusButton.setAlpha((int) (0xFF * collapseProgress));
-        }
-
-        for (int a = 0; a < nameTextView.length; a++) {
-            if (nameTextView[a] == null)
-                continue;
-
-            if (expandAnimator == null || !expandAnimator.isRunning()) {
-                nameTextView[a].setTranslationX(nameX);
-                nameTextView[a].setTranslationY(nameY);
-                onlineTextView[a].setTranslationX(onlineX + customPhotoOffset);
-                onlineTextView[a].setTranslationY(onlineY);
-
-                if (a == 1) {
-                    mediaCounterTextView.setTranslationX(onlineX);
-                    mediaCounterTextView.setTranslationY(onlineY);
-                }
-            }
-
-            nameTextView[a].setScaleX(nameScale);
-            nameTextView[a].setScaleY(nameScale);
-        }
     }
 
 
@@ -17152,8 +17120,6 @@ public class ProfileActivity extends BaseFragment
      * @param currentHeight The current content height (extraHeight for collapsed state)
      */
     private void updateAvatarTransform(float currentHeight) {
-        System.out.println("ProfileActivity:: updateAvatarTransform : currentHeight = " + currentHeight +
-                " extraHeight = " + extraHeight + " collapsedAreaHeight = " + collapsedAreaHeight);
 
         // POSITIONING LOGIC
         // No horizontal movement - avatar stays centered
@@ -17357,13 +17323,6 @@ public class ProfileActivity extends BaseFragment
      * Processes OPENING_ANIMATION scenario in collapsed mode: Activity opening with animation
      * while starting in collapsed state. Uses initialAnimationExtraHeight instead of extraHeight.
      */
-    private void processOpeningInCollapsedMode(float collapseProgress) {
-        // Use unified avatar positioning system with opening animation height
-        float animationHeight = openAnimationInProgress ? initialAnimationExtraHeight : extraHeight;
-//        updateAvatarTransform(animationHeight);
-        updateTextPositionsAndScales(collapseProgress);
-        updateCollectibleHint();
-    }
 
     /**
      * Processes INTERMEDIATE_EXPANSION scenario: User scrolled down past collapsedAreaHeight
@@ -17523,22 +17482,35 @@ public class ProfileActivity extends BaseFragment
         float upwardMovement = scrollProgress * maxUpwardMovement;
         float finalY = baseY - upwardMovement + actionBar.getTranslationY();
 
-        // Update text views for animation state 0
-        nameTextView[0].setTranslationX(0);
-        // 1.3dp: Fine-tuning offset for name text vertical alignment relative to avatar
-        nameTextView[0].setTranslationY((float) Math.floor(finalY) + AndroidUtilities.dp(1.3f));
-        onlineTextView[0].setTranslationX(0);
-        // 24dp: Vertical spacing between name text and online status text
-        onlineTextView[0].setTranslationY((float) Math.floor(finalY) + AndroidUtilities.dp(24));
-        // 1.0f: Normal scale (no scaling) for the transition state
-        nameTextView[0].setScaleX(1.0f);
-        nameTextView[0].setScaleY(1.0f);
+//        // Update text views for animation state 0
+//        nameTextView[0].setTranslationX(0);
+//        // 1.3dp: Fine-tuning offset for name text vertical alignment relative to avatar
+//        nameTextView[0].setTranslationY((float) Math.floor(finalY) + AndroidUtilities.dp(1.3f));
+//        onlineTextView[0].setTranslationX(0);
+//        // 24dp: Vertical spacing between name text and online status text
+//        onlineTextView[0].setTranslationY((float) Math.floor(finalY) + AndroidUtilities.dp(24));
+//        // 1.0f: Normal scale (no scaling) for the transition state
+//        nameTextView[0].setScaleX(1.0f);
+//        nameTextView[0].setScaleY(1.0f);
+//
+//        // Update text views for animation state 1 - position to match final updateTextPositions coordinates
+////        nameTextView[1].setPivotY(nameTextView[1].getMeasuredHeight());
+//        // 1.67f: Large scale factor for expanded profile mode (makes text bigger when avatar is expanded)
+//        nameTextView[1].setScaleX(1.4f);
+//        nameTextView[1].setScaleY(1.4f);
 
-        // Update text views for animation state 1
-        nameTextView[1].setPivotY(nameTextView[1].getMeasuredHeight());
-        // 1.67f: Large scale factor for expanded profile mode (makes text bigger when avatar is expanded)
-        nameTextView[1].setScaleX(1.4f);
-        nameTextView[1].setScaleY(1.4f);
+//        nameTextView[1].setScaleX(AndroidUtilities.lerp(1.0f, 1.4f, openingProfileAnimationProgress));
+//        nameTextView[1].setScaleY(AndroidUtilities.lerp(1.0f, 1.4f, openingProfileAnimationProgress));
+//        // Position text views to match final expanded positions from updateTextPositions
+//        float nameTargetX = AndroidUtilities.dpf2(40f) - nameTextView[1].getLeft();
+//        float nameTargetY = newTop + (extraHeight * openingProfileAnimationProgress) - AndroidUtilities.dpf2(100f) - nameTextView[1].getBottom();
+//        float onlineTargetX = AndroidUtilities.dpf2(18f) - onlineTextView[1].getLeft();
+//        float onlineTargetY = newTop + (extraHeight * openingProfileAnimationProgress) - AndroidUtilities.dpf2(75f) - onlineTextView[1].getBottom();
+//
+//        nameTextView[1].setTranslationX(nameTargetX);
+//        nameTextView[1].setTranslationY(nameTargetY);
+//        onlineTextView[1].setTranslationX(onlineTargetX);
+//        onlineTextView[1].setTranslationY(onlineTargetY);
 
         // AVATAR POSITIONING: Start from collapsed position and animate to expanded center
         // Calculate collapsed state position (same as setupMainProfileContainer)
