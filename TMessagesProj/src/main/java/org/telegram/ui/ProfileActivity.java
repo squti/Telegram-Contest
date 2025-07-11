@@ -16768,6 +16768,130 @@ public class ProfileActivity extends BaseFragment
                     }
                 }
             }
+        } else if (chatId != 0) {
+            TLRPC.Chat chat = getMessagesController().getChat(chatId);
+            if (chat != null && !ChatObject.isLeftFromChat(chat) && !ChatObject.isKickedFromChat(chat)) {
+                
+                if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                    // Channel profile: mute/unmute, gift/discuss, share, leave
+                    
+                    // Button 1: Mute/Unmute
+                    long dialogId = -chatId;
+                    boolean muted = getMessagesController().isDialogMuted(dialogId, 0);
+                    
+                    if (muted) {
+                        customButtonContainer.addButton(R.drawable.profile_unmute, "Unmute", v -> {
+                            getNotificationsController().muteDialog(dialogId, 0, false);
+                            setupCustomButtons(); // Refresh to update mute state
+                        });
+                    } else {
+                        customButtonContainer.addButton(R.drawable.profile_mute, "Mute", v -> {
+                            getNotificationsController().muteDialog(dialogId, 0, true);
+                            setupCustomButtons(); // Refresh to update mute state
+                        });
+                    }
+
+                    // Button 2: Live Stream, Discuss or Gift (priority order)
+                    if (callItemVisible) {
+                        // Show Live Stream button if there's an active live stream/voice chat
+                        customButtonContainer.addButton(R.drawable.msg_voicechat, "Live Stream", v -> {
+                            ChatObject.Call call = getMessagesController().getGroupCall(chatId, false);
+                            if (call != null) {
+                                VoIPHelper.startCall(chat, null, null, false, getParentActivity(), ProfileActivity.this, getAccountInstance());
+                            }
+                        });
+                    } else if (chatInfo != null && chatInfo.linked_chat_id != 0) {
+                        // Show Discuss button if discussion group is available
+                        customButtonContainer.addButton(R.drawable.profile_message, "Discuss", v -> {
+                            Bundle args = new Bundle();
+                            args.putLong("chat_id", chatInfo.linked_chat_id);
+                            presentFragment(new ChatActivity(args), true);
+                        });
+                    } else {
+                        // Show Gift button when live stream and discuss are not available
+                        customButtonContainer.addButton(R.drawable.profile_gift, "Gift", v -> {
+                            showDialog(new GiftSheet(getContext(), currentAccount, chatId, null, null));
+                        });
+                    }
+
+                    // Button 3: Share
+                    customButtonContainer.addButton(R.drawable.msg_share, "Share", v -> {
+                        try {
+                            Intent intent = new Intent(Intent.ACTION_SEND);
+                            intent.setType("text/plain");
+                            if (chatInfo != null && !TextUtils.isEmpty(chatInfo.about)) {
+                                intent.putExtra(Intent.EXTRA_TEXT, "https://t.me/" + ChatObject.getPublicUsername(chat));
+                            } else {
+                                intent.putExtra(Intent.EXTRA_TEXT, "https://t.me/" + ChatObject.getPublicUsername(chat));
+                            }
+                            getParentActivity().startActivity(Intent.createChooser(intent, LocaleController.getString("ShareFile", R.string.ShareFile)));
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    });
+
+                    // Button 4: Leave Channel
+                    customButtonContainer.addButton(R.drawable.msg_leave, "Leave", v -> {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("LeaveChannel", R.string.LeaveChannel));
+                        builder.setMessage(LocaleController.formatString("ChannelLeaveAlert", R.string.ChannelLeaveAlert, chat.title));
+                        builder.setPositiveButton(LocaleController.getString("LeaveChannel", R.string.LeaveChannel), (dialogInterface, i) -> {
+                            getMessagesController().deleteParticipantFromChat(chatId, getMessagesController().getUser(getUserConfig().getClientUserId()));
+                            finishFragment();
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showDialog(builder.create());
+                    });
+                } else {
+                    // Group profile: message, mute/unmute, voice chat, leave
+                    
+                    // Button 1: Message
+                    customButtonContainer.addButton(R.drawable.profile_message, "Message", v -> {
+                        Bundle args = new Bundle();
+                        args.putLong("chat_id", chatId);
+                        presentFragment(new ChatActivity(args), true);
+                    });
+
+                    // Button 2: Mute/Unmute
+                    long dialogId = -chatId;
+                    boolean muted = getMessagesController().isDialogMuted(dialogId, 0);
+                    
+                    if (muted) {
+                        customButtonContainer.addButton(R.drawable.profile_unmute, "Unmute", v -> {
+                            getNotificationsController().muteDialog(dialogId, 0, false);
+                            setupCustomButtons(); // Refresh to update mute state
+                        });
+                    } else {
+                        customButtonContainer.addButton(R.drawable.profile_mute, "Mute", v -> {
+                            getNotificationsController().muteDialog(dialogId, 0, true);
+                            setupCustomButtons(); // Refresh to update mute state
+                        });
+                    }
+
+                    // Button 3: Voice Chat
+                    customButtonContainer.addButton(R.drawable.msg_voicechat, "Voice Chat", v -> {
+                        ChatObject.Call call = getMessagesController().getGroupCall(chatId, false);
+                        if (call == null) {
+                            VoIPHelper.showGroupCallAlert(ProfileActivity.this, chat, null, false, getAccountInstance());
+                        } else {
+                            VoIPHelper.startCall(chat, null, null, false, getParentActivity(), ProfileActivity.this, getAccountInstance());
+                        }
+                    });
+
+                    // Button 4: Leave Group
+                    customButtonContainer.addButton(R.drawable.msg_leave, "Leave", v -> {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString(R.string.DeleteAndExit));
+                        builder.setMessage(LocaleController.formatString("AreYouSureDeleteAndExit", R.string.AreYouSureDeleteAndExit, chat.title));
+                        builder.setPositiveButton(LocaleController.getString(R.string.Delete), (dialogInterface, i) -> {
+                            getMessagesController().deleteParticipantFromChat(chatId, getMessagesController().getUser(getUserConfig().getClientUserId()));
+                            finishFragment();
+                        });
+                        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+                        showDialog(builder.create());
+                    });
+                }
+            }
         } else {
             // Fallback: Show the original sample buttons for other profiles (bots, channels, self, etc.)
             
