@@ -16961,11 +16961,16 @@ public class ProfileActivity extends BaseFragment
                     }
                 }
             } else {
-                // User hasn't joined the channel/group yet - show report buttons
+                // User hasn't joined the channel/group yet - show join, share and report buttons
                 if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                    // Channel not joined: Show minimal buttons including report
+                    // Channel not joined: Show join, share and report buttons
                     
-                    // Button 1: Share
+                    // Button 1: Join Channel
+                    customButtonContainer.addButton(R.drawable.profile_join, "Join", v -> {
+                        getMessagesController().addUserToChat(chatId, getMessagesController().getUser(getUserConfig().getClientUserId()), 0, null, ProfileActivity.this, null);
+                    });
+                    
+                    // Button 2: Share
                     customButtonContainer.addButton(R.drawable.msg_share, "Share", v -> {
                         try {
                             Intent intent = new Intent(Intent.ACTION_SEND);
@@ -16981,14 +16986,19 @@ public class ProfileActivity extends BaseFragment
                         }
                     });
 
-                    // Button 2: Report Channel
+                    // Button 3: Report Channel
                     customButtonContainer.addButton(R.drawable.profile_report, "Report", v -> {
                         ReportBottomSheet.openChat(ProfileActivity.this, getDialogId());
                     });
                 } else {
-                    // Group not joined: Show minimal buttons including report
+                    // Group not joined: Show join, share and report buttons
                     
-                    // Button 1: Share
+                    // Button 1: Join Group
+                    customButtonContainer.addButton(R.drawable.profile_join, "Join", v -> {
+                        getMessagesController().addUserToChat(chatId, getMessagesController().getUser(getUserConfig().getClientUserId()), 0, null, ProfileActivity.this, null);
+                    });
+                    
+                    // Button 2: Share
                     customButtonContainer.addButton(R.drawable.msg_share, "Share", v -> {
                         try {
                             Intent intent = new Intent(Intent.ACTION_SEND);
@@ -17004,7 +17014,7 @@ public class ProfileActivity extends BaseFragment
                         }
                     });
 
-                    // Button 2: Report Group
+                    // Button 3: Report Group
                     customButtonContainer.addButton(R.drawable.profile_report, "Report", v -> {
                         ReportBottomSheet.openChat(ProfileActivity.this, getDialogId());
                     });
