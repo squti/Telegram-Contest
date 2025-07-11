@@ -935,11 +935,32 @@ public class ProfileActivity extends BaseFragment
     // Expansion threshold: determines when to show overlay UI vs just transform avatar
     private static final float FULL_EXPANSION_THRESHOLD = 0.28f;
 
-    // Global variable to manually adjust avatar top position (in dp)
-    // Positive values move avatar down, negative values move avatar up
-    public static float AVATAR_TOP_MARGIN_ADJUSTMENT_DP = 30f;
-    public static float NAME_TOP_MARGIN_ADJUSTMENT_DP = 125f;
-    public static float ONLINE_TOP_MARGIN_ADJUSTMENT_DP = 162f;
+    // Dynamic method to calculate avatar top position exactly under status bar
+    private float getAvatarTopMarginAdjustment() {
+        // Calculate status bar height in DP
+        float statusBarHeightDp = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) / AndroidUtilities.density;
+        
+        // Add a small padding (e.g., 8dp) to position avatar just below status bar
+        return statusBarHeightDp + 8f;
+    }
+    
+    // Dynamic method to calculate name text top position relative to status bar
+    private float getNameTopMarginAdjustment() {
+        // Calculate status bar height in DP
+        float statusBarHeightDp = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) / AndroidUtilities.density;
+        
+        // Position name text appropriately below status bar (base 125dp + status bar adjustment)
+        return statusBarHeightDp + 117f; // 125 - 8 = 117 (since we already account for 8dp in avatar)
+    }
+    
+    // Dynamic method to calculate online text top position relative to status bar  
+    private float getOnlineTopMarginAdjustment() {
+        // Calculate status bar height in DP
+        float statusBarHeightDp = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) / AndroidUtilities.density;
+        
+        // Position online text appropriately below status bar (base 162dp + status bar adjustment)
+        return statusBarHeightDp + 154f; // 162 - 8 = 154 (since we already account for 8dp in avatar)
+    }
     float ASYMMETRIC_YPIVOT_FOR_AVATAR_EXPANSION = 0.30f; // Adjust this value: lower = more downward expansion
     private float avatarX;
 
@@ -6890,7 +6911,7 @@ public class ProfileActivity extends BaseFragment
 
         // NAME TEXT VIEW DIAGONAL POSITIONING
         // Start from the current expanded center position (not hardcoded)
-        float nameExpandedY = AndroidUtilities.dp(NAME_TOP_MARGIN_ADJUSTMENT_DP);
+        float nameExpandedY = AndroidUtilities.dp(getNameTopMarginAdjustment());
         float nameExpandedX = 0f; // Center position calculation like in animation
         
         // Calculate center position exactly like in the open/close animation
@@ -6921,7 +6942,7 @@ public class ProfileActivity extends BaseFragment
         
         // ONLINE TEXT VIEW DIAGONAL POSITIONING  
         // Start from the current expanded center position (not hardcoded)
-        float onlineExpandedY = AndroidUtilities.dp(ONLINE_TOP_MARGIN_ADJUSTMENT_DP);
+        float onlineExpandedY = AndroidUtilities.dp(getOnlineTopMarginAdjustment());
         float onlineExpandedX = 0f; // Center position calculation like in animation
         
         // Calculate center position like in the open/close animation
@@ -17322,7 +17343,7 @@ public class ProfileActivity extends BaseFragment
                         avatarContainer, "translationX", currentTranslationX, 0f);
 
                 ObjectAnimator translationYAnimator = ObjectAnimator.ofFloat(
-                        avatarContainer, "translationY", currentTranslationY, AndroidUtilities.dp(AVATAR_TOP_MARGIN_ADJUSTMENT_DP));
+                        avatarContainer, "translationY", currentTranslationY, AndroidUtilities.dp(getAvatarTopMarginAdjustment()));
 
                 ObjectAnimator scaleXAnimator = ObjectAnimator.ofFloat(
                         avatarContainer, "scaleX", currentScaleX, 1f);
@@ -17416,7 +17437,7 @@ public class ProfileActivity extends BaseFragment
 
                     nameArrayCenterX =  nameArrayCenterX  - textWidth2 / 2f;
                 }
-                float nameArrayCenterY = AndroidUtilities.dp(NAME_TOP_MARGIN_ADJUSTMENT_DP);
+                float nameArrayCenterY = AndroidUtilities.dp(getNameTopMarginAdjustment());
 
                 ArrayList<ObjectAnimator> nameAnimators = new ArrayList<>();
                 
@@ -17554,7 +17575,7 @@ public class ProfileActivity extends BaseFragment
 //                    onlineTextView[a].setPivotY(onlineTextView[a].getTextHeight() / 2f);
                     // Create animators to center position
                     onlineAnimators.add(ObjectAnimator.ofFloat(onlineTextView[a], "translationX", currentTranslationX, onlineArrayCenterX));
-                    onlineAnimators.add(ObjectAnimator.ofFloat(onlineTextView[a], "translationY", currentTranslationY, AndroidUtilities.dp(ONLINE_TOP_MARGIN_ADJUSTMENT_DP)));
+                    onlineAnimators.add(ObjectAnimator.ofFloat(onlineTextView[a], "translationY", currentTranslationY, AndroidUtilities.dp(getOnlineTopMarginAdjustment())));
                     onlineAnimators.add(ObjectAnimator.ofFloat(onlineTextView[a], "scaleX", currentScaleX, 1f));
                     onlineAnimators.add(ObjectAnimator.ofFloat(onlineTextView[a], "scaleY", currentScaleY, 1f));
                 }
@@ -17754,29 +17775,31 @@ public class ProfileActivity extends BaseFragment
         avatarX = 0f;
 
         // Start from the expanded state position - when extraHeight = collapsedAreaHeight (no scroll),
-        // the avatar should be at exactly AVATAR_TOP_MARGIN_ADJUSTMENT_DP to match expanded state
-        float expandedStateY = AndroidUtilities.dp(AVATAR_TOP_MARGIN_ADJUSTMENT_DP);
+        // the avatar should be at exactly getAvatarTopMarginAdjustment() to match expanded state
+        float expandedStateY = AndroidUtilities.dp(getAvatarTopMarginAdjustment());
 
-        // Calculate scroll-based upward movement
-        // As currentHeight decreases from collapsedAreaHeight to 0, avatar moves up
+        // Calculate scroll-based movement
+        // As currentHeight decreases from collapsedAreaHeight to 0, avatar moves up to -88dp
         float scrollUpAmount = Math.max(0, collapsedAreaHeight - currentHeight);
         float scrollProgress = Math.max(0f, Math.min(1f, scrollUpAmount / collapsedAreaHeight));
 
-        // 50dp: Maximum upward movement distance when fully collapsed
-        float maxUpwardMovement = AndroidUtilities.dp(50);
-        float upwardMovement = scrollProgress * maxUpwardMovement;
+        // When extraHeight reaches zero (scrollProgress = 1.0), avatar should be at -88dp
+        float targetCollapsedY = AndroidUtilities.dp(-88);
+        
+        // Interpolate between expanded position and -88dp based on scroll progress
+        float interpolatedY = expandedStateY + (targetCollapsedY - expandedStateY) * scrollProgress;
 
         // SCALING LOGIC
         // Avatar scales from 1.0 (full size) down to 0.6 (60% size) as user scrolls up
         // 0.6f: Minimum scale factor when fully collapsed
-        float minScale = 0.6f;
+        float minScale = 0.4f;
         avatarScale = 1.0f - (scrollProgress * (1.0f - minScale));
 
         // CRITICAL: Position calculation must account for visual center during scaling
         // Even when scaling down, we want consistent visual behavior with expansion states
 
-        // Calculate the target visual center position (moving up from expanded state position)
-        float targetCenterY = expandedStateY - upwardMovement + actionBar.getTranslationY();
+        // Calculate the target visual center position
+        float targetCenterY = interpolatedY + actionBar.getTranslationY();
 
         // Account for how scaling affects the visual center
         // When scaling by N, the visual center moves by (N-1) * halfSize from the layout origin
@@ -17910,7 +17933,7 @@ public class ProfileActivity extends BaseFragment
 
         int actionBarHeight = ActionBar.getCurrentActionBarHeight();
         int statusBarOffset = actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
-        float baseY = statusBarOffset + actionBarHeight / 2.0f - 44 * AndroidUtilities.density + AndroidUtilities.dp(AVATAR_TOP_MARGIN_ADJUSTMENT_DP);
+        float baseY = statusBarOffset + actionBarHeight / 2.0f - 44 * AndroidUtilities.density + AndroidUtilities.dp(getAvatarTopMarginAdjustment());
         float thresholdY = baseY + (thresholdExpansionFactor * AndroidUtilities.dp(40));
 
         // Scale: Continue from actual intermediate threshold scale up to full expansion scale
@@ -17993,8 +18016,8 @@ public class ProfileActivity extends BaseFragment
         avatarScale = 1.0f + (expansionFactor * (maxIntermediateScale - 1.0f));
 
         // Position: Use the same margin-aware logic as updateAvatarTransform
-        // Start from the expanded state position (includes AVATAR_TOP_MARGIN_ADJUSTMENT_DP)
-        float baseY = AndroidUtilities.dp(AVATAR_TOP_MARGIN_ADJUSTMENT_DP);
+        // Start from the expanded state position (includes getAvatarTopMarginAdjustment())
+        float baseY = AndroidUtilities.dp(getAvatarTopMarginAdjustment());
 
         // CRITICAL: Position calculation must account for visual center during scaling
         // When scaling, we want the avatar to appear to grow from its center, not from its layout origin
@@ -18027,7 +18050,7 @@ public class ProfileActivity extends BaseFragment
         // Calculate text positions for intermediate expansion - no scaling, just vertical movement
         
         // NAME TEXT VIEW: Start from expanded center position, move down based on expansion factor
-        float nameBaseY = AndroidUtilities.dp(NAME_TOP_MARGIN_ADJUSTMENT_DP);
+        float nameBaseY = AndroidUtilities.dp(getNameTopMarginAdjustment());
         float nameAdditionalY = 2.0f * expansionFactor * AndroidUtilities.dp(50); // Move down up to 50dp as we expand
         float nameIntermediateY = nameBaseY + nameAdditionalY;
         
@@ -18046,7 +18069,7 @@ public class ProfileActivity extends BaseFragment
         }
         
         // ONLINE TEXT VIEW: Start from expanded center position, move down based on expansion factor
-        float onlineBaseY = AndroidUtilities.dp(ONLINE_TOP_MARGIN_ADJUSTMENT_DP);
+        float onlineBaseY = AndroidUtilities.dp(getOnlineTopMarginAdjustment());
         float onlineAdditionalY = 2.0f * expansionFactor * AndroidUtilities.dp(50); // Move down up to 50dp as we expand
         float onlineIntermediateY = onlineBaseY + onlineAdditionalY;
         
@@ -18102,7 +18125,7 @@ public class ProfileActivity extends BaseFragment
         int statusBarOffset = actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
         // 44dp: Half of the 88dp avatar container size - centers avatar in action bar
         // actionBarHeight / 2.0f: Centers avatar vertically within the action bar area
-        float baseY = statusBarOffset + actionBarHeight / 2.0f - 44 * AndroidUtilities.density + AndroidUtilities.dp(AVATAR_TOP_MARGIN_ADJUSTMENT_DP);
+        float baseY = statusBarOffset + actionBarHeight / 2.0f - 44 * AndroidUtilities.density + AndroidUtilities.dp(getAvatarTopMarginAdjustment());
 
         float scrollUpAmount = Math.max(0, collapsedAreaHeight - animationHeight);
         float scrollProgress = Math.max(0f, Math.min(1f, scrollUpAmount / collapsedAreaHeight));
