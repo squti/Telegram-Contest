@@ -962,7 +962,7 @@ public class ProfileActivity extends BaseFragment
         // Position online text appropriately below status bar (base 162dp + status bar adjustment)
         return statusBarHeightDp + 154f; // 162 - 8 = 154 (since we already account for 8dp in avatar)
     }
-    float ASYMMETRIC_YPIVOT_FOR_AVATAR_EXPANSION = 0.30f; // Adjust this value: lower = more downward expansion
+    float ASYMMETRIC_YPIVOT_FOR_AVATAR_EXPANSION = 0.40f; // Adjust this value: lower = more downward expansion
     private float avatarX;
 
     private float avatarY;
@@ -12029,16 +12029,30 @@ public class ProfileActivity extends BaseFragment
                         canvas.save();
                         canvas.clipRect(0, 0, getMeasuredWidth(), y1);
 
-                        // Calculate StarGiftPatterns position based on known avatar layout
-                        // Avatar is centered horizontally and positioned at getAvatarTopMarginAdjustment() from top
+                        // Calculate StarGiftPatterns position based on current avatar position
+                        // Avatar is centered horizontally and positioned dynamically based on current state
                         float avatarCenterX = getMeasuredWidth() / 2f; // Avatar is always centered horizontally
-                        float avatarCenterY = AndroidUtilities.dp(getAvatarTopMarginAdjustment()) + AndroidUtilities.dp(AVATAR_SIZE_DP) / 2f;
+                        
+                        // Calculate current avatar center Y position including any movement
+                        float currentAvatarCenterY;
+                        if (avatarContainer != null) {
+                            // Use actual avatar container position including transformations
+                            float avatarContainerCenterY = avatarContainer.getY() + avatarContainer.getTranslationY() + (avatarContainer.getHeight() * avatarContainer.getScaleY()) / 2f;
+                            currentAvatarCenterY = avatarContainerCenterY;
+                        } else {
+                            // Fallback to original fixed position
+                            currentAvatarCenterY = AndroidUtilities.dp(getAvatarTopMarginAdjustment()) + AndroidUtilities.dp(AVATAR_SIZE_DP) / 2f;
+                        }
+                        
+                        // Fixed convergence center (original expanded position)
+                        float originalAvatarCenterY = AndroidUtilities.dp(getAvatarTopMarginAdjustment()) + AndroidUtilities.dp(AVATAR_SIZE_DP) / 2f;
+                        
                         float avatarRadius = AndroidUtilities.dp(AVATAR_SIZE_DP) / 2f; // Half of avatar size
                         float emojiRadius = avatarRadius + AndroidUtilities.dp(24); // Distance from avatar center to emojis
 
-                        // Use our new circular pattern
-                        StarGiftPatterns.drawCircularProfilePattern(canvas, emoji, avatarCenterX, avatarCenterY,
-                                emojiRadius, Math.min(1f, extraHeight / (float) collapsedAreaHeight));
+                        // Use our new circular pattern with current position for normal layout, original position for convergence
+                        StarGiftPatterns.drawCircularProfilePatternWithConvergence(canvas, emoji, avatarCenterX, currentAvatarCenterY,
+                                avatarCenterX, originalAvatarCenterY, emojiRadius, Math.min(1f, extraHeight / (float) collapsedAreaHeight));
                         canvas.restore();
                     }
                 }
