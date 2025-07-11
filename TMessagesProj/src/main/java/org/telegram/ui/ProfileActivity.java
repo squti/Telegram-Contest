@@ -17319,21 +17319,6 @@ public class ProfileActivity extends BaseFragment
                 });
             }
 
-            // Button 3: More options button
-            customButtonContainer.addButton(R.drawable.ic_ab_other, "More", v -> {
-                // Handle more options button click
-                if (mainMenuItem != null) {
-                    mainMenuItem.toggleSubMenu();
-                }
-            });
-
-            // Button 4: Search button (conditional)
-            if (searchItem != null && searchItem.getVisibility() == View.VISIBLE) {
-                customButtonContainer.addButton(R.drawable.ic_ab_search, "Search", v -> {
-                    // Handle search button click
-                    actionBar.openSearchField(true);
-                });
-            }
         }
     }
     private void setupAvatarContainer(Context context) {
