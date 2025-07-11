@@ -16733,10 +16733,11 @@ public class ProfileActivity extends BaseFragment
                     });
                 }
 
-                // Button 3: Stop Bot (if already chatting) or Report Bot (if not chatting yet)
+                // Button 3: Stop Bot (if chatting and not blocked) or Report Bot (if not chatting or blocked)
                 boolean isChattingWithBot = getMessagesController().getDialog(dialogId) != null;
+                boolean isBotBlocked = getMessagesController().blockePeers.indexOfKey(userId) >= 0;
                 
-                if (isChattingWithBot) {
+                if (isChattingWithBot && !isBotBlocked) {
                     customButtonContainer.addButton(R.drawable.msg_block, "Stop", v -> {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle("Stop");
