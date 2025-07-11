@@ -278,10 +278,10 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                         lerp(0.9f, 0.25f, actionBarProgress)
                 );
             } else if (index == 1) {
-                // Middle left
+                // Middle left - doubled distance from avatar
                 gift.draw(
                         canvas,
-                        acx - ar - dp(25), acy,
+                        acx - ar - dp(50), acy,
                         scale, 0.0f,
                         alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
                         1.0f
@@ -305,10 +305,10 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                         1.0f
                 );
             } else if (index == 4) {
-                // Middle right
+                // Middle right - doubled distance from avatar
                 gift.draw(
                         canvas,
-                        acx + ar + dp(25), acy,
+                        acx + ar + dp(50), acy,
                         scale, 0.0f,
                         alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
                         1.0f
