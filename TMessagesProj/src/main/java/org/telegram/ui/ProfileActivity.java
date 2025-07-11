@@ -965,6 +965,7 @@ public class ProfileActivity extends BaseFragment
     private float nameTextViewLastTop;
     private float onlineTextViewLastLeft;
     private float onlineTextViewLastTop;
+    private boolean shouldCalculateButtonsColor = true;
 
     public ProfileActivity(Bundle args) {
         this(args, null);
@@ -1726,6 +1727,8 @@ public class ProfileActivity extends BaseFragment
 
             @Override
             public void onAnimationEnd(Animator animation) {
+                shouldCalculateButtonsColor = true;
+                updateCustomButtonBackgrounds();
                 actionBar.setItemsBackgroundColor(isPulledDown ? Theme.ACTION_BAR_WHITE_SELECTOR_COLOR
                         : peerColor != null ? 0x20ffffff : getThemedColor(Theme.key_avatar_actionBarSelectorBlue),
                         false);
@@ -15947,6 +15950,204 @@ public class ProfileActivity extends BaseFragment
             }
             
             customButtonContainer.setScaleY(scaleY);
+            
+            // Update button backgrounds based on avatar expansion and image brightness
+            updateCustomButtonBackgrounds();
+        }
+    }
+    
+    /**
+     * Updates custom button backgrounds based on avatar expansion state and image brightness
+     */
+    private void updateCustomButtonBackgrounds() {
+        if (customButtonContainer == null) return;
+
+        // Check if avatar is expanded (extraHeight > collapsedAreaHeight)
+        boolean isAvatarExpanded = extraHeight > collapsedAreaHeight;
+        if (shouldCalculateButtonsColor) {
+            shouldCalculateButtonsColor = false;
+
+            if (isAvatarExpanded) {
+                // Avatar expanded: use avatar image brightness for button background
+                boolean isAvatarBright = isAvatarImageBright();
+                int backgroundColor;
+
+                if (isAvatarBright) {
+                    // Bright avatar: use dark semi-transparent background (25 alpha, 0,0,0)
+                    backgroundColor = Color.argb(25, 0, 0, 0);
+                } else {
+                    // Dark avatar: use light semi-transparent background (100 alpha, 255,255,255)
+                    backgroundColor = Color.argb(100, 255, 255, 255);
+                }
+
+                customButtonContainer.setButtonBackgroundColor(backgroundColor);
+            } else {
+                // Avatar collapsed: use topView background brightness for button background
+                boolean isTopViewBright = isTopViewBackgroundBright();
+                int backgroundColor;
+
+                if (isTopViewBright) {
+                    // Bright topView: use dark semi-transparent background (25 alpha, 0,0,0)
+                    backgroundColor = Color.argb(25, 0, 0, 0);
+                } else {
+                    // Dark topView: use light semi-transparent background (100 alpha, 255,255,255)
+                    backgroundColor = Color.argb(100, 255, 255, 255);
+                }
+
+                customButtonContainer.setButtonBackgroundColor(backgroundColor);
+            }
+        }
+    }
+    /**
+     * Calculates whether the topView background has a bright or dark color
+     * @return true if topView background is bright, false if dark
+     */
+    private boolean isTopViewBackgroundBright() {
+        if (topView == null) return false;
+
+        try {
+            // Get the background drawable from topView
+            Drawable background = topView.getBackground();
+            if (background == null) return false;
+
+            // Handle different types of background drawables
+            int backgroundColor = Color.TRANSPARENT;
+
+            if (background instanceof ColorDrawable) {
+                // Simple color background
+                backgroundColor = ((ColorDrawable) background).getColor();
+            } else if (background instanceof GradientDrawable) {
+                // For gradient backgrounds, we'll try to get the solid color if set
+                // This is a bit limited but should work for most cases
+                // Note: GradientDrawable doesn't have a direct way to get colors,
+                // so we'll create a small bitmap and sample it
+                return analyzeDrawableColor(background);
+            } else {
+                // For other drawable types, analyze by rendering to bitmap
+                return analyzeDrawableColor(background);
+            }
+
+            // Extract RGB components from the color
+            int red = Color.red(backgroundColor);
+            int green = Color.green(backgroundColor);
+            int blue = Color.blue(backgroundColor);
+
+            // Calculate luminance using standard formula
+            // Luminance = 0.299*R + 0.587*G + 0.114*B
+            double luminance = 0.299 * red + 0.587 * green + 0.114 * blue;
+
+            // Consider bright if luminance > 128 (middle of 0-255 range)
+            return luminance > 128;
+
+        } catch (Exception e) {
+            // If any error occurs, default to false (dark)
+            return false;
+        }
+    }
+    private boolean analyzeDrawableColor(Drawable drawable) {
+        try {
+            // Create a small bitmap to analyze the drawable color
+            int size = 10; // Small size for performance
+            Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+
+            // Set drawable bounds and draw it
+            drawable.setBounds(0, 0, size, size);
+            drawable.draw(canvas);
+
+            // Calculate average color
+            long totalRed = 0, totalGreen = 0, totalBlue = 0;
+            int pixelCount = 0;
+
+            for (int x = 0; x < size; x++) {
+                for (int y = 0; y < size; y++) {
+                    int pixel = bitmap.getPixel(x, y);
+                    if (Color.alpha(pixel) > 0) { // Only count non-transparent pixels
+                        totalRed += Color.red(pixel);
+                        totalGreen += Color.green(pixel);
+                        totalBlue += Color.blue(pixel);
+                        pixelCount++;
+                    }
+                }
+            }
+
+            bitmap.recycle();
+
+            if (pixelCount == 0) return false;
+
+            // Calculate average RGB values
+            int avgRed = (int) (totalRed / pixelCount);
+            int avgGreen = (int) (totalGreen / pixelCount);
+            int avgBlue = (int) (totalBlue / pixelCount);
+
+            // Calculate luminance
+            double luminance = 0.299 * avgRed + 0.587 * avgGreen + 0.114 * avgBlue;
+
+            // Consider bright if luminance > 128
+            return luminance > 128;
+
+        } catch (Exception e) {
+            // If any error occurs, default to false (dark)
+            return false;
+        }
+    }
+    /**
+     * Calculates whether the avatar image has a bright or dark average color
+     * @return true if avatar image is bright, false if dark
+     */
+    private boolean isAvatarImageBright() {
+        if (avatarImage == null) return false;
+        
+        try {
+            // Get the drawable from avatar image
+            Drawable drawable = avatarImage.getImageReceiver().getDrawable();
+            if (drawable == null) return false;
+            
+            // Create a small bitmap to analyze color
+            int width = Math.min(drawable.getIntrinsicWidth(), 50);
+            int height = Math.min(drawable.getIntrinsicHeight(), 50);
+            if (width <= 0 || height <= 0) return false;
+            
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            drawable.setBounds(0, 0, width, height);
+            drawable.draw(canvas);
+            
+            // Calculate average color brightness
+            long totalRed = 0, totalGreen = 0, totalBlue = 0;
+            int pixelCount = 0;
+            
+            for (int x = 0; x < width; x++) {
+                for (int y = 0; y < height; y++) {
+                    int pixel = bitmap.getPixel(x, y);
+                    if (Color.alpha(pixel) > 0) { // Only count non-transparent pixels
+                        totalRed += Color.red(pixel);
+                        totalGreen += Color.green(pixel);
+                        totalBlue += Color.blue(pixel);
+                        pixelCount++;
+                    }
+                }
+            }
+            
+            bitmap.recycle();
+            
+            if (pixelCount == 0) return false;
+            
+            // Calculate average RGB values
+            int avgRed = (int) (totalRed / pixelCount);
+            int avgGreen = (int) (totalGreen / pixelCount);
+            int avgBlue = (int) (totalBlue / pixelCount);
+            
+            // Calculate luminance using standard formula
+            // Luminance = 0.299*R + 0.587*G + 0.114*B
+            double luminance = 0.299 * avgRed + 0.587 * avgGreen + 0.114 * avgBlue;
+            
+            // Consider bright if luminance > 128 (middle of 0-255 range)
+            return luminance > 128;
+            
+        } catch (Exception e) {
+            // If any error occurs, default to false (dark)
+            return false;
         }
     }
     private void updateProfileLayoutText(float diff) {
@@ -17139,6 +17340,7 @@ public class ProfileActivity extends BaseFragment
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         isOpenAnimationInProgress = false;
+                        shouldCalculateButtonsColor = true;
                     }
                 });
                 avatarSet.start();
@@ -17652,6 +17854,9 @@ public class ProfileActivity extends BaseFragment
             // INTERMEDIATE_EXPANSION: Transform avatar but don't show overlay UI yet
             processIntermediateExpansion(durationFactor);
         }
+        
+        // Update custom button backgrounds based on expansion state and avatar brightness
+        updateCustomButtonBackgrounds();
     }
 
 
@@ -17665,6 +17870,9 @@ public class ProfileActivity extends BaseFragment
         updateAvatarTransform(extraHeight);
         updateTextPositionsAndScales(collapseProgress);
         updateCollectibleHint();
+        
+        // Update custom button backgrounds for collapsed state
+        updateCustomButtonBackgrounds();
     }
 
     /**

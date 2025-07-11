@@ -158,6 +158,23 @@ public class CustomButtonContainer extends LinearLayout {
         return getChildCount();
     }
     
+    /**
+     * Set the background color for all buttons in the container
+     * @param backgroundColor The new background color (including alpha)
+     */
+    public void setButtonBackgroundColor(int backgroundColor) {
+        for (int i = 0; i < getChildCount(); i++) {
+            View button = getChildAt(i);
+            
+            // Create new gradient drawable with updated color
+            GradientDrawable background = new GradientDrawable();
+            background.setColor(backgroundColor);
+            background.setCornerRadius(AndroidUtilities.dp(buttonCornerRadiusDp));
+            
+            button.setBackground(background);
+        }
+    }
+    
     private View createButton(int iconResId, String text, OnClickListener clickListener) {
         Drawable drawable;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
