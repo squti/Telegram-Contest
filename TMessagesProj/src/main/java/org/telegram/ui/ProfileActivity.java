@@ -15923,9 +15923,8 @@ public class ProfileActivity extends BaseFragment
     }
     private void updateCustomButtonContainerPosition() {
         if (customButtonContainer != null) {
-            // Move the container based on extraHeight changes
-            // Using a sensitivity factor of 0.5f for smooth movement
-            float translationY = (extraHeight);
+            // Move the container based on extraHeight changes for smooth movement
+            float translationY = extraHeight;
             customButtonContainer.setTranslationY(translationY);
         }
     }
@@ -16018,6 +16017,41 @@ public class ProfileActivity extends BaseFragment
                 if (sharedMediaLayout != null && sharedMediaLayout.checkPinchToZoom(ev)) {
                     return true;
                 }
+                
+                // Handle touch events for translated customButtonContainer
+                if (customButtonContainer != null && customButtonContainer.getVisibility() == View.VISIBLE) {
+                    // Get the translation offset
+                    float translationY = customButtonContainer.getTranslationY();
+                    
+                    // Check if touch is within the translated button container bounds
+                    float touchX = ev.getX();
+                    float touchY = ev.getY();
+                    
+                    // Calculate actual bounds including translation
+                    int[] location = new int[2];
+                    customButtonContainer.getLocationOnScreen(location);
+                    
+                    float containerLeft = customButtonContainer.getLeft();
+                    float containerTop = customButtonContainer.getTop() + translationY;
+                    float containerRight = customButtonContainer.getRight();
+                    float containerBottom = customButtonContainer.getBottom() + translationY;
+                    
+                    if (touchX >= containerLeft && touchX <= containerRight && 
+                        touchY >= containerTop && touchY <= containerBottom) {
+                        
+                        // Adjust touch coordinates for the container's coordinate system
+                        MotionEvent adjustedEvent = MotionEvent.obtain(ev);
+                        adjustedEvent.offsetLocation(-containerLeft, -(containerTop));
+                        
+                        boolean handled = customButtonContainer.dispatchTouchEvent(adjustedEvent);
+                        adjustedEvent.recycle();
+                        
+                        if (handled) {
+                            return true;
+                        }
+                    }
+                }
+                
                 return super.dispatchTouchEvent(ev);
             }
 
