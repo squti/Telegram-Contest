@@ -243,6 +243,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.MediaActivity;
 import org.telegram.ui.Components.MessagePrivateSeenView;
+import org.telegram.ui.Components.NormalDistributionDrawable;
 import org.telegram.ui.Components.Paint.PersistColorPalette;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
@@ -935,6 +936,7 @@ public class ProfileActivity extends BaseFragment
 
     // Expansion threshold: determines when to show overlay UI vs just transform avatar
     private static final float FULL_EXPANSION_THRESHOLD = 0.28f;
+    public NormalDistributionDrawable normalDistDrawable;
 
     // Dynamic method to calculate avatar top position exactly under status bar
     private float getAvatarTopMarginAdjustment() {
@@ -988,6 +990,7 @@ public class ProfileActivity extends BaseFragment
     private float onlineTextViewLastLeft;
     private float onlineTextViewLastTop;
     private boolean shouldCalculateButtonsColor = true;
+    private View normalDistView;
 
     public ProfileActivity(Bundle args) {
         this(args, null);
@@ -16914,7 +16917,18 @@ public class ProfileActivity extends BaseFragment
                 updateCollectibleHint();
             }
         };
+        normalDistDrawable = new NormalDistributionDrawable();
 
+        normalDistView = new View(context);
+        normalDistView.setId(View.generateViewId());
+        FrameLayout.LayoutParams distParams = new FrameLayout.LayoutParams(
+                481,
+                0);
+        distParams.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL; // Stick to the top center
+        normalDistView.setLayoutParams(distParams);
+        normalDistView.setRotation(180f); // Reverse the view vertically
+        normalDistView.setBackground(normalDistDrawable);
+        mainProfileViewContainer.addView(normalDistView);
         // Center the avatar horizontally by default so opening animation and scroll positioning work together
         // 88x88: New avatar container size (changed from 42x42 to prevent size jumps during animations)
         mainProfileViewContainer.addView(avatarContainer,
@@ -17904,6 +17918,41 @@ public class ProfileActivity extends BaseFragment
             avatarImage.setAlpha(1.0f);
             if (avatarBlackOverlay != null) {
                 avatarBlackOverlay.setAlpha(0f);
+            }
+        }
+
+        // NORMAL DISTRIBUTION VIEW HEIGHT ANIMATION
+        // Bell-curve animation: 0 → 328dp → 0 as avatar moves from normal → zero margin → -88dp
+        if (normalDistView != null) {
+            float normalDistHeight = 0f;
+            
+            // Key positions:
+            // expandedStateY: Normal position (start animation at 0dp height)
+            // 0dp: Peak position (328dp height)
+            // -88dp: End position (0dp height again)
+            
+            float zeroMarginY = 0f; // Avatar at zero top margin
+            float endPositionY = AndroidUtilities.dp(-88); // Final collapsed position
+            
+            if (interpolatedY >= zeroMarginY) {
+                // Phase 1: Avatar moving from normal position to zero margin (ascending part of bell curve)
+                // Calculate progress from normal position to zero margin
+                float heightPhase1Progress = Math.max(0f, Math.min(1f, 
+                    (expandedStateY - interpolatedY) / (expandedStateY - zeroMarginY)));
+                normalDistHeight = 328 * heightPhase1Progress;
+            } else {
+                // Phase 2: Avatar moving from zero margin to -88dp (descending part of bell curve)
+                // Calculate progress from zero margin to final position
+                float heightPhase2Progress = Math.max(0f, Math.min(1f, 
+                    (zeroMarginY - interpolatedY) / (zeroMarginY - endPositionY)));
+                normalDistHeight = 328 * (1f - heightPhase2Progress);
+            }
+            
+            // Apply the calculated height to normalDistView
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) normalDistView.getLayoutParams();
+            if (layoutParams != null) {
+                layoutParams.height = (int) normalDistHeight;
+                normalDistView.setLayoutParams(layoutParams);
             }
         }
 
