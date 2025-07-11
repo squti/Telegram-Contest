@@ -15926,6 +15926,27 @@ public class ProfileActivity extends BaseFragment
             // Move the container based on extraHeight changes for smooth movement
             float translationY = extraHeight;
             customButtonContainer.setTranslationY(translationY);
+            
+            // Apply Y-axis scaling animation based on extraHeight
+            // Scaling starts at 2/3 of collapsedAreaHeight and reaches 0 at 1/3 of collapsedAreaHeight
+            float startScalingHeight = (float) collapsedAreaHeight * 2f / 3f; // Start scaling at 2/3
+            float endScalingHeight = (float) collapsedAreaHeight / 3f;         // End scaling at 1/3
+            float scaleY;
+            
+            if (extraHeight >= startScalingHeight) {
+                // Above scaling start: maintain full scale
+                scaleY = 1.0f;
+            } else if (extraHeight <= endScalingHeight) {
+                // Below scaling end: zero scale (fully hidden)
+                scaleY = 0.0f;
+            } else {
+                // In scaling range: linear interpolation from 1.0 to 0.0
+                float scalingRange = startScalingHeight - endScalingHeight;
+                float currentPosition = extraHeight - endScalingHeight;
+                scaleY = currentPosition / scalingRange;
+            }
+            
+            customButtonContainer.setScaleY(scaleY);
         }
     }
     private void updateProfileLayoutText(float diff) {
@@ -16968,6 +16989,7 @@ public class ProfileActivity extends BaseFragment
                     // Button 1: Join Channel
                     customButtonContainer.addButton(R.drawable.profile_join, "Join", v -> {
                         getMessagesController().addUserToChat(chatId, getMessagesController().getUser(getUserConfig().getClientUserId()), 0, null, ProfileActivity.this, null);
+                        finishFragment();
                     });
                     
                     // Button 2: Share
@@ -16996,6 +17018,7 @@ public class ProfileActivity extends BaseFragment
                     // Button 1: Join Group
                     customButtonContainer.addButton(R.drawable.profile_join, "Join", v -> {
                         getMessagesController().addUserToChat(chatId, getMessagesController().getUser(getUserConfig().getClientUserId()), 0, null, ProfileActivity.this, null);
+                        finishFragment();
                     });
                     
                     // Button 2: Share
