@@ -214,11 +214,15 @@ public class StarGiftPatterns {
         final int emojiCount = 8;
         final float baseSize = 20f;
         final float highAlpha = 0.37f;
+        
+        // Draw inner ring of 8 patterns
         for (int i = 0; i < emojiCount; i++) {
             float angle = (float) (i * 2 * Math.PI / emojiCount);
 
-            float x = centerX + radius * (float) Math.cos(angle);
-            float y = centerY + radius * (float) Math.sin(angle);
+            // Increase distance by 20%
+            float adjustedRadius = radius * 1.2f;
+            float x = centerX + adjustedRadius * (float) Math.cos(angle);
+            float y = centerY + adjustedRadius * (float) Math.sin(angle);
 
             float size = baseSize + (i % 2 == 0 ? 2f : -1f);
 
@@ -230,6 +234,32 @@ public class StarGiftPatterns {
             );
 
             pattern.setAlpha((int) (0xFF * alpha * highAlpha));
+            pattern.draw(canvas);
+        }
+        
+        // Draw outer ring of 8 patterns (offset by half angle for better spacing)
+        // Increase distance by 20%
+        final float outerRadius = (radius * 1.2f) + dpf2(30f); // Base radius increased by 20%, then 30dp further out
+        final float outerAlpha = highAlpha * 0.7f; // Slightly more transparent
+        final float outerBaseSize = 18f; // Slightly smaller
+        
+        for (int i = 0; i < emojiCount; i++) {
+            // Offset by half angle (π/8) to position between inner patterns
+            float angle = (float) ((i + 0.5f) * 2 * Math.PI / emojiCount);
+
+            float x = centerX + outerRadius * (float) Math.cos(angle);
+            float y = centerY + outerRadius * (float) Math.sin(angle);
+
+            float size = outerBaseSize + (i % 2 == 0 ? 1f : -0.5f);
+
+            pattern.setBounds(
+                    (int) (x - dpf2(size) / 2.0f),
+                    (int) (y - dpf2(size) / 2.0f),
+                    (int) (x + dpf2(size) / 2.0f),
+                    (int) (y + dpf2(size) / 2.0f)
+            );
+
+            pattern.setAlpha((int) (0xFF * alpha * outerAlpha));
             pattern.draw(canvas);
         }
     }
