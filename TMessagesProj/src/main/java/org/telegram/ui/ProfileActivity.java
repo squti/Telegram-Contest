@@ -1248,6 +1248,7 @@ public class ProfileActivity extends BaseFragment
         getNotificationCenter().addObserver(this, NotificationCenter.closeChats);
         getNotificationCenter().addObserver(this, NotificationCenter.topicsDidLoaded);
         getNotificationCenter().addObserver(this, NotificationCenter.updateSearchSettings);
+        getNotificationCenter().addObserver(this, NotificationCenter.notificationsSettingsUpdated);
         getNotificationCenter().addObserver(this, NotificationCenter.reloadDialogPhotos);
         getNotificationCenter().addObserver(this, NotificationCenter.storiesUpdated);
         getNotificationCenter().addObserver(this, NotificationCenter.storiesReadUpdated);
@@ -1360,6 +1361,7 @@ public class ProfileActivity extends BaseFragment
         getNotificationCenter().removeObserver(this, NotificationCenter.didReceiveNewMessages);
         getNotificationCenter().removeObserver(this, NotificationCenter.topicsDidLoaded);
         getNotificationCenter().removeObserver(this, NotificationCenter.updateSearchSettings);
+        getNotificationCenter().removeObserver(this, NotificationCenter.notificationsSettingsUpdated);
         getNotificationCenter().removeObserver(this, NotificationCenter.reloadDialogPhotos);
         getNotificationCenter().removeObserver(this, NotificationCenter.storiesUpdated);
         getNotificationCenter().removeObserver(this, NotificationCenter.storiesReadUpdated);
@@ -7240,6 +7242,10 @@ public class ProfileActivity extends BaseFragment
                     }
                 }
             }
+            // Refresh custom buttons when interface is updated
+            if (customButtonContainer != null && userId != 0) {
+                setupCustomButtons();
+            }
         } else if (id == NotificationCenter.chatOnlineCountDidLoad) {
             Long chatId = (Long) args[0];
             if (chatInfo == null || currentChat == null || currentChat.id != chatId) {
@@ -7426,6 +7432,10 @@ public class ProfileActivity extends BaseFragment
                         mainMenuItem.hideSubItem(bot_privacy);
                     }
                 }
+                // Refresh custom buttons when user info is updated
+                if (customButtonContainer != null) {
+                    setupCustomButtons();
+                }
             }
         } else if (id == NotificationCenter.privacyRulesUpdated) {
             if (qrItem != null) {
@@ -7476,6 +7486,11 @@ public class ProfileActivity extends BaseFragment
                 searchAdapter.recentSearches.clear();
                 searchAdapter.updateSearchArray();
                 searchAdapter.search(searchAdapter.lastSearchString);
+            }
+        } else if (id == NotificationCenter.notificationsSettingsUpdated) {
+            // Refresh custom buttons when notification settings change (mute/unmute)
+            if (customButtonContainer != null) {
+                setupCustomButtons();
             }
         } else if (id == NotificationCenter.reloadDialogPhotos) {
             updateProfileData(false);
@@ -16652,42 +16667,111 @@ public class ProfileActivity extends BaseFragment
     private void setupCustomButtons() {
         if (customButtonContainer == null) return;
 
-        // Add sample buttons with different icons and functionality
+        // Clear existing buttons
+        customButtonContainer.removeAllButtons();
 
-        // Button 1: Message/Chat button
-        customButtonContainer.addButton(R.drawable.msg_send, "Message", v -> {
-            // Handle message button click
-            if (userId != 0) {
-                Bundle args = new Bundle();
-                args.putLong("user_id", userId);
-                presentFragment(new ChatActivity(args), true);
+        // Check if this is a normal user profile (not self, not bot, not channel)
+        if (userId != 0 && userId != getUserConfig().getClientUserId()) {
+            TLRPC.User user = getMessagesController().getUser(userId);
+            if (user != null && !user.bot && currentEncryptedChat == null) {
+                
+                // Button 1: Message - show if sendMessageRow would be shown
+                if (sendMessageRow != -1 || (!myProfile && user.id != getUserConfig().getClientUserId())) {
+                    customButtonContainer.addButton(R.drawable.profile_message, "Message", v -> {
+                        onWriteButtonClick();
+                    });
+                }
+
+                // Button 2: Mute/Unmute - show if notificationsRow would be shown  
+                if (notificationsRow != -1 || userId != getUserConfig().getClientUserId()) {
+                    // Check if user is muted
+                    long dialogId = userId;
+                    boolean muted = getMessagesController().isDialogMuted(dialogId, 0);
+                    
+                    if (muted) {
+                        customButtonContainer.addButton(R.drawable.profile_unmute, "Unmute", v -> {
+                            getNotificationsController().muteDialog(dialogId, 0, false);
+                            // Refresh buttons to update mute/unmute state
+                            setupCustomButtons();
+                        });
+                    } else {
+                        customButtonContainer.addButton(R.drawable.profile_mute, "Mute", v -> {
+                            getNotificationsController().muteDialog(dialogId, 0, true);
+                            // Refresh buttons to update mute/unmute state  
+                            setupCustomButtons();
+                        });
+                    }
+                }
+
+                // Button 3: Call - show if callItemVisible is true
+                if (callItemVisible) {
+                    customButtonContainer.addButton(R.drawable.profile_call, "Call", v -> {
+                        if (userInfo != null && userInfo.phone_calls_available) {
+                            VoIPHelper.startCall(user, false, false, getParentActivity(), userInfo, getAccountInstance());
+                        }
+                    });
+                }
+
+                // Button 4: Video Call or Gift - show video if available, otherwise show gift
+                if (videoCallItemVisible) {
+                    customButtonContainer.addButton(R.drawable.profile_video, "Video", v -> {
+                        if (userInfo != null && userInfo.video_calls_available) {
+                            VoIPHelper.startCall(user, true, false, getParentActivity(), userInfo, getAccountInstance());
+                        }
+                    });
+                } else {
+                    // Show gift button when video is not available
+                    // Check if gift functionality is available (same conditions as menu item)
+                    boolean giftAvailable = !BuildVars.IS_BILLING_UNAVAILABLE && 
+                                          !user.self && 
+                                          !user.bot &&
+                                          !getMessagesController().premiumPurchaseBlocked();
+                    
+                    if (giftAvailable) {
+                        customButtonContainer.addButton(R.drawable.profile_gift, "Gift", v -> {
+                            showDialog(new GiftSheet(getContext(), currentAccount, userId, null, null));
+                        });
+                    }
+                }
             }
-        });
-
-        // Button 2: Call button (if available)
-        if (callItemVisible) {
-            customButtonContainer.addButton(R.drawable.menu_feature_paid, "Call", v -> {
-                // Handle call button click
+        } else {
+            // Fallback: Show the original sample buttons for other profiles (bots, channels, self, etc.)
+            
+            // Button 1: Message/Chat button
+            customButtonContainer.addButton(R.drawable.msg_send, "Message", v -> {
+                // Handle message button click
                 if (userId != 0) {
-                    VoIPHelper.startCall(getMessagesController().getUser(userId), false, false, getParentActivity(), userInfo, getAccountInstance());
+                    Bundle args = new Bundle();
+                    args.putLong("user_id", userId);
+                    presentFragment(new ChatActivity(args), true);
                 }
             });
-        }
 
-        // Button 3: More options button
-        customButtonContainer.addButton(R.drawable.ic_ab_other, "More", v -> {
-            // Handle more options button click
-            if (mainMenuItem != null) {
-                mainMenuItem.toggleSubMenu();
+            // Button 2: Call button (if available)
+            if (callItemVisible) {
+                customButtonContainer.addButton(R.drawable.menu_feature_paid, "Call", v -> {
+                    // Handle call button click
+                    if (userId != 0) {
+                        VoIPHelper.startCall(getMessagesController().getUser(userId), false, false, getParentActivity(), userInfo, getAccountInstance());
+                    }
+                });
             }
-        });
 
-        // Button 4: Search button (conditional)
-        if (searchItem != null && searchItem.getVisibility() == View.VISIBLE) {
-            customButtonContainer.addButton(R.drawable.ic_ab_search, "Search", v -> {
-                // Handle search button click
-                actionBar.openSearchField(true);
+            // Button 3: More options button
+            customButtonContainer.addButton(R.drawable.ic_ab_other, "More", v -> {
+                // Handle more options button click
+                if (mainMenuItem != null) {
+                    mainMenuItem.toggleSubMenu();
+                }
             });
+
+            // Button 4: Search button (conditional)
+            if (searchItem != null && searchItem.getVisibility() == View.VISIBLE) {
+                customButtonContainer.addButton(R.drawable.ic_ab_search, "Search", v -> {
+                    // Handle search button click
+                    actionBar.openSearchField(true);
+                });
+            }
         }
     }
     private void setupAvatarContainer(Context context) {
