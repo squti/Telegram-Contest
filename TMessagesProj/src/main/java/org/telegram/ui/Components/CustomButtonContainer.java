@@ -3,8 +3,11 @@ package org.telegram.ui.Components;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.text.TextPaint;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -12,22 +15,24 @@ import android.widget.LinearLayout;
 import org.telegram.messenger.AndroidUtilities;
 
 /**
- * Custom ViewGroup that holds 1-4 icon-only buttons in a horizontal row.
+ * Custom ViewGroup that holds 1-4 buttons with icons and text labels in a horizontal row.
  * Features:
  * - Auto-adjusting button widths (equal distribution)
  * - Transparent container background
  * - White semi-transparent button backgrounds (50% alpha)
  * - Rounded button corners (moderate radius)
- * - SVG/vector icon support
+ * - SVG/vector icon support with text labels
  * - Click callback support
  * - Adjustable container height in DP
  */
 public class CustomButtonContainer extends LinearLayout {
     
-    private int containerHeightDp = 48; // Default height in DP
+    private int containerHeightDp = 60; // Increased height to accommodate text
     private final int buttonCornerRadiusDp = 10; // Moderate corner radius
     private final int buttonMarginDp = 8; // Margin between buttons
-    private final int iconSizeDp = 24; // Icon size in DP
+    private final int iconSizeDp = 20; // Slightly smaller icon size to make room for text
+    private final int textSizeDp = 11; // Text size in DP
+    private final int iconTextSpacingDp = 4; // Space between icon and text
     
     public CustomButtonContainer(Context context) {
         super(context);
@@ -49,33 +54,53 @@ public class CustomButtonContainer extends LinearLayout {
     }
     
     /**
-     * Add a button with icon and click listener
+     * Add a button with icon, text and click listener
      * @param iconResId Resource ID for the icon (supports SVG/vector drawables)
+     * @param text Text label to display under the icon
      * @param clickListener Click listener for the button
      */
-    public void addButton(int iconResId, OnClickListener clickListener) {
+    public void addButton(int iconResId, String text, OnClickListener clickListener) {
         if (getChildCount() >= 4) {
             throw new IllegalStateException("CustomButtonContainer can hold maximum 4 buttons");
         }
         
-        View button = createButton(iconResId, clickListener);
+        View button = createButton(iconResId, text, clickListener);
         addView(button, createButtonLayoutParams());
         redistributeButtonWidths();
     }
     
     /**
-     * Add a button with drawable and click listener
+     * Add a button with drawable, text and click listener
      * @param drawable Drawable for the icon
+     * @param text Text label to display under the icon
      * @param clickListener Click listener for the button
      */
-    public void addButton(Drawable drawable, OnClickListener clickListener) {
+    public void addButton(Drawable drawable, String text, OnClickListener clickListener) {
         if (getChildCount() >= 4) {
             throw new IllegalStateException("CustomButtonContainer can hold maximum 4 buttons");
         }
         
-        View button = createButton(drawable, clickListener);
+        View button = createButton(drawable, text, clickListener);
         addView(button, createButtonLayoutParams());
         redistributeButtonWidths();
+    }
+    
+    /**
+     * Add a button with icon and click listener (no text)
+     * @param iconResId Resource ID for the icon (supports SVG/vector drawables)
+     * @param clickListener Click listener for the button
+     */
+    public void addButton(int iconResId, OnClickListener clickListener) {
+        addButton(iconResId, "", clickListener);
+    }
+    
+    /**
+     * Add a button with drawable and click listener (no text)
+     * @param drawable Drawable for the icon
+     * @param clickListener Click listener for the button
+     */
+    public void addButton(Drawable drawable, OnClickListener clickListener) {
+        addButton(drawable, "", clickListener);
     }
     
     /**
@@ -133,32 +158,55 @@ public class CustomButtonContainer extends LinearLayout {
         return getChildCount();
     }
     
-    private View createButton(int iconResId, OnClickListener clickListener) {
+    private View createButton(int iconResId, String text, OnClickListener clickListener) {
         Drawable drawable;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
             drawable = getContext().getResources().getDrawable(iconResId, getContext().getTheme());
         } else {
             drawable = getContext().getResources().getDrawable(iconResId);
         }
-        return createButton(drawable, clickListener);
+        return createButton(drawable, text, clickListener);
     }
     
-    private View createButton(Drawable drawable, OnClickListener clickListener) {
+    private View createButton(Drawable drawable, String text, OnClickListener clickListener) {
         View button = new View(getContext()) {
+            private TextPaint textPaint;
+            
+            {
+                // Initialize text paint
+                textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+                textPaint.setColor(Color.WHITE);
+                textPaint.setTextSize(AndroidUtilities.dp(textSizeDp));
+                textPaint.setTypeface(Typeface.DEFAULT);
+                textPaint.setTextAlign(Paint.Align.CENTER);
+            }
+            
             @Override
             protected void onDraw(Canvas canvas) {
                 super.onDraw(canvas);
                 
-                // Draw icon centered in the button
+                // Calculate positions
+                int iconSize = AndroidUtilities.dp(iconSizeDp);
+                int iconTextSpacing = AndroidUtilities.dp(iconTextSpacingDp);
+                
+                // Draw icon centered horizontally and positioned higher up
                 if (drawable != null) {
-                    int iconSize = AndroidUtilities.dp(iconSizeDp);
-                    int left = (getWidth() - iconSize) / 2;
-                    int top = (getHeight() - iconSize) / 2;
-                    int right = left + iconSize;
-                    int bottom = top + iconSize;
+                    int iconLeft = (getWidth() - iconSize) / 2;
+                    int iconTop = AndroidUtilities.dp(8); // Position icon higher up
+                    int iconRight = iconLeft + iconSize;
+                    int iconBottom = iconTop + iconSize;
                     
-                    drawable.setBounds(left, top, right, bottom);
+                    drawable.setBounds(iconLeft, iconTop, iconRight, iconBottom);
                     drawable.draw(canvas);
+                }
+                
+                // Draw text below icon
+                if (text != null && !text.isEmpty()) {
+                    float textX = getWidth() / 2f;
+                    float textY = AndroidUtilities.dp(8) + iconSize + iconTextSpacing + 
+                                 Math.abs(textPaint.getFontMetrics().ascent);
+                    
+                    canvas.drawText(text, textX, textY, textPaint);
                 }
             }
         };

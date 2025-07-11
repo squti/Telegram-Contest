@@ -16638,7 +16638,7 @@ public class ProfileActivity extends BaseFragment
         customButtonContainer = new CustomButtonContainer(context);
         setupCustomButtons();
 
-        customButtonContainer.setContainerHeight(52); // Set height in DP
+        customButtonContainer.setContainerHeight(60); // Set height in DP to accommodate text
 
         mainProfileViewContainer.addView(customButtonContainer,
                 LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 52,
@@ -16655,7 +16655,7 @@ public class ProfileActivity extends BaseFragment
         // Add sample buttons with different icons and functionality
 
         // Button 1: Message/Chat button
-        customButtonContainer.addButton(R.drawable.msg_send, v -> {
+        customButtonContainer.addButton(R.drawable.msg_send, "Message", v -> {
             // Handle message button click
             if (userId != 0) {
                 Bundle args = new Bundle();
@@ -16666,7 +16666,7 @@ public class ProfileActivity extends BaseFragment
 
         // Button 2: Call button (if available)
         if (callItemVisible) {
-            customButtonContainer.addButton(R.drawable.menu_feature_paid, v -> {
+            customButtonContainer.addButton(R.drawable.menu_feature_paid, "Call", v -> {
                 // Handle call button click
                 if (userId != 0) {
                     VoIPHelper.startCall(getMessagesController().getUser(userId), false, false, getParentActivity(), userInfo, getAccountInstance());
@@ -16675,7 +16675,7 @@ public class ProfileActivity extends BaseFragment
         }
 
         // Button 3: More options button
-        customButtonContainer.addButton(R.drawable.ic_ab_other, v -> {
+        customButtonContainer.addButton(R.drawable.ic_ab_other, "More", v -> {
             // Handle more options button click
             if (mainMenuItem != null) {
                 mainMenuItem.toggleSubMenu();
@@ -16684,7 +16684,7 @@ public class ProfileActivity extends BaseFragment
 
         // Button 4: Search button (conditional)
         if (searchItem != null && searchItem.getVisibility() == View.VISIBLE) {
-            customButtonContainer.addButton(R.drawable.ic_ab_search, v -> {
+            customButtonContainer.addButton(R.drawable.ic_ab_search, "Search", v -> {
                 // Handle search button click
                 actionBar.openSearchField(true);
             });
