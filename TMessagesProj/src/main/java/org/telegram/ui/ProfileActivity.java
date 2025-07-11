@@ -16704,6 +16704,38 @@ public class ProfileActivity extends BaseFragment
         // Clear existing buttons
         customButtonContainer.removeAllButtons();
 
+        // Check if this is a bot user profile
+        if (userId != 0 && userId != getUserConfig().getClientUserId()) {
+            TLRPC.User user = getMessagesController().getUser(userId);
+            if (user != null && user.bot) {
+                // Bot profile: message, mute/unmute
+                
+                // Button 1: Message
+                customButtonContainer.addButton(R.drawable.profile_message, "Message", v -> {
+                    Bundle args = new Bundle();
+                    args.putLong("user_id", userId);
+                    presentFragment(new ChatActivity(args), true);
+                });
+
+                // Button 2: Mute/Unmute
+                long dialogId = userId;
+                boolean muted = getMessagesController().isDialogMuted(dialogId, 0);
+                
+                if (muted) {
+                    customButtonContainer.addButton(R.drawable.profile_unmute, "Unmute", v -> {
+                        getNotificationsController().muteDialog(dialogId, 0, false);
+                        setupCustomButtons(); // Refresh to update mute state
+                    });
+                } else {
+                    customButtonContainer.addButton(R.drawable.profile_mute, "Mute", v -> {
+                        getNotificationsController().muteDialog(dialogId, 0, true);
+                        setupCustomButtons(); // Refresh to update mute state
+                    });
+                }
+                return; // Exit early for bots
+            }
+        }
+
         // Check if this is a normal user profile (not self, not bot, not channel)
         if (userId != 0 && userId != getUserConfig().getClientUserId()) {
             TLRPC.User user = getMessagesController().getUser(userId);
@@ -16893,7 +16925,7 @@ public class ProfileActivity extends BaseFragment
                 }
             }
         } else {
-            // Fallback: Show the original sample buttons for other profiles (bots, channels, self, etc.)
+            // Fallback: Show the original sample buttons for other profiles (self, etc.)
             
             // Button 1: Message/Chat button
             customButtonContainer.addButton(R.drawable.msg_send, "Message", v -> {
