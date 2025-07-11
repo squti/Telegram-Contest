@@ -12029,14 +12029,12 @@ public class ProfileActivity extends BaseFragment
                         canvas.save();
                         canvas.clipRect(0, 0, getMeasuredWidth(), y1);
 
-                        // Calculate avatar center position
-                        float avatarCenterX = getMeasuredWidth() / 2f; // Avatar is typically centered horizontally
-                        float avatarCenterY = ActionBar.getCurrentActionBarHeight()
-                                + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0)
-                                + AndroidUtilities.dp(64); // Approximate avatar center
-                        float avatarRadius = AndroidUtilities.dp(AVATAR_SIZE_DP); // Standard avatar radius
-                        float emojiRadius = avatarRadius + AndroidUtilities.dp(24); // Distance from avatar center to
-                        // emojis
+                        // Calculate StarGiftPatterns position based on known avatar layout
+                        // Avatar is centered horizontally and positioned at getAvatarTopMarginAdjustment() from top
+                        float avatarCenterX = getMeasuredWidth() / 2f; // Avatar is always centered horizontally
+                        float avatarCenterY = AndroidUtilities.dp(getAvatarTopMarginAdjustment()) + AndroidUtilities.dp(AVATAR_SIZE_DP) / 2f;
+                        float avatarRadius = AndroidUtilities.dp(AVATAR_SIZE_DP) / 2f; // Half of avatar size
+                        float emojiRadius = avatarRadius + AndroidUtilities.dp(24); // Distance from avatar center to emojis
 
                         // Use our new circular pattern
                         StarGiftPatterns.drawCircularProfilePattern(canvas, emoji, avatarCenterX, avatarCenterY,
