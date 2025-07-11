@@ -17805,6 +17805,49 @@ public class ProfileActivity extends BaseFragment
         // Interpolate between expanded position and -88dp based on scroll progress
         float interpolatedY = expandedStateY + (targetCollapsedY - expandedStateY) * scrollProgress;
 
+        // GIFT STAGGERED COLLAPSE ANIMATION: Calculate individual progress for each gift group
+        // All gifts should fully collapse when avatar reaches -44dp, but start at different times
+        float overallProgress = 0f;
+        
+        if (interpolatedY <= AndroidUtilities.dp(-44)) {
+            // Avatar has reached -44dp, all gifts should be fully collapsed
+            overallProgress = 1f;
+        } else if (interpolatedY < expandedStateY) {
+            // Avatar is moving up but hasn't reached -44dp yet
+            float progressTo44dp = Math.abs(interpolatedY - expandedStateY) / Math.abs(AndroidUtilities.dp(-44) - expandedStateY);
+            overallProgress = Math.max(0f, Math.min(1f, progressTo44dp));
+        }
+        
+        // Calculate staggered progress for each gift group
+        // Phase 1 (Early): Top left (0) and bottom right (5) - start at 0% overall progress
+        // Phase 2 (Middle): Top right (3) and bottom left (2) - start at 25% overall progress  
+        // Phase 3 (Late): Center left (1) and center right (4) - start at 50% overall progress
+        
+        float[] giftCollapseProgress = new float[6];
+        
+        // Phase 1: Top left (0) and bottom right (5) - start immediately
+        float phase1StartProgress = 0f;
+        float phase1Progress = Math.max(0f, (overallProgress - phase1StartProgress) / (1f - phase1StartProgress));
+        giftCollapseProgress[0] = Math.max(0f, Math.min(1f, phase1Progress)); // Top left
+        giftCollapseProgress[5] = Math.max(0f, Math.min(1f, phase1Progress)); // Bottom right
+        
+        // Phase 2: Top right (3) and bottom left (2) - start at 25%
+        float phase2StartProgress = 0.25f;
+        float phase2Progress = Math.max(0f, (overallProgress - phase2StartProgress) / (1f - phase2StartProgress));
+        giftCollapseProgress[3] = Math.max(0f, Math.min(1f, phase2Progress)); // Top right
+        giftCollapseProgress[2] = Math.max(0f, Math.min(1f, phase2Progress)); // Bottom left
+        
+        // Phase 3: Center left (1) and center right (4) - start at 50%
+        float phase3StartProgress = 0.5f;
+        float phase3Progress = Math.max(0f, (overallProgress - phase3StartProgress) / (1f - phase3StartProgress));
+        giftCollapseProgress[1] = Math.max(0f, Math.min(1f, phase3Progress)); // Center left
+        giftCollapseProgress[4] = Math.max(0f, Math.min(1f, phase3Progress)); // Center right
+        
+        // Update gifts with individual collapse progress values
+        if (giftsView != null) {
+            giftsView.setStaggeredCollapseProgress(giftCollapseProgress);
+        }
+
         // SCALING LOGIC
         // Avatar scales from 1.0 (full size) down to 0.6 (60% size) as user scrolls up
         // 0.6f: Minimum scale factor when fully collapsed

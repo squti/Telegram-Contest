@@ -106,6 +106,23 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         invalidate();
     }
 
+    private float collapseProgress = 0f;
+    private float[] staggeredCollapseProgress = new float[6]; // Individual progress for each gift
+    
+    public void setCollapseProgress(float progress) {
+        if (this.collapseProgress != progress) {
+            this.collapseProgress = progress;
+            invalidate();
+        }
+    }
+    
+    public void setStaggeredCollapseProgress(float[] progressArray) {
+        if (progressArray != null && progressArray.length >= 6) {
+            this.staggeredCollapseProgress = progressArray.clone();
+            invalidate();
+        }
+    }
+
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
@@ -268,61 +285,56 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             final float scale = lerp(0.5f, 1.0f, alpha);
             final int index = i;
 
+            // Calculate original spread positions
+            float originalX, originalY;
+            
             if (index == 0) {
                 // Top left
-                gift.draw(
-                        canvas,
-                        acx - ar - dp(10), acy - dp(40),
-                        scale, -10.0f,
-                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                        lerp(0.9f, 0.25f, actionBarProgress)
-                );
+                originalX = acx - ar - dp(10);
+                originalY = acy - dp(40);
             } else if (index == 1) {
                 // Middle left - doubled distance from avatar
-                gift.draw(
-                        canvas,
-                        acx - ar - dp(50), acy,
-                        scale, 0.0f,
-                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                        1.0f
-                );
+                originalX = acx - ar - dp(50);
+                originalY = acy;
             } else if (index == 2) {
                 // Bottom left
-                gift.draw(
-                        canvas,
-                        acx - ar - dp(10), acy + dp(40),
-                        scale, 10.0f,
-                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                        1.0f
-                );
+                originalX = acx - ar - dp(10);
+                originalY = acy + dp(40);
             } else if (index == 3) {
                 // Top right
-                gift.draw(
-                        canvas,
-                        acx + ar + dp(10), acy - dp(40),
-                        scale, 10.0f,
-                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                        1.0f
-                );
+                originalX = acx + ar + dp(10);
+                originalY = acy - dp(40);
             } else if (index == 4) {
                 // Middle right - doubled distance from avatar
-                gift.draw(
-                        canvas,
-                        acx + ar + dp(50), acy,
-                        scale, 0.0f,
-                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                        1.0f
-                );
-            } else if (index == 5) {
+                originalX = acx + ar + dp(50);
+                originalY = acy;
+            } else { // index == 5
                 // Bottom right
-                gift.draw(
-                        canvas,
-                        acx + ar + dp(10), acy + dp(40),
-                        scale, -10.0f,
-                        alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                        1.0f
-                );
+                originalX = acx + ar + dp(10);
+                originalY = acy + dp(40);
             }
+            
+            // Calculate collapsed center position (avatar center)
+            float centerX = acx;
+            float centerY = acy;
+            
+            // Use individual staggered collapse progress for this gift
+            float giftProgress = (staggeredCollapseProgress != null && index < staggeredCollapseProgress.length) 
+                ? staggeredCollapseProgress[index] 
+                : collapseProgress; // Fallback to uniform progress if staggered not available
+            
+            // Interpolate between spread and center positions based on individual gift progress
+            float finalX = lerp(originalX, centerX, giftProgress);
+            float finalY = lerp(originalY, centerY, giftProgress);
+            
+            // Draw gift at interpolated position
+            gift.draw(
+                    canvas,
+                    finalX, finalY,
+                    scale, index == 0 || index == 5 ? (index == 0 ? -10.0f : -10.0f) : (index == 3 ? 10.0f : 0.0f),
+                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
+                    index == 0 ? lerp(0.9f, 0.25f, actionBarProgress) : 1.0f
+            );
         }
 
         canvas.restore();
