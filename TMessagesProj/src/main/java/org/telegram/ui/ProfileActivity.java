@@ -12050,9 +12050,13 @@ public class ProfileActivity extends BaseFragment
                         float avatarRadius = AndroidUtilities.dp(AVATAR_SIZE_DP) / 2f; // Half of avatar size
                         float emojiRadius = avatarRadius + AndroidUtilities.dp(24); // Distance from avatar center to emojis
 
-                        // Use our new circular pattern with current position for normal layout, original position for convergence
-                        StarGiftPatterns.drawCircularProfilePatternWithConvergence(canvas, emoji, avatarCenterX, currentAvatarCenterY,
-                                avatarCenterX, originalAvatarCenterY, emojiRadius, Math.min(1f, extraHeight / (float) collapsedAreaHeight));
+                        // Calculate alpha for convergence logic
+                        float alpha = Math.min(1f, extraHeight / (float) collapsedAreaHeight);
+                        
+                        // Swap parameters: convergence center becomes the current position, normal position becomes original position
+                        // This way: when alpha=1 (expanded), patterns use originalAvatarCenterY; when alpha=0 (collapsed), patterns follow current avatar
+                        StarGiftPatterns.drawCircularProfilePatternWithConvergence(canvas, emoji, avatarCenterX, originalAvatarCenterY,
+                                avatarCenterX, currentAvatarCenterY, emojiRadius, alpha);
                         canvas.restore();
                     }
                 }
