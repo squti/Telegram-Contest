@@ -16708,7 +16708,7 @@ public class ProfileActivity extends BaseFragment
         if (userId != 0 && userId != getUserConfig().getClientUserId()) {
             TLRPC.User user = getMessagesController().getUser(userId);
             if (user != null && user.bot) {
-                // Bot profile: message, mute/unmute
+                // Bot profile: message, mute/unmute, stop
                 
                 // Button 1: Message
                 customButtonContainer.addButton(R.drawable.profile_message, "Message", v -> {
@@ -16732,6 +16732,20 @@ public class ProfileActivity extends BaseFragment
                         setupCustomButtons(); // Refresh to update mute state
                     });
                 }
+
+                // Button 3: Stop Bot
+                customButtonContainer.addButton(R.drawable.msg_block, "Stop", v -> {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setTitle("Stop");
+                    builder.setMessage("Do you want to stop this bot?");
+                    builder.setPositiveButton(LocaleController.getString("Stop", R.string.Stop), (dialogInterface, i) -> {
+                        getMessagesController().blockPeer(userId);
+                        getMessagesController().deleteDialog(dialogId, 1, false);
+                        finishFragment();
+                    });
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    showDialog(builder.create());
+                });
                 return; // Exit early for bots
             }
         }
@@ -16805,22 +16819,27 @@ public class ProfileActivity extends BaseFragment
             if (chat != null && !ChatObject.isLeftFromChat(chat) && !ChatObject.isKickedFromChat(chat)) {
                 
                 if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                    // Channel profile: mute/unmute, gift/discuss, share, leave
+                    // Channel profile: conditional buttons based on ownership
                     
-                    // Button 1: Mute/Unmute
-                    long dialogId = -chatId;
-                    boolean muted = getMessagesController().isDialogMuted(dialogId, 0);
+                    // Check if this is my channel
+                    boolean isMyChannel = chat.creator || (chat.admin_rights != null && chat.admin_rights.change_info);
                     
-                    if (muted) {
-                        customButtonContainer.addButton(R.drawable.profile_unmute, "Unmute", v -> {
-                            getNotificationsController().muteDialog(dialogId, 0, false);
-                            setupCustomButtons(); // Refresh to update mute state
-                        });
-                    } else {
-                        customButtonContainer.addButton(R.drawable.profile_mute, "Mute", v -> {
-                            getNotificationsController().muteDialog(dialogId, 0, true);
-                            setupCustomButtons(); // Refresh to update mute state
-                        });
+                    if (!isMyChannel) {
+                        // Button 1: Mute/Unmute (only for channels I don't own)
+                        long dialogId = -chatId;
+                        boolean muted = getMessagesController().isDialogMuted(dialogId, 0);
+                        
+                        if (muted) {
+                            customButtonContainer.addButton(R.drawable.profile_unmute, "Unmute", v -> {
+                                getNotificationsController().muteDialog(dialogId, 0, false);
+                                setupCustomButtons(); // Refresh to update mute state
+                            });
+                        } else {
+                            customButtonContainer.addButton(R.drawable.profile_mute, "Mute", v -> {
+                                getNotificationsController().muteDialog(dialogId, 0, true);
+                                setupCustomButtons(); // Refresh to update mute state
+                            });
+                        }
                     }
 
                     // Button 2: Live Stream, Discuss or Gift (priority order)
@@ -16862,20 +16881,25 @@ public class ProfileActivity extends BaseFragment
                         }
                     });
 
-                    // Button 4: Leave Channel
-                    customButtonContainer.addButton(R.drawable.msg_leave, "Leave", v -> {
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setTitle(LocaleController.getString("LeaveChannel", R.string.LeaveChannel));
-                        builder.setMessage(LocaleController.formatString("ChannelLeaveAlert", R.string.ChannelLeaveAlert, chat.title));
-                        builder.setPositiveButton(LocaleController.getString("LeaveChannel", R.string.LeaveChannel), (dialogInterface, i) -> {
-                            getMessagesController().deleteParticipantFromChat(chatId, getMessagesController().getUser(getUserConfig().getClientUserId()));
-                            finishFragment();
+                    // Button 4: Leave Channel (only for channels I don't own)
+                    if (!isMyChannel) {
+                        customButtonContainer.addButton(R.drawable.msg_leave, "Leave", v -> {
+                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                            builder.setTitle(LocaleController.getString("LeaveChannel", R.string.LeaveChannel));
+                            builder.setMessage(LocaleController.formatString("ChannelLeaveAlert", R.string.ChannelLeaveAlert, chat.title));
+                            builder.setPositiveButton(LocaleController.getString("LeaveChannel", R.string.LeaveChannel), (dialogInterface, i) -> {
+                                getMessagesController().deleteParticipantFromChat(chatId, getMessagesController().getUser(getUserConfig().getClientUserId()));
+                                finishFragment();
+                            });
+                            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                            showDialog(builder.create());
                         });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showDialog(builder.create());
-                    });
+                    }
                 } else {
-                    // Group profile: message, mute/unmute, voice chat, leave
+                    // Group profile: conditional buttons based on ownership
+                    
+                    // Check if this is my group
+                    boolean isMyGroup = chat.creator || (chat.admin_rights != null && chat.admin_rights.change_info);
                     
                     // Button 1: Message
                     customButtonContainer.addButton(R.drawable.profile_message, "Message", v -> {
@@ -16884,20 +16908,22 @@ public class ProfileActivity extends BaseFragment
                         presentFragment(new ChatActivity(args), true);
                     });
 
-                    // Button 2: Mute/Unmute
-                    long dialogId = -chatId;
-                    boolean muted = getMessagesController().isDialogMuted(dialogId, 0);
+                    if (!isMyGroup) {
+                        // Button 2: Mute/Unmute (only for groups I don't own)
+                        long dialogId = -chatId;
+                        boolean muted = getMessagesController().isDialogMuted(dialogId, 0);
                     
-                    if (muted) {
-                        customButtonContainer.addButton(R.drawable.profile_unmute, "Unmute", v -> {
-                            getNotificationsController().muteDialog(dialogId, 0, false);
-                            setupCustomButtons(); // Refresh to update mute state
-                        });
-                    } else {
-                        customButtonContainer.addButton(R.drawable.profile_mute, "Mute", v -> {
-                            getNotificationsController().muteDialog(dialogId, 0, true);
-                            setupCustomButtons(); // Refresh to update mute state
-                        });
+                        if (muted) {
+                            customButtonContainer.addButton(R.drawable.profile_unmute, "Unmute", v -> {
+                                getNotificationsController().muteDialog(dialogId, 0, false);
+                                setupCustomButtons(); // Refresh to update mute state
+                            });
+                        } else {
+                            customButtonContainer.addButton(R.drawable.profile_mute, "Mute", v -> {
+                                getNotificationsController().muteDialog(dialogId, 0, true);
+                                setupCustomButtons(); // Refresh to update mute state
+                            });
+                        }
                     }
 
                     // Button 3: Voice Chat
@@ -16910,18 +16936,20 @@ public class ProfileActivity extends BaseFragment
                         }
                     });
 
-                    // Button 4: Leave Group
-                    customButtonContainer.addButton(R.drawable.msg_leave, "Leave", v -> {
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setTitle(LocaleController.getString(R.string.DeleteAndExit));
-                        builder.setMessage(LocaleController.formatString("AreYouSureDeleteAndExit", R.string.AreYouSureDeleteAndExit, chat.title));
-                        builder.setPositiveButton(LocaleController.getString(R.string.Delete), (dialogInterface, i) -> {
-                            getMessagesController().deleteParticipantFromChat(chatId, getMessagesController().getUser(getUserConfig().getClientUserId()));
-                            finishFragment();
+                    if (!isMyGroup) {
+                        // Button 4: Leave Group (only for groups I don't own)
+                        customButtonContainer.addButton(R.drawable.msg_leave, "Leave", v -> {
+                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                            builder.setTitle(LocaleController.getString(R.string.DeleteAndExit));
+                            builder.setMessage(LocaleController.formatString("AreYouSureDeleteAndExit", R.string.AreYouSureDeleteAndExit, chat.title));
+                            builder.setPositiveButton(LocaleController.getString(R.string.Delete), (dialogInterface, i) -> {
+                                getMessagesController().deleteParticipantFromChat(chatId, getMessagesController().getUser(getUserConfig().getClientUserId()));
+                                finishFragment();
+                            });
+                            builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+                            showDialog(builder.create());
                         });
-                        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
-                        showDialog(builder.create());
-                    });
+                    }
                 }
             }
         } else {
