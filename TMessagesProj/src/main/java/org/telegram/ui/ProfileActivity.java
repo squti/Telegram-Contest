@@ -16733,19 +16733,27 @@ public class ProfileActivity extends BaseFragment
                     });
                 }
 
-                // Button 3: Stop Bot
-                customButtonContainer.addButton(R.drawable.msg_block, "Stop", v -> {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setTitle("Stop");
-                    builder.setMessage("Do you want to stop this bot?");
-                    builder.setPositiveButton(LocaleController.getString("Stop", R.string.Stop), (dialogInterface, i) -> {
-                        getMessagesController().blockPeer(userId);
-                        getMessagesController().deleteDialog(dialogId, 1, false);
-                        finishFragment();
+                // Button 3: Stop Bot (if already chatting) or Report Bot (if not chatting yet)
+                boolean isChattingWithBot = getMessagesController().getDialog(dialogId) != null;
+                
+                if (isChattingWithBot) {
+                    customButtonContainer.addButton(R.drawable.msg_block, "Stop", v -> {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle("Stop");
+                        builder.setMessage("Do you want to stop this bot?");
+                        builder.setPositiveButton(LocaleController.getString("Stop", R.string.Stop), (dialogInterface, i) -> {
+                            getMessagesController().blockPeer(userId);
+                            getMessagesController().deleteDialog(dialogId, 1, false);
+                            finishFragment();
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showDialog(builder.create());
                     });
-                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showDialog(builder.create());
-                });
+                } else {
+                    customButtonContainer.addButton(R.drawable.profile_report, "Report", v -> {
+                        ReportBottomSheet.openChat(ProfileActivity.this, getDialogId());
+                    });
+                }
                 return; // Exit early for bots
             }
         }
@@ -16950,6 +16958,55 @@ public class ProfileActivity extends BaseFragment
                             showDialog(builder.create());
                         });
                     }
+                }
+            } else {
+                // User hasn't joined the channel/group yet - show report buttons
+                if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                    // Channel not joined: Show minimal buttons including report
+                    
+                    // Button 1: Share
+                    customButtonContainer.addButton(R.drawable.msg_share, "Share", v -> {
+                        try {
+                            Intent intent = new Intent(Intent.ACTION_SEND);
+                            intent.setType("text/plain");
+                            if (chatInfo != null && !TextUtils.isEmpty(chatInfo.about)) {
+                                intent.putExtra(Intent.EXTRA_TEXT, "https://t.me/" + ChatObject.getPublicUsername(chat));
+                            } else {
+                                intent.putExtra(Intent.EXTRA_TEXT, "https://t.me/" + ChatObject.getPublicUsername(chat));
+                            }
+                            getParentActivity().startActivity(Intent.createChooser(intent, LocaleController.getString("ShareFile", R.string.ShareFile)));
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    });
+
+                    // Button 2: Report Channel
+                    customButtonContainer.addButton(R.drawable.profile_report, "Report", v -> {
+                        ReportBottomSheet.openChat(ProfileActivity.this, getDialogId());
+                    });
+                } else {
+                    // Group not joined: Show minimal buttons including report
+                    
+                    // Button 1: Share
+                    customButtonContainer.addButton(R.drawable.msg_share, "Share", v -> {
+                        try {
+                            Intent intent = new Intent(Intent.ACTION_SEND);
+                            intent.setType("text/plain");
+                            if (chatInfo != null && !TextUtils.isEmpty(chatInfo.about)) {
+                                intent.putExtra(Intent.EXTRA_TEXT, "https://t.me/" + ChatObject.getPublicUsername(chat));
+                            } else {
+                                intent.putExtra(Intent.EXTRA_TEXT, "https://t.me/" + ChatObject.getPublicUsername(chat));
+                            }
+                            getParentActivity().startActivity(Intent.createChooser(intent, LocaleController.getString("ShareFile", R.string.ShareFile)));
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    });
+
+                    // Button 2: Report Group
+                    customButtonContainer.addButton(R.drawable.profile_report, "Report", v -> {
+                        ReportBottomSheet.openChat(ProfileActivity.this, getDialogId());
+                    });
                 }
             }
         } else {
