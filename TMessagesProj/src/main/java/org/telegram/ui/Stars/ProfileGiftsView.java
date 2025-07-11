@@ -270,6 +270,23 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         canvas.save();
         canvas.clipRect(0, 0, getWidth(), expandY);
 
+        // Create circular clipping to exclude avatar area from gift drawing
+        // Calculate avatar center position and radius relative to this view
+        final float avatarCenterX = ax + aw / 2.0f;
+        final float avatarCenterY = ay + ah / 2.0f;
+        final float avatarRadius = Math.max(aw, ah) / 2.0f + dp(8); // Add small padding around avatar
+        
+        // Only apply avatar clipping if avatar is visible in our bounds
+        if (avatarCenterX >= 0 && avatarCenterX <= getWidth() && 
+            avatarCenterY >= 0 && avatarCenterY <= expandY) {
+            
+            // Create a path that excludes the avatar area
+            android.graphics.Path clipPath = new android.graphics.Path();
+            clipPath.addRect(0, 0, getWidth(), expandY, android.graphics.Path.Direction.CW);
+            clipPath.addCircle(avatarCenterX, avatarCenterY, avatarRadius, android.graphics.Path.Direction.CCW);
+            canvas.clipPath(clipPath);
+        }
+
         final float acx = getWidth() / 2.0f;
         final float cacx = Math.min(acx, dp(48));
         final float acy = ay + ah / 2.0f;
