@@ -486,6 +486,7 @@ public class ProfileActivity extends BaseFragment
     private CustomButtonContainer customButtonContainer;
     private DrawerProfileCell.AnimatedStatusView animatedStatusView;
     private AvatarImageView avatarImage;
+    private View avatarBlackOverlay;
     private View avatarOverlay;
     private AnimatorSet avatarAnimation;
     private RadialProgressView avatarProgressView;
@@ -17309,6 +17310,21 @@ public class ProfileActivity extends BaseFragment
         avatarContainer = new FrameLayout(context);
         avatarContainer.addView(avatarImage,
                 LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        
+        // Create circular black overlay for darkening effect
+        avatarBlackOverlay = new View(context);
+        avatarBlackOverlay.setBackgroundColor(Color.BLACK);
+        avatarBlackOverlay.setAlpha(0f); // Start transparent
+        
+        // Make the black overlay circular by setting corner radius to half of size (44dp)
+        GradientDrawable circularBackground = new GradientDrawable();
+        circularBackground.setColor(Color.BLACK);
+        circularBackground.setCornerRadius(AndroidUtilities.dp(44)); // 44dp radius for 88dp circle
+        avatarBlackOverlay.setBackground(circularBackground);
+        
+        avatarContainer.addView(avatarBlackOverlay,
+                LayoutHelper.createFrame(88, 88, Gravity.CENTER));
+        
         avatarContainer.addView(avatarProgressView,
                 LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         if (parentLayout != null && parentLayout.getLastFragment() instanceof ChatActivity) {
@@ -17810,6 +17826,27 @@ public class ProfileActivity extends BaseFragment
 
         // Calculate the layout position that will place the visual center at the target
         avatarY = targetCenterY - scaleCenterOffset;
+
+        // DARKENING EFFECT: Apply progressive darkening as avatar moves up using black overlay
+        // Start darkening when avatar reaches the top of collapsed area
+        if (scrollProgress > 0f) {
+            // Calculate darkening progress: 0 = no darkening, 1 = completely black
+            float darkeningProgress = Math.max(0f, Math.min(1f, scrollProgress));
+            
+            // Apply darkening effect using black overlay
+            // As avatar moves up, increase black overlay alpha (darken avatar)
+            // Keep avatar at full opacity, let the black overlay create the darkening effect
+            avatarImage.setAlpha(1.0f);
+            if (avatarBlackOverlay != null) {
+                avatarBlackOverlay.setAlpha(darkeningProgress);
+            }
+        } else {
+            // Restore full brightness when not collapsing
+            avatarImage.setAlpha(1.0f);
+            if (avatarBlackOverlay != null) {
+                avatarBlackOverlay.setAlpha(0f);
+            }
+        }
 
 
 
