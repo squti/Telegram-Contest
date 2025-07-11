@@ -254,9 +254,9 @@ import org.telegram.ui.Stars.StarReactionsOverlay;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stars.StarsReactionsSheet;
+import org.telegram.ui.Stories.PublicStoriesList;
 import org.telegram.ui.Stories.StoriesListPlaceProvider;
 import org.telegram.ui.Stories.StoriesUtilities;
-import org.telegram.ui.Stories.PublicStoriesList;
 import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.Stories.recorder.PreviewView;
 import org.telegram.ui.Stories.recorder.StoryEntry;
@@ -38633,7 +38633,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 args.putLong("user_id", user.id);
                 args.putBoolean("expandPhoto", expandPhoto);
                 ProfileActivity fragment = new ProfileActivity(args);
-                fragment.setPlayProfileAnimation(currentUser != null && currentUser.id == user.id ? 1 : 0);
+
+                fragment.setProfileActivityOpeningAnimationType(ProfileActivity.ProfileOpeningAnimationType.fromValue(currentUser != null && currentUser.id == user.id ? 1 : 0));
                 AndroidUtilities.setAdjustResizeToNothing(getParentActivity(), classGuid);
                 presentFragment(fragment);
             }
@@ -40077,7 +40078,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 args.putLong("dialog_id", dialog_id);
             }
             ProfileActivity fragment = new ProfileActivity(args);
-            fragment.setPlayProfileAnimation(currentUser != null && currentUser.id == uid ? 1 : 0);
+            fragment.setProfileActivityOpeningAnimationType(ProfileActivity.ProfileOpeningAnimationType.fromValue(currentUser != null && currentUser.id == uid ? 1 : 0));
             presentFragment(fragment);
         } else {
             Bundle args = new Bundle();

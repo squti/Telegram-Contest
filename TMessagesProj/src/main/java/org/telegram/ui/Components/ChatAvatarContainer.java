@@ -46,7 +46,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SavedMessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
@@ -536,7 +535,15 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
 
         if (parentFragment.isComments) {
             if (chat == null) return;
-            parentFragment.presentFragment(ProfileActivity.of(-chat.id), removeLast);
+            Bundle args = new Bundle();
+            args.putLong("chat_id", -chat.id);
+            args.putInt("avatarContainer_left", getLeft() + avatarImageView.getLeft());
+            args.putInt("avatarContainer_top", avatarImageView.getTop());
+            args.putInt("titleTextView_top", titleTextView.getTop());
+            args.putInt("titleTextView_left", getLeft() + titleTextView.getLeft());
+            args.putInt("subtitle_top", subtitleTextView.getTop());
+            args.putInt("subtitle_left", getLeft() + subtitleTextView.getLeft());
+            parentFragment.presentFragment(new ProfileActivity(args), removeLast);
             return;
         }
 
@@ -573,12 +580,18 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 }
                 args.putBoolean("reportSpam", parentFragment.hasReportSpam());
                 args.putInt("actionBarColor", getThemedColor(Theme.key_actionBarDefault));
+                args.putInt("avatarContainer_left", getLeft() + avatarImageView.getLeft());
+                args.putInt("avatarContainer_top", avatarImageView.getTop());
+                args.putInt("titleTextView_top", titleTextView.getTop());
+                args.putInt("titleTextView_left", getLeft() + titleTextView.getLeft());
+                args.putInt("subtitle_top", subtitleTextView.getTop());
+                args.putInt("subtitle_left", getLeft() + subtitleTextView.getLeft());
                 ProfileActivity fragment = new ProfileActivity(args, sharedMediaPreloader);
                 if (!monoforum) {
                     fragment.setUserInfo(parentFragment.getCurrentUserInfo(), parentFragment.profileChannelMessageFetcher, parentFragment.birthdayAssetsFetcher);
                 }
                 if (fromChatAnimation) {
-                    fragment.setPlayProfileAnimation(byAvatar ? 2 : 1);
+                    fragment.setProfileActivityOpeningAnimationType(ProfileActivity.ProfileOpeningAnimationType.fromValue(byAvatar ? 2 : 1));
                 }
                 parentFragment.presentFragment(fragment, removeLast);
             }
@@ -590,12 +603,18 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             } else if (parentFragment.isTopic) {
                 args.putLong("topic_id", parentFragment.getThreadMessage().getId());
             }
+            args.putInt("avatarContainer_left", getLeft() + avatarImageView.getLeft());
+            args.putInt("avatarContainer_top", avatarImageView.getTop());
+            args.putInt("titleTextView_top", titleTextView.getTop());
+            args.putInt("titleTextView_left", getLeft() + titleTextView.getLeft());
+            args.putInt("subtitle_top", subtitleTextView.getTop());
+            args.putInt("subtitle_left", getLeft() + subtitleTextView.getLeft());
             ProfileActivity fragment = new ProfileActivity(args, sharedMediaPreloader);
             if (!monoforum) {
                 fragment.setChatInfo(parentFragment.getCurrentChatInfo());
             }
             if (fromChatAnimation) {
-                fragment.setPlayProfileAnimation(byAvatar ? 2 : 1);
+                fragment.setProfileActivityOpeningAnimationType(ProfileActivity.ProfileOpeningAnimationType.fromValue(byAvatar ? 2 : 1));
             }
             parentFragment.presentFragment(fragment, removeLast);
         }

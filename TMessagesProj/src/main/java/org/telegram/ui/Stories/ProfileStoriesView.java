@@ -43,9 +43,9 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AvatarImageView;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
+import org.telegram.ui.Components.AvatarImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.RadialProgress;
 
@@ -488,7 +488,8 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
         float avatarPullProgress = Utilities.clamp((avatarContainer.getScaleX() - 1f) / 0.4f, 1f, 0f);
         float insetMain = AndroidUtilities.lerp(AndroidUtilities.dpf2(4f), AndroidUtilities.dpf2(3.5f), avatarPullProgress);
         insetMain *= progressToInsets;
-        float ax = avatarContainer.getX() + insetMain * avatarContainer.getScaleX();
+        // Use view's center for horizontal positioning to avoid offset issues
+        float ax = getWidth() / 2.0f - (avatarContainer.getWidth() - insetMain * 2) * avatarContainer.getScaleX() / 2.0f;
         float ay = avatarContainer.getY() + insetMain * avatarContainer.getScaleY();
         float aw = (avatarContainer.getWidth() - insetMain * 2) * avatarContainer.getScaleX();
         float ah = (avatarContainer.getHeight() - insetMain * 2) * avatarContainer.getScaleY();
